@@ -72,7 +72,7 @@
             2,
             {
                 "before": true,
-                "after": true
+                "after": false
             }
         ],
         "handle-callback-err": [
@@ -117,15 +117,7 @@
         "no-extend-native": 2,
         "no-extra-bind": 2,
         "no-extra-boolean-cast": 2,
-        "no-extra-parens": [
-            "error",
-            "all",
-            {
-                "conditionalAssign": false,
-                "returnAssign": false,
-                "nestedBinaryExpressions": false
-            }
-        ],
+        "no-extra-parens": "off",
         "no-fallthrough": 1,
         "no-floating-decimal": 2,
         "no-func-assign": 2,
@@ -295,7 +287,7 @@
         ],
         "yield-star-spacing": [
             2,
-            "both"
+            "before"
         ],
         "yoda": [
             2,

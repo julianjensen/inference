@@ -6,7 +6,6 @@
 [![npm version][npm-image]][npm-url]
 [![License][license-image]][license-url]
 [![Known Vulnerabilities][snyk-image]][snyk-url]
-[![Codacy Badge][codacy-image]][codacy-url]
 [![david-dm][david-dm-image]][david-dm-url]
 
 > A JSDOC substitue that will parse doc tags as well as closure annotations.
@@ -60,9 +59,6 @@ MIT © [Julian Jensen](https://github.com/julianjensen/jsdoc-tag-parser)
 
 [snyk-url]: https://snyk.io/test/github/julianjensen/jsdoc-tag-parser
 [snyk-image]: https://snyk.io/test/github/julianjensen/jsdoc-tag-parser/badge.svg
-
-[codacy-url]: https://www.codacy.com/app/julianjensen/jsdoc-tag-parser?utm_source=github.com&amp;amp;utm_medium=referral&amp;amp;utm_content=julianjensen/jsdoc-tag-parser&amp;amp;utm_campaign=Badge_Grade
-[codacy-image]: https://api.codacy.com/project/badge/Grade/
 
 [david-dm-url]: https://david-dm.org/julianjensen/jsdoc-tag-parser
 [david-dm-image]: https://david-dm.org/julianjensen/jsdoc-tag-parser.svg
