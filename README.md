@@ -76,3 +76,31 @@ All of the specifiers have one field `local`, always an `Identifier`
 
 MIT © [Julian Jensen](https://github.com/julianjensen/jsdoc-tag-parser)
 
+Checks whether {@code this} is a subtype of {@code that}.<p>
+Note this function also returns true if this type structurally
+matches the protocol define by that type (if that type is an
+interface function type)
+   *
+Subtyping rules:
+<ul>
+<li>(unknown) &mdash; every type is a subtype of the Unknown type.</li>
+<li>(no) &mdash; the No type is a subtype of every type.</li>
+<li>(no-object) &mdash; the NoObject type is a subtype of every object
+type (i.e. subtypes of the Object type).</li>
+<li>(ref) &mdash; a type is a subtype of itself.</li>
+<li>(union-l) &mdash; A union type is a subtype of a type U if all the
+union type's constituents are a subtype of U. Formally<br>
+<code>(T<sub>1</sub>, &hellip;, T<sub>n</sub>) &lt;: U</code> if and only
+<code>T<sub>k</sub> &lt;: U</code> for all <code>k &isin; 1..n</code>.</li>
+<li>(union-r) &mdash; A type U is a subtype of a union type if it is a
+subtype of one of the union type's constituents. Formally<br>
+<code>U &lt;: (T<sub>1</sub>, &hellip;, T<sub>n</sub>)</code> if and only
+if <code>U &lt;: T<sub>k</sub></code> for some index {@code k}.</li>
+<li>(objects) &mdash; an Object <code>O<sub>1</sub></code> is a subtype
+of an object <code>O<sub>2</sub></code> if it has more properties
+than <code>O<sub>2</sub></code> and all common properties are
+pairwise subtypes.</li>
+</ul>
+   *
+@return <code>this &lt;: that</code>
+

@@ -56,7 +56,8 @@
         "commander": "^2.13.0",
         "doctrine": "^2.1.0",
         "espree": "^3.5.2",
-        "estraverse": "^4.2.0"
+        "estraverse": "^4.2.0",
+        "typescript": "^2.6.2"
     },
     "@std/esm": {
         "esm": "js",

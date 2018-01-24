@@ -1,77 +1,58 @@
 /** ******************************************************************************************************************
  * @file Describe what symbols does.
+ *
+ *
  * @author Julian Jensen <jjdanois@gmail.com>
  * @since 1.0.0
  * @date 20-Jan-2018
  *********************************************************************************************************************/
-
-
-
-
 "use strict";
 
 import { globals, isString, node_is } from "./utils";
 import { Syntax } from 'espree';
-import { SymbolFlags } from "./types";
+import { SymbolFlags, TransformFlags } from "./types";
 import { parse } from "./parse-file";
 
 const
     make_temp = () => `$_temp${~~( Math.random() * 1e5 )}`,
-    as_identifier = parts => parts.length === 1 && isString( parts[ 0 ] ) ? parts[ 0 ] : null,
-    as_fqn = parts => parts.every( p => !p.computed ) ? parts : null;
+    make_alias = ( actualName, aliasName ) => '_alias_' + actualName + '$' + JSON.stringify( aliasName ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' );
 
 /**
- * @class
+ *
  */
 export class Symbol
 {
     /**
-     * @param {string} name
-     * @param {SymbolTable} symbolTable
+     * @param {string} [name]
+     * @param {?Symbol} [parent]
      */
-    constructor( name, symbolTable )
+    constructor( name = 'global', parent = null )
     {
-        this.name = name;
-        this.definitions = [];
+        this.symbols = new Map();
+        this.parent = parent;
+        this.node = null;
+        this._name = name;
+        /** @type {TransformFlags} */
+        this.transformFlags = TransformFlags.None;
+        this.tempCounter = 1;
+        /** @type {Declaration|Identifier} */
         this.decls = [];
+        /** @type {Array<Identifier>} */
         this.refs = [];
-        /** @type {SymbolFlags} */
-        this.flags = SymbolFlags.None;
-        /** @type {?SymbolTable} */
-        this.symbols = null;
-        /** @type {SymbolTable} */
-        this.symbolTable = symbolTable;
+        /** @type {Array<Annotation>} */
+        this.definitions = [];
+        /** @type {Symbol} */
+        this.aliasFor = null;
     }
 
-    /**
-     * @param {Declaration} decl
-     * @return {Symbol}
-     */
-    declaration( decl )
+    get name()
     {
-        if ( !this.decls.includes( decl ) ) this.decls.push( decl );
-        return this;
+        return this._name || this.tempName || '<missing name>';
     }
 
-    /**
-     * @param {Identifier} ref
-     * @return {Symbol}
-     */
-    reference( ref )
+    set name( n )
     {
-        if ( !this.refs.includes( ref ) ) this.refs.push( ref );
-        return this;
-    }
-
-    definition( def )
-    {
-        this.merge_definition( def );
-        return this;
-    }
-
-    merge_definition( def )
-    {
-        this.definitions.push( def );
+        this._name = n;
     }
 
     /**
@@ -83,10 +64,7 @@ export class Symbol
         this.flags |= type;
 
         if ( this.flags & SymbolFlags.JSContainer && !this.symbols )
-        {
-            this.symbolTable = new SymbolTable( this.symbolTable );
-            this.symbolTable.name = this.name;
-        }
+            this.symbols = new Map();
 
         return this;
     }
@@ -118,245 +96,135 @@ export class Symbol
         return this;
     }
 
-    value()
+    temp_name()
     {
-
+        this.tempName = `__[${this.fqn()}].${this.symbolTable.tempCounter++}`;
+        return this;
     }
 
-    toString()
+    get_or_create( name )
     {
-        return `${this.name} ( ${this.flags.asString()} )`;
-    }
-}
+        let sym = this.symbols.get( name );
 
-/**
- *
- */
-export class SymbolTable
-{
+        if ( !sym )
+        {
+            sym = new Symbol( name, this );
+            this.symbols.set( name, sym );
+        }
+
+        return sym;
+    }
+
     /**
-     * @param {SymbolTable} parent
+     * @param {string} name
+     * @param {Symbol} target
+     * @return {Symbol}
      */
-    constructor( parent = null )
+    alias( name, target )
     {
-        this.symbols = new Map();
-        this.parent = parent;
-        this.node = null;
-        this.name = null;
+        if ( this.symbols.has( name ) )
+            throw new Error( `Duplicate definition for alias "${name}"` );
+
+        const sym = this.get_or_create( name ).as( SymbolFlags.Alias );
+        sym.aliasFor = target;
+        return sym;
     }
 
     /**
      * @param {string} name
      * @param {?Declaration} [node]
      * @param {Annotation} [definition]
-     * @return {SymbolTable}
+     * @return {Symbol}
      */
     decl( name, node, definition )
     {
-        name = this.fqn( name );
-        if ( !this.symbols.has( name ) )
-        {
-            const sym = new Symbol( name, this );
-            this.symbols.set( name, sym );
-            sym.declaration( node );
-            sym.definition( definition );
-        }
+        let sym = this.get_or_create( name );
 
-        return this;
+        if ( node ) this.decls.push( node );
+        if ( definition ) this.definitions.push( definition );
+
+        return sym;
     }
 
     /**
      * @param {string} name
      * @param {Identifier} [node]
      * @param {Annotation} [definition]
-     * @return {SymbolTable}
+     * @return {Symbol}
      */
     ref( name, node, definition )
     {
-        name = this.fqn( name );
-        if ( !this.symbols.has( name ) )
-        {
-            const sym = new Symbol( name, this );
-            this.symbols.set( name, sym );
-            if ( node ) sym.reference( node );
-            if ( definition ) sym.definition( definition );
-        }
+        const sym = this.get_or_create( name );
+
+        if ( node ) this.refs.push( node );
+        if ( definition ) this.definitions.push( definition );
 
         return this;
     }
 
     /**
-     * @param {string} name
      * @return {?Array<string>}
      */
-    fqn( name )
+    fqn()
     {
-        const names = [ name ];
+        const names = [ this.name ];
 
-        let symTab = this.parent;
+        let sym = this.parent;
 
-        while ( symTab )
+        while ( sym.parent )
         {
-            if ( symTab.name ) names.unshift( symTab.name );
-            symTab = symTab.parent;
+            if ( sym.name ) names.unshift( sym.name );
+            sym = sym.parent;
         }
 
         return names.length ? names : null;
     }
 
     /**
-     * @param {Symbol|string|Identifier|MemberExpression|null|undefined} [name]
+     * recurse( sym = current ):
+     *
+     *      if string
+     *          sym = sym.string
+     *
+     *      if array
+     *          prop is recurse( array )
+     *          genName alias -> prop
+     *          sym = sym.genName
+     *          sym is computed
+     *
+     * @param {RecursiveNames} varNames
      * @param {boolean} [createIfMissing=false]
-     * @return {Symbol}
      */
-    get( name, createIfMissing = false )
+    get( varNames, createIfMissing = false )
     {
-        if ( name === null || name === void 0  )
-            return this.make_temp();
+        /**
+         * @param {RecursiveNames} names
+         */
+        const experimental = names => {
 
-        if ( name instanceof Symbol ) return name;
+            let sym = globals.current;
 
-        if ( isString( name ) )
-        {
-            if ( this.symbols.has( name ) )
-                return this.symbols.get( name );
-
-            let sym = this.get_name( name );
-
-            if ( sym ) return sym;
-
-            return createIfMissing ? this.ref( name ).get( name ) : null;
-        }
-        // else if ( node_is( name, Syntax.Identifier ) )
-        //     return this.get( name.name, createIfMissing );
-        else
-        {
-            let
-                /** @type {?(Array<Array<string>|string>)} */
-                rawFqn = make_fqn( name ),
-                name = as_identifier( rawFqn ),
-                names = as_fqn( rawFqn );
-
-            /**
-             * 1. [ `string` ] => `string`
-             *    Get the symbol named `string` from the current or parent symboltable.
-             *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
-             */
-            if ( name )
-                return globals.current.get( name, createIfMissing );
-
-            /**
-             * 2. [ `string`, ...,`string` ] => `string`, ..., `string`
-             *    Pop last `string` as `lastsym`
-             *    Set `current` to current symboltable
-             *    Get the first (left-most) symbol as `sym` from the current or parent symboltable.
-             *    Get the symboltable associated with `sym` as `current`.
-             *
-             *    for each symbol as `sym` in list
-             *      Get `sym` from `current` only (no parents) as `sym`
-             *      if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable, flags as `JSContainer`
-             *      if `sym` does not exist return `null`
-             *      Get the symboltable associated with `sym` as `current`.
-             *
-             *    Get `lastsym` from `current` only (no parents)
-             *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
-             *    return `sym`
-             */
-            if ( names )
+            while ( names.length )
             {
-                let lastSym = names.pop(),
-                    /** @type {SymbolTable} */
-                    cur = globals.current,
-                    /** @type {?Symbol} */
-                    sym;
+                let next = names.shift();
 
-                for ( const name of names )
+                if ( isString( next ) )
+                    sym = sym.get_own( next, createIfMissing );
+                else
                 {
-                    sym = cur.get( name, createIfMissing );
+                    const
+                        aliasName = make_alias( this.name, next ), // '_alias_' + this.name + '$' + JSON.stringify( next ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' ),
+                        prop = experimental( next );
 
-                    if ( !sym ) return null;
-
-                    sym.as( SymbolFlags.JSContainer );
-                    cur = sym.symbolTable;
-                }
-
-                return cur.get( lastSym, createIfMissing );
-            }
-
-            /**
-             * 3. [ { name: [ `string|NamePart`, ..., `string|NamePart` ], computed: [ `string|NamePart`, ..., `string|NamePart` ] } ]
-             *    Get consecutive `string` from `name`
-             *    Set `sym` to return result from calling number 2 above
-             *    if `sym` does not exist return `null`
-             */
-
-            /**
-             * @param {Array<string>|string} list
-             * @param {SymbolTable} [symbolTable]
-             * @return {?Symbol}
-             */
-            const walk_nested = list => {
-                let /** @type {Array<string>} */
-                    conseq = [],
-                    /** @type {?Symbol} */
-                    sym,
-                    base,
-                    prop;
-
-                while ( list.length )
-                {
-                    while ( list.length && isString( list[ 0 ] ) )
-                        conseq.push( list.shift() );
-
-                    if ( conseq.length )
-                    {
-                        sym = this.get( conseq, createIfMissing );
-                        base = sym && sym.symbolTable;
-                        if ( !sym ) return null;
-                    }
-
-                    if ( list.length )
-                    {
-                        prop = this.get( list.shift(), createIfMissing );
-
-                        if ( !prop ) return null;
-
-                        sym = base.symbolTable.get( prop, createIfMissing );
-                        base = sym.symbolTable;
-                    }
+                    sym.transformFlags |= TransformFlags.ContainsComputedPropertyName;
+                    sym = sym.alias( aliasName, prop ).as( SymbolFlags.ComputedNotInferred );
                 }
             }
 
-            /**
-             *
-             * Set `sym` to result of `object` as follows:
-             *      if `object` is `Identifier`
-             *          set `sym` to result of calling number 1 above
-             *          if `sym` does not exist return `null`
-             *
-             *      if `object` is `ThisExpression`
-             *          Resolve `this` to `sym`
-             *          if `sym` does not exist set `sym` to generic `Object`
-             *
-             *      if `object` is `Super`
-             *          Resolve `super` to `sym`
-             *          if `sym` does not exist set `sym` to generic `Object`
-             *
-             *      if `object` is `MemberExpression`
-             *          Set `sym` to result of self( `object` )
-             *
-             * Set `current` to symboltable of `sym`
-             *
-             * Get `property` in the same way as `object` above (`super` is not legal as `property`)
-             *      Set result to `prop`
-             *
-             * if `prop` does not exist on `current` and create is `true`, create `prop` on `current`
-             * Get `prop` from `current` and write to `sym`
-             * return `sym`
-             */
+            return sym;
+        };
 
-            return walk_nested( rawFqn );
-        }
+        return experimental( Symbol.make_fqn( varNames ) );
     }
 
     make_temp()
@@ -379,11 +247,18 @@ export class SymbolTable
         return null;
     }
 
-    get_own( name )
+    get_own( name, createIfMissing = false )
     {
         if ( !isString( name ) ) return null;
 
-        return this.symbols.get( name );
+        const sym = this.symbols.get( name );
+
+        if ( sym ) return sym;
+
+        if ( !createIfMissing ) return null;
+
+        return this.decl( name );
+
     }
 
     has_own( name )
@@ -419,236 +294,89 @@ export class SymbolTable
         return this.has_own( name );
     }
 
+    asString( indent = '' )
+    {
+        let st = '';
+
+        if ( this.symbols && this.symbols.size )
+        {
+            let subSyms = [];
+
+            for ( const sym of this.symbols.values() )
+                subSyms.push( sym.asString( indent + '    ' ) );
+
+            st = '\n' + indent + subSyms.join( '\n' + indent );
+        }
+
+        let aStr = ( this.flags & SymbolFlags.Alias ) ? ` => ${this.aliasFor.name} [${this.aliasFor.fqn().join( '.' )}]` : '';
+
+        return `${this.name}: ${SymbolFlags.asString( this.flags )}${aStr}${st}`;
+    }
+
     toString()
     {
-        [ ...this.symbols.values() ].map( s => `${s}` ).join( '\n' );
+        return this.asString();
+    }
+
+    /**
+     * @param {string|Array<string>|MemberExpression|Identifier|ThisExpression|Super|SimpleLiteral|RegExpLiteral|Expression} node
+     * @return {Array<string>|string}
+     */
+    static make_fqn( node )
+    {
+        if ( isString( node ) ) return [ node ];
+
+        if ( Array.isArray( node ) && node.some( isString ) ) return node;
+
+        switch ( node.type )
+        {
+            case Syntax.Literal:
+                return node.regex ? [ node.regex.pattern + '.' + node.regex.flags ] : [ node.value ];
+
+            case Syntax.Identifier:
+                return [ node.name ];
+
+            case Syntax.ThisExpression:
+                return [ 'this' ];
+
+            case Syntax.Super:
+                return [ 'super' ];
+
+            case Syntax.MemberExpression:
+                if ( node.computed )
+                    return [ ...Symbol.make_fqn( node.object ), Symbol.make_fqn( node.property ) ];
+
+                return Symbol.make_fqn( node.object ).concat( Symbol.make_fqn( node.property ) );
+        }
     }
 }
 
 /**
- *
- * Three options:
- *
- * 1. [ `string` ] => `string`
- *    Get the symbol named `string` from the current or parent symboltable.
- *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
- *
- * 2. [ `string`, ...,`string` ] => `string`, ..., `string`
- *    Pop last `string` as `lastsym`
- *    Set `current` to current symboltable
- *    Get the first (left-most) symbol as `sym` from the current or parent symboltable.
- *    Get the symboltable associated with `sym` as `current`.
- *
- *    for each symbol as `sym` in list
- *      Get `sym` from `current` only (no parents) as `sym`
- *      if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable, flags as `JSContainer`
- *      if `sym` does not exist return `null`
- *      Get the symboltable associated with `sym` as `current`.
- *
- *    Get `lastsym` from `current` only (no parents)
- *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
- *    return `sym`
- *
- * 3. deprecated: [ { name: [ `string|NamePart`, ..., `string|NamePart` ], computed: [ `string|NamePart`, ..., `string|NamePart` ] } ]
- *    Get consecutive `string` from `name`
- *    Set `sym` to return result from calling number 2 above
- *    if `sym` does not exist return `null`
- *
- *
- * Set `sym` to result of `object` as follows:
- *      if `object` is `Identifier`
- *          set `sym` to result of calling number 1 above
- *          if `sym` does not exist return `null`
- *
- *      if `object` is `ThisExpression`
- *          Resolve `this` to `sym`
- *          if `sym` does not exist set `sym` to generic `Object`
- *
- *      if `object` is `Super`
- *          Resolve `super` to `sym`
- *          if `sym` does not exist set `sym` to generic `Object`
- *
- *      if `object` is `MemberExpression`
- *          Set `sym` to result of self( `object` )
- *
- * Set `current` to symboltable of `sym`
- *
- * Get `property` in the same way as `object` above (`super` is not legal as `property`)
- *      Set result to `prop`
- *
- * if `prop` does not exist on `current` and create is `true`, create `prop` on `current`
- * Get `prop` from `current` and write to `sym`
- * return `sym`
- *
- * @param {string|Array<string>|Identifier|MemberExpression} id
- * @param {boolean} [createIfMissing=false]
- * @param {?SymbolTable} [startSymbols]
- * @return {?Symbol}
+ * @class
+ * @extends Symbol
  */
-function get( id, createIfMissing = false, startSymbols = globals.current )
+class FunctionSymbol extends Symbol
 {
-    let
-        /** @type {?(Array<NamePart|string>)} */
-        rawFqn = make_fqn( id ),
-        name = as_identifier( rawFqn ),
-        names = as_fqn( rawFqn );
-
-    /**
-     * 1. [ `string` ] => `string`
-     *    Get the symbol named `string` from the current or parent symboltable.
-     *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
-     */
-    if ( name )
-        return globals.current.get( name, createIfMissing );
-
-    /**
-     * 2. [ `string`, ...,`string` ] => `string`, ..., `string`
-     *    Pop last `string` as `lastsym`
-     *    Set `current` to current symboltable
-     *    Get the first (left-most) symbol as `sym` from the current or parent symboltable.
-     *    Get the symboltable associated with `sym` as `current`.
-     *
-     *    for each symbol as `sym` in list
-     *      Get `sym` from `current` only (no parents) as `sym`
-     *      if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable, flags as `JSContainer`
-     *      if `sym` does not exist return `null`
-     *      Get the symboltable associated with `sym` as `current`.
-     *
-     *    Get `lastsym` from `current` only (no parents)
-     *    if `sym` does not exist and `create` is `true`, create `sym` on `current` symboltable
-     *    return `sym`
-     */
-    if ( names )
+    constructor( name, parent )
     {
-        let lastSym = names.pop(),
-            /** @type {SymbolTable} */
-            cur = globals.current,
-            /** @type {?Symbol} */
-            sym;
-
-        for ( const name of names.entries() )
-        {
-            sym = cur.get( name, createIfMissing );
-
-            if ( !sym ) return null;
-
-            sym.as( SymbolFlags.JSContainer );
-            cur = sym.symbolTable;
-        }
-
-        return cur.get( lastSym, createIfMissing );
+        super( name, parent );
+        this.params = [];
+        this.defaults = [];
+        this.returnType = null;
     }
 
-    /**
-     * 3. [ { name: [ `string|NamePart`, ..., `string|NamePart` ], computed: [ `string|NamePart`, ..., `string|NamePart` ] } ]
-     *    Get consecutive `string` from `name`
-     *    Set `sym` to return result from calling number 2 above
-     *    if `sym` does not exist return `null`
-     */
-
-    /**
-     * @param {Array<string>|string} list
-     * @param {SymbolTable} [symbolTable]
-     * @return {?Symbol}
-     */
-    function walk_nested( list, symbolTable = startSymbols )
+    add_param( sym , index = this.params.length )
     {
-        let /** @type {Array<string>} */
-            conseq = [],
-            /** @type {?Symbol} */
-            sym,
-            base,
-            prop;
-
-        while ( list.length )
-        {
-            while ( list.length && isString( list[ 0 ] ) )
-                conseq.push( list.shift() );
-
-            if ( conseq.length )
-            {
-                sym = get( conseq, createIfMissing );
-                base = sym && sym.symbolTable;
-                if ( !sym ) return null;
-            }
-
-            if ( list.length )
-            {
-                prop = get( list.shift(), createIfMissing );
-
-                if ( !prop ) return null;
-
-                sym = base.symbolTable.get( prop, createIfMissing );
-                base = sym.symbolTable;
-            }
-        }
+        this.params[ index ] = sym;
     }
 
-    /**
-     *
-     * Set `sym` to result of `object` as follows:
-     *      if `object` is `Identifier`
-     *          set `sym` to result of calling number 1 above
-     *          if `sym` does not exist return `null`
-     *
-     *      if `object` is `ThisExpression`
-     *          Resolve `this` to `sym`
-     *          if `sym` does not exist set `sym` to generic `Object`
-     *
-     *      if `object` is `Super`
-     *          Resolve `super` to `sym`
-     *          if `sym` does not exist set `sym` to generic `Object`
-     *
-     *      if `object` is `MemberExpression`
-     *          Set `sym` to result of self( `object` )
-     *
-     * Set `current` to symboltable of `sym`
-     *
-     * Get `property` in the same way as `object` above (`super` is not legal as `property`)
-     *      Set result to `prop`
-     *
-     * if `prop` does not exist on `current` and create is `true`, create `prop` on `current`
-     * Get `prop` from `current` and write to `sym`
-     * return `sym`
-     */
-
-    return walk_nested( rawFqn );
-}
-
-/**
- * @param {string|Array<string>|MemberExpression|Identifier|ThisExpression|Super|SimpleLiteral|RegExpLiteral|Expression} node
- * @return {Array<string>|string}
- */
-function make_fqn( node )
-{
-    if ( isString( node ) ) return [ node ];
-
-    if ( Array.isArray( node ) && node.every( isString ) ) return node;
-
-    switch ( node.type )
+    returns( sym )
     {
-        case Syntax.Literal:
-            return node.regex ? [ node.regex.pattern + '.' + node.regex.flags ] : [ node.value ];
-
-        case Syntax.Identifier:
-            return [ node.name ];
-
-        case Syntax.ThisExpression:
-            return [ 'this' ];
-
-        case Syntax.Super:
-            return [ 'super' ];
-
-        case Syntax.MemberExpression:
-            if ( node.computed )
-                return [ ...make_fqn( node.object ), make_fqn( node.property ) ];
-                // return [ { name: make_fqn( node.object ), computed: make_fqn( node.property ) } ];
-
-            return make_fqn( node.object ).concat( make_fqn( node.property ) );
+        this.returnType = sym;
     }
 }
 
-globals.current = globals.symbolTable = new SymbolTable();
+globals.current = globals.symbolTable = new Symbol( 'global' );
 
 [
     "a",
@@ -662,8 +390,13 @@ globals.current = globals.symbolTable = new SymbolTable();
 ].forEach( testStr => {
     const ast = parse( testStr );
 
-    console.log( '-----\n' + testStr + '\n', JSON.stringify( make_fqn( ast.body[ 0 ].expression ), null, 4 ) + '\n' );
+    globals.current = globals.symbolTable = new Symbol();
+
+    console.log( '-----\n' + testStr + '\n', JSON.stringify( Symbol.make_fqn( ast.body[ 0 ].expression ), null, 4 ) + '\n' );
 
     globals.current.get( ast.body[ 0 ].expression, true );
-    console.log( '' + globals.current );
+
+    const symTab = '' + globals.current;
+
+    console.log( symTab );
 } );
