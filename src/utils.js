@@ -6,6 +6,8 @@
  *********************************************************************************************************************/
 "use strict";
 
+import { inspect } from 'util';
+
 const
     /**
      * @param {object} o
@@ -130,8 +132,61 @@ export function read_balanced_delimiters( str, stop = ',', delims = allDelimiter
     return [ se[ 0 ] + 1, se[ 1 ] ];
 }
 
+const
+    asts = new Map();
+
+/**
+ * @param {string} fileName
+ * @param {number} index
+ */
+export function ast_from_index( fileName, index )
+{
+    const
+        ast = asts.get( fileName );
+
+    return ast ? ast[ index ] : null;
+}
+
+/**
+ * @param {string} fileName
+ * @param {Array<Node>} ast
+ */
+export function store_ast( fileName, ast )
+{
+    asts.set( fileName, ast );
+}
+
+export function flatDump( obj )
+{
+    return inspect( obj, { depth: 0, colors: true } );
+}
+
 export const globals = {
     symbolTable: null,
     current: null,
     program: null
 };
+
+/**
+ * @param {string} msg
+ * @param {Node} [node]
+ * @param {boolean} [noThrow=false]
+ */
+export function fatal( msg, node, noThrow = false )
+{
+    const
+        loc = node && node.loc;
+
+    let fileLoc;
+
+    if ( node )
+    {
+        while ( node.parent ) node = node.parent;
+        fileLoc = `In "${node.fileName}", line ${loc.start.line}: `;
+    }
+
+    console.error( `${fileLoc}${msg}` );
+
+    if ( !noThrow )
+        throw new Error( msg );
+}

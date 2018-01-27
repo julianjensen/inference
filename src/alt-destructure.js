@@ -72,8 +72,8 @@
 
 "use strict";
 
-import {Syntax } from 'espree';
-import { globals, node_is } from "./utils";
+import { Syntax } from 'espree';
+import { globals, node_is, fatal } from "./utils";
 
 /**
  * @interface BaseNodeWithoutComments
@@ -92,10 +92,48 @@ class RHS
      */
     constructor( rhs )
     {
+        let tmp;
+
+        this.rhsType = rhs.type;
+
         switch ( rhs.type )
         {
             case Syntax.Identifier:
-                let tmp = globals.symbolTable.get( rhs.name );
+                tmp = globals.current.get( rhs, true );
+                break;
+
+            case Syntax.ObjectExpression:
+                tmp = rhs.properties;
+                break;
+
+            case Syntax.ArrayExpression:
+                tmp = rhs.elements;
+                break;
+
+            // Tricky but solvable, mostly...
+            case Syntax.ThisExpression:
+                break;
+
+            // Tricky because
+            // easy case: const { a, b: c, d = 1 } = va1 = va2
+            // but: const { a, b: c, d = 1 } = { x, y: [ p, o, r = 10 ], zzz } = va2
+            case Syntax.AssignmentExpression:
+                break;
+
+            case Syntax.ArrowFunctionExpression:
+            case Syntax.FunctionExpression:
+            case Syntax.UnaryExpression:
+            case Syntax.UpdateExpression:
+            case Syntax.BinaryExpression:
+            case Syntax.LogicalExpression:
+            case Syntax.Literal:
+            case Syntax.TemplateLiteral:
+            case Syntax.TaggedTemplateExpression:
+                fatal( `Illegal destructure target ${rhs.type}`, rhs );
+/*
+ThisExpression | FunctionExpression | YieldExpression | MemberExpression | ConditionalExpression |
+    CallExpression | NewExpression | SequenceExpression | ClassExpression | MetaProperty | AwaitExpression
+ */
 
         }
         this.rhs = rhs;
@@ -265,4 +303,14 @@ function step_pattern( node, rhs )
             step_pattern( node.left, rhs.get_value( node.right ) );
             break;
     }
+}
+
+/**
+ * @param {Pattern} lhs
+ * @param {Expression} rhs
+ * @return {*}
+ */
+export default function get_all_identifiers_from_destructuring( lhs, rhs )
+{
+    return step_pattern( lhs, new RHS( rhs ) );
 }

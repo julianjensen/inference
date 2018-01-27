@@ -52,7 +52,6 @@
     },
     "dependencies": {
         "@std/esm": "^0.19.7",
-        "catharsis": "^0.8.9",
         "commander": "^2.13.0",
         "doctrine": "^2.1.0",
         "espree": "^3.5.2",

@@ -8,13 +8,13 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { globals, isString, node_is } from "./utils";
-import { Syntax } from 'espree';
-import { SymbolFlags, TransformFlags } from "./types";
-import { parse } from "./parse-file";
+import { globals, isString, node_is }                 from "./utils";
+import { Syntax }                                     from 'espree';
+import { ModifierFlags, SymbolFlags, TransformFlags } from "./types";
 
 const
     make_temp = () => `$_temp${~~( Math.random() * 1e5 )}`,
+    make_anonymous = () => `$_anon${~~( Math.random() * 1e5 )}`,
     make_alias = ( actualName, aliasName ) => '_alias_' + actualName + '$' + JSON.stringify( aliasName ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' );
 
 /**
@@ -43,6 +43,8 @@ export class Symbol
         this.definitions = [];
         /** @type {Symbol} */
         this.aliasFor = null;
+        /** @type {ModifierFlags} */
+        this.modifiers = ModifierFlags.None;
     }
 
     get name()
@@ -131,14 +133,16 @@ export class Symbol
     }
 
     /**
-     * @param {string} name
+     * @param {string|Node} name
      * @param {?Declaration} [node]
      * @param {Annotation} [definition]
      * @return {Symbol}
      */
     decl( name, node, definition )
     {
-        let sym = this.get_or_create( name );
+        if ( !name ) name = make_anonymous();
+
+        let sym = typeof name === 'string' ? this.get_or_create( name ) : this.get( name );
 
         if ( node ) this.decls.push( node );
         if ( definition ) this.definitions.push( definition );
@@ -224,6 +228,8 @@ export class Symbol
             return sym;
         };
 
+        console.error( `varNames:`, varNames );
+        console.error( `result:`, Symbol.make_fqn( varNames ) );
         return experimental( Symbol.make_fqn( varNames ) );
     }
 
@@ -376,27 +382,25 @@ class FunctionSymbol extends Symbol
     }
 }
 
-globals.current = globals.symbolTable = new Symbol( 'global' );
-
-[
-    "a",
-    "a.b",
-    "a.b.c",
-    "a.b.c[ x ]",
-    "a.b.c[ x.y ]",
-    "a.b[ x.y ].s.t",
-    "a.b[ x.y ][ s.t ]",
-    "a.b[ x.y ][ s[ h.i ].t ]"
-].forEach( testStr => {
-    const ast = parse( testStr );
-
-    globals.current = globals.symbolTable = new Symbol();
-
-    console.log( '-----\n' + testStr + '\n', JSON.stringify( Symbol.make_fqn( ast.body[ 0 ].expression ), null, 4 ) + '\n' );
-
-    globals.current.get( ast.body[ 0 ].expression, true );
-
-    const symTab = '' + globals.current;
-
-    console.log( symTab );
-} );
+// [
+//     "a",
+//     "a.b",
+//     "a.b.c",
+//     "a.b.c[ x ]",
+//     "a.b.c[ x.y ]",
+//     "a.b[ x.y ].s.t",
+//     "a.b[ x.y ][ s.t ]",
+//     "a.b[ x.y ][ s[ h.i ].t ]"
+// ].forEach( testStr => {
+//     const ast = parse( testStr );
+//
+//     globals.current = globals.symbolTable = new Symbol();
+//
+//     console.log( '-----\n' + testStr + '\n', JSON.stringify( Symbol.make_fqn( ast.body[ 0 ].expression ), null, 4 ) + '\n' );
+//
+//     globals.current.get( ast.body[ 0 ].expression, true );
+//
+//     const symTab = '' + globals.current;
+//
+//     console.log( symTab );
+// } );

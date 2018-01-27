@@ -112,6 +112,183 @@ const _transformFlags = {
 make_enum_from_object( Object.assign( TransformFlags, _transformFlags ), TransformFlags );
 
 /**
+ * For any given symbol we have:
+ *
+ * 1. Access
+ * 2. Modifiers
+ * 3. Lexical
+ * 4. Type(s)
+ * 5. Name
+ * 6. Decls
+ * 7. Refs
+ *
+ * ### Access
+ * * private [artifical]
+ * * public (to module, default)
+ * * protected [artificial]
+ * * exported [as, default]
+ *
+ * ### Modifiers
+ * * async
+ * * generator (technically, a GeneratorFunction)
+ * * iterable
+ * * nonenumerable
+ * * readonly
+ * * writeonly (externally, of course)
+ * * frozen
+ * * sealed
+ * * static
+ * * abstract (artifical)
+ * * override (artifical)
+ *
+ * ### Lexical
+ * * block
+ * * function
+ * * bound
+ *
+ * ### Object modifiers
+ * * iterable
+ * * frozen
+ * * sealed
+ *
+ * ### Function modifiers
+ * * async
+ * * generator (function)
+ * * private (to nearest function scope)
+ * * exported (excludes private)
+ * * constructor (arbitrary)
+ * * hoistable
+ * * predicate
+ * * anonymous (but may be assigned)
+ *
+ * ### Arrow function modifiers
+ * * async
+ * * predicate
+ * * anonymous (always but maybe assigned)
+ *
+ * ### Method modifiers
+ * * async
+ * * generator (function)
+ * * abstract (aka virtual)
+ * * override
+ * * static
+ * * private (to class)
+ * * protected (private to class and subclasses)
+ * * public (implied)
+ * * constructor
+ *
+ * ### Class Modifiers
+ * * frozed
+ * * sealed
+ * * subtype
+ * * supertype
+ * * iterable
+ * * private (to module)
+ * * exported (excludes private)
+ * * anonymous
+ *
+ * ### Types
+ *
+ * #### Primitives
+ * * number
+ * * boolean
+ * * string
+ * * null
+ * * undefined
+ * * symbol
+ *
+ * #### Complex
+ * * object
+ *
+ * #### Object-based
+ * * function
+ * * set
+ * * map
+ * * regexp
+ * * promise
+ * * proxy
+ * * reflect
+ * * global
+ *
+ * #### Indexed
+ * * array
+ * * typedarray
+ * * arraybuffer
+ * * sharedarraybuffer
+ *
+ * #### Keyed
+ * * map
+ * * set
+ * * weakmap
+ * * weakset
+ *
+ * #### Built-in
+ * * atomics
+ * * dataview
+ * * date
+ * * error
+ * * json
+ * * math
+ * * generator (more commonly, iterator)
+ * * NaN
+ *
+ * #### Errors
+ * * evalerror (deprecated)
+ * * internalerror
+ * * rangeerror
+ * * referenceerror
+ * * syntaxerror
+ * * typeerror
+ * * urierror
+ *
+ * ### Internal
+ * * container (class, interface, object)
+ * * imported
+ * * formalparameter
+ * * argument
+ * * union
+ * * interface
+ * * typedef/alias
+ * * enum
+ * * templatetype
+ * * transient
+ * * computed
+ *
+ *
+ *
+ * @enum
+ */
+export let Type = [
+    'NONE',
+    'CONST',
+    'BLOCKSCOPED',
+    'FUNCTIONSCOPED',
+    'HOISTABLE',
+    'ENUM',
+    'OPTIONAL',
+    'STATIC',
+    'SYSTEM',
+    'PARAM',
+    'INTERFACE',
+    'ITERABLE',
+    'ITERATOR',
+    'CONSTRUCTOR',
+    'GETACCESSOR',
+    'SETACCESSOR',
+    'ABSTRACT',
+    'OVERRIDE',
+    'INSTANCE',
+    'UNION',
+    'PRIVATE',
+    'PROTECTED',
+    'SUPER',
+    'NAMESPACE',
+    'EXTERNAL'
+];
+
+Type = make_bitfield_enum( Type );
+
+/**
  * @enum
  */
 export const SymbolFlags = {
@@ -123,9 +300,9 @@ export const SymbolFlags = {
     Function:               1 << 4,   // Function
     Class:                  1 << 5,   // Class
     Interface:              1 << 6,   // Interface
-    ConstEnum:              1 << 7,   // Const enum
+    Iterable:               1 << 7,   // Implements Iterable
     RegularEnum:            1 << 8,   // Enum
-    ValueModule:            1 << 9,   // Instantiated module
+    NoBind:                 1 << 9,   // Arrow function
     NamespaceModule:        1 << 10,  // Uninstantiated module
     TypeLiteral:            1 << 11,  // Type Literal or mapped type
     ObjectLiteral:          1 << 12,  // Object Literal
@@ -159,6 +336,7 @@ export const SymbolFlags = {
  * @private
  */
 const _symbolFlags = {
+    Callable: SymbolFlags.Class | SymbolFlags.Function | SymbolFlags.Method | SymbolFlags.Constructor,
     All: SymbolFlags.FunctionScopedVariable | SymbolFlags.BlockScopedVariable | SymbolFlags.Property | SymbolFlags.EnumMember | SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.ConstEnum |
          SymbolFlags.RegularEnum | SymbolFlags.ValueModule | SymbolFlags.NamespaceModule | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral | SymbolFlags.Method | SymbolFlags.Constructor | SymbolFlags.GetAccessor |
          SymbolFlags.SetAccessor | SymbolFlags.Signature | SymbolFlags.TypeParameter | SymbolFlags.TypeAlias | SymbolFlags.ExportValue |
@@ -246,7 +424,7 @@ export const TypeFlags = {
     ContainsObjectLiteral:   1 << 23,  // Type is or contains object literal type
     ContainsAnyFunctionType: 1 << 24,  // Type is or contains the anyFunctionType
     NonPrimitive:            1 << 25,  // intrinsic object type
-    JsxAttributes:           1 << 26,  // Jsx attributes type
+    Generator:               1 << 26,
     MarkerType:              1 << 27,  // Marker type used for variance probing,
     asString( val, sep = ' | ' )
     {
@@ -255,7 +433,7 @@ export const TypeFlags = {
 };
 
 /**
- * @enum {number}
+ * @enum
  * @extends TypeFlags
  * @private
  */
@@ -293,16 +471,69 @@ const _typeFlags = {
 make_enum_from_object( Object.assign( TypeFlags, _typeFlags ), TypeFlags );
 
 /**
+ * @enum
+ * @mixes _modifierFlags
+ */
+export const ModifierFlags = {
+    None:             0,
+    Export:           1 << 0,  // Declarations
+    Ambient:          1 << 1,  // Declarations
+    Public:           1 << 2,  // Property/Method
+    Private:          1 << 3,  // Property/Method
+    Protected:        1 << 4,  // Property/Method
+    Static:           1 << 5,  // Property/Method
+    Readonly:         1 << 6,  // Property/Method
+    Abstract:         1 << 7,  // Class/Method/ConstructSignature
+    Async:            1 << 8,  // Property/Method/Function
+    Default:          1 << 9,  // Function/Class (export default declaration)
+    Const:            1 << 11, // Variable declaration
+    Generator:        1 << 12,
+    HasComputedFlags: 1 << 29  // Modifier flags have been computed
+};
+
+/**
+ * @enum
+ * @mixin
+ * @private
+ */
+const _modifierFlags = {
+        AccessibilityModifier: ModifierFlags.Public | ModifierFlags.Private | ModifierFlags.Protected,
+        // Accessibility modifiers and 'readonly' can be attached to a parameter in a constructor to make it a property.
+        ParameterPropertyModifier: ModifierFlags.AccessibilityModifier | ModifierFlags.Readonly,
+        NonPublicAccessibilityModifier: ModifierFlags.Private | ModifierFlags.Protected,
+
+        TypeScriptModifier: ModifierFlags.Ambient | ModifierFlags.Public | ModifierFlags.Private | ModifierFlags.Protected | ModifierFlags.Readonly | ModifierFlags.Abstract | ModifierFlags.Const,
+        ExportDefault: ModifierFlags.Export | ModifierFlags.Default
+};
+
+make_enum_from_object( Object.assign( ModifierFlags, _modifierFlags ), ModifierFlags );
+
+/**
  * @param {object<string,number>} names
- * @param {object<string|number,string|number>} __enum
+ * @param {object<string|number,string|number>} [__enum]
  * @return {object<string|number,string|number>}
  * @private
  */
-function make_enum_from_object( names, __enum )
+function make_enum_from_object( names, __enum = names )
 {
     Object.entries( names ).forEach( ( [ name, val ] ) => typeof val !== 'function' ? ( __enum[ __enum[ name ] = val ] = name ) : __enum[ name ] = val );
 }
 
+/**
+ * @param {Array<string>} names
+ * @return {{}}
+ */
+function make_bitfield_enum( names )
+{
+    const __enum = {};
+
+    __enum[ __enum[ 0 ] = 'NONE' ] = 0;
+
+    for ( const [ i, enumName ] of names.entries() )
+        __enum[ __enum[ 1 << i ] = enumName ] = 1 << i;
+
+    return __enum;
+}
 
 /**
  * Turns an `enum` into an array of strings.

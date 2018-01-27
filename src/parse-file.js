@@ -5,37 +5,43 @@
  * @date 19-Jan-2018
  *********************************************************************************************************************/
 
+
+
 "use strict";
 
-import { parse as parser } from 'espree';
+import { parse as parser, Syntax }                       from 'espree';
 import { traverse, attachComments, VisitorKeys } from 'estraverse';
-import { parse_comments } from './jsdoc-parser';
-import { TransformFlags } from "./types";
-import { globals } from "./utils";
-
-const defaultParserOptions = {
-    loc:          true,
-    range:        true,
-    comment:      true,
-    tokens:       true,
-    ecmaVersion:  9,
-    sourceType:   globals.program && globals.program.script ? 'script' : 'module',
-    ecmaFeatures: {
-        impliedStrict:                true,
-        experimentalObjectRestSpread: true
-    }
-};
+import { parse_comments }                        from './jsdoc-parser';
+import { TransformFlags }                        from "./types";
+import { globals, store_ast }                    from "./utils";
+import build_definition                          from "./doctags";
+import { Symbol }                                from "./symbols";
 
 /**
  * @param {string} source       - The source module
- * @param {object} [options]    - The usual espree/esprima options
+ * @param {object} [_options]    - The usual espree/esprima options
  * @return {Program}
  */
-export function parse( source, options = defaultParserOptions )
+export function parse( source, _options = {} )
 {
+    const defaultParserOptions = {
+        loc:          true,
+        range:        true,
+        comment:      true,
+        tokens:       true,
+        ecmaVersion:  9,
+        sourceType:   globals.program && globals.program.script ? 'script' : 'module',
+        ecmaFeatures: {
+            impliedStrict:                true,
+            experimentalObjectRestSpread: true
+        }
+    };
+
+    const options = Object.assign( {}, defaultParserOptions, _options );
+
     options.range = options.loc = options.comment = options.tokens = true;
-    options.ecmaVersion = 2018;
-    options.ecmaFeatures = options.ecmaFeatures || {};
+    options.ecmaVersion                               = 2018;
+    options.ecmaFeatures                              = options.ecmaFeatures || {};
     options.ecmaFeatures.experimentalObjectRestSpread = true;
 
     const
@@ -66,30 +72,55 @@ export function parse( source, options = defaultParserOptions )
 
 /**
  * @param {Program} withComments
- * @return {Array}
+ * @param {string} file
+ * @return {object}
  */
-export function prep( withComments )
+export function prep( withComments, file )
 {
     const
-        allNodesParsed = [];
+        types          = new Set(),
+        allNodesParsed = [],
+        byIndex        = [];
 
-    let index = 0;
+    if ( !globals.symbolTable )
+        globals.symbolTable = new Symbol( 'global' );
 
-    traverse( withComments, { enter( node, parent ) {
+    if ( globals.program.script )
+        globals.current = globals.symbolTable;
+    else
+        globals.current = new Symbol( file, globals.symbolTable );
 
-            node.parent = parent;
-            node.index = index++;
+    withComments.fileName = file;
+
+    traverse( withComments, {
+        enter( node, parent )
+        {
+
+            node.parent         = parent;
+            node.index          = byIndex.length;
             node.transformFlags = TransformFlags.None;
+            byIndex.push( node );
 
             [ node.field, node.fieldIndex ] = determine_field( node, parent );
 
             const comments = parse_comments( node );
 
-            if ( comments ) allNodesParsed.push( comments );
+            if ( comments )
+            {
+                types.add( node.type );
+                allNodesParsed.push( comments );
+                build_definition( node, comments );
+            }
+            else if ( node.type === Syntax.Identifier )
+            {
+                build_definition( node );
+            }
         }
     } );
 
-    return allNodesParsed;
+    store_ast( file, byIndex );
+
+    return { fileName: file, types: [ ...types ], allDocNodes: allNodesParsed };
 }
 
 /**
