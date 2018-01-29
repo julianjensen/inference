@@ -4,17 +4,13 @@
  * @since 1.0.0
  * @date 19-Jan-2018
  *********************************************************************************************************************/
-
-
-
 "use strict";
 
-import { parse as parser, Syntax }                       from 'espree';
+import { parse as parser }                       from 'espree';
 import { traverse, attachComments, VisitorKeys } from 'estraverse';
-import { parse_comments }                        from './jsdoc-parser';
-import { TransformFlags }                        from "./types";
+import { TypeFlags } from "./types";
 import { globals, store_ast }                    from "./utils";
-import build_definition                          from "./doctags";
+import { enter, exit }                          from "./doctags";
 import { Symbol }                                from "./symbols";
 
 /**
@@ -48,26 +44,6 @@ export function parse( source, _options = {} )
         ast = parser( source, options /* options */ );
 
     return attachComments( ast, ast.comments, ast.tokens );
-
-    //     allNodesParsed = [];
-    //
-    // let index = 0;
-    //
-    // traverse( withComments, { enter( node, parent ) {
-    //
-    //         node.parent = parent;
-    //         node.index = index++;
-    //         node.transformFlags = TransformFlags.None;
-    //
-    //         [ node.field, node.fieldIndex ] = determine_field( node, parent );
-    //
-    //         const comments = parse_comments( node );
-    //
-    //         if ( comments ) allNodesParsed.push( comments );
-    //     }
-    // } );
-    //
-    // return allNodesParsed;
 }
 
 /**
@@ -83,12 +59,12 @@ export function prep( withComments, file )
         byIndex        = [];
 
     if ( !globals.symbolTable )
-        globals.symbolTable = new Symbol( 'global' );
+        globals.symbolTable = new Symbol( 'global' ).as( TypeFlags.CONTAINER );
 
     if ( globals.program.script )
         globals.current = globals.symbolTable;
     else
-        globals.current = new Symbol( file, globals.symbolTable );
+        globals.current = new Symbol( file, globals.symbolTable ).as( TypeFlags.CONTAINER | TypeFlags.MODULE );
 
     withComments.fileName = file;
 
@@ -103,19 +79,19 @@ export function prep( withComments, file )
 
             [ node.field, node.fieldIndex ] = determine_field( node, parent );
 
-            const comments = parse_comments( node );
-
-            if ( comments )
-            {
-                types.add( node.type );
-                allNodesParsed.push( comments );
-                build_definition( node, comments );
-            }
-            else if ( node.type === Syntax.Identifier )
-            {
-                build_definition( node );
-            }
-        }
+            enter( node );
+            // const comments = parse_comments( node );
+            //
+            // if ( comments )
+            // {
+            //     types.add( node.type );
+            //     allNodesParsed.push( comments );
+            //     build_definition( node, comments );
+            // }
+            // else if ( node.type === Syntax.Identifier )
+            //     build_definition( node );
+        },
+        exit
     } );
 
     store_ast( file, byIndex );

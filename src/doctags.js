@@ -1,18 +1,68 @@
 /** ******************************************************************************************************************
- * @file Describe what doctags does.
+ * @file Create vars and attach doc tags, if any.
+ *
+ * Strict mode
+ * -----------
+ *
+ * 1. No global variable creation. Any assignment to a variable that hasn't been declared and source type is `"script"`
+ *    will throw a `ReferenceError`. In normal mode, a variable is created on the global scope.
+ *
+ * 2. Assigning values to global non-writable variables will throw a `TypeError`. Silently fails in normal mode.
+ *
+ * 3. Trying to delete undeletable properties will throw a `TypeError`.
+ *
+ * 4. Parameters must have unique names. In normal mode, subsequent parameters with the same name will hide the
+ *    previous values although they can still be accessed using `arguments`.
+ *
+ * 5. No octal syntax, you must use the prefix `0o`.
+ *
+ * 6. Setting a property on a primitive throws a `TypeError`. Silently fails in normal mode.
+ *
+ * 7. `with` is prohibited.
+ *
+ * 8. `eval` gets its own scope and is executed in strict mode. Also, eval'd code cannot delete a plain name.
+ *
+ * 9. `eval` and `arguments` are treated as keywords, i.e. cannot be assigned to.
+ *
+ * 10. In nomral mode, `arguments` elements are aliased to the parameters, changing one changes the other. This is not true for strict mode.
+ *
+ * 11. `arguments.callee` is not supported, throws `TypeError` is accessed. In normal mode, refers to the enclosing function.
+ *
+ * 12. `this` is not boxed. Inside a function not explicitly invoked with a `this` context will have `this === undefined`.
+ *
+ * 13. Accessing `function.caller` and `function.arguments` will throw a `TypeError`.
+ *
+ * 14. Accessing `arguments.caller` will throw a `TypeError`.
+ *
+ * 15. New reserved words:
+ *     * `implements`
+ *     * `interface`
+ *     * `let`
+ *     * `package`
+ *     * `private`
+ *     * `protected`
+ *     * `public`
+ *     * `protected`
+ *     * `public`
+ *     * `static`
+ *     * `yield`
+ *
+ * 16. Not an actual "strict mode" thing but generally supported: No function declaration outside of script/module and function
+ *     scope.
+ *
  * @author Julian Jensen <jjdanois@gmail.com>
  * @since 1.0.0
  * @date 20-Jan-2018
  *********************************************************************************************************************/
 
-
-
 "use strict";
 
-import unassociated_tag                               from './doctags-unrelated';
-import { flatDump, globals }                          from "./utils";
-import { Syntax }                                     from 'espree';
-import { ModifierFlags, SymbolFlags, TransformFlags } from "./types";
+import unassociated_tag      from './doctags-unrelated';
+import { flatDump, globals } from "./utils";
+import { Syntax }            from 'espree';
+import { TypeFlags }         from "./types";
+import { FunctionSymbol }    from "./symbols";
+import { parse_comments }    from "./jsdoc-parser";
 
 let symbolTable;
 
@@ -49,12 +99,12 @@ function var_decl( node, cb )
     const sym = declaration( node.id, cb );
 
     if ( node.kind === 'var' )
-        sym.as( SymbolFlags.FunctionScopedVariable );
+        sym.as( TypeFlags.HOISTABLE );
     else
     {
-        sym.as( SymbolFlags.BlockScopedVariable );
+        sym.as( TypeFlags.BLOCKSCOPED );
         if ( node.kind === 'const' )
-            sym.modifiers |= ModifierFlags.Const;
+            sym.as( TypeFlags.READONLY );
     }
 }
 
@@ -112,10 +162,10 @@ function create_symbol( node, cb )
                 sym = declaration( node, cb, node.key );
             else
                 sym = declaration( node, cb, mname );
-            if ( node.generator ) sym.transformFlags |= TransformFlags.Generator;
-            if ( node.async ) sym.modifiers |= ModifierFlags.Async;
+            if ( node.generator ) sym.as( TypeFlags.GENERATORFUNC );
+            if ( node.async ) sym.as( TypeFlags.ASYNC );
             if ( node.computed || node.key.computed )
-                sym.as( SymbolFlags.Computed | SymbolFlags.Method );
+                sym.as( TypeFlags.COMPUTED | TypeFlags.PROPERTY | TypeFlags.CALLABLE );
             break;
 
         case Syntax.FunctionDeclaration:
@@ -173,7 +223,8 @@ function from_identifier( node )
  */
 function function_expression( node )
 {
-    let sym, p = node.parent;
+    let sym,
+        p = node.parent;
 
     if ( node.id )
         sym = undoc_decl( node.id, node );
@@ -212,13 +263,88 @@ function undoc_decl( nameNode, declNode )
  * @param {Identifier|Pattern|MethodDefinition} node
  * @param {CommentBlock} cb
  * @param {string} [optName]
+ * @return {Symbol}
  */
 function declaration( node, cb, optName )
 {
-    if ( node.type === Syntax.Identifier )
-        return symbolTable.decl( optName || node.name, node.parent, cb.tags );
+    const sym = new Symbol( optName || node.name, symbolTable );
 
-    console.log( `optName:`, optName );
-    return symbolTable.decl( optName || node, node, cb.tags );
+    sym.decl_node( node.type === Syntax.Identifier ? node.parent : node );
+
+    if ( cb )
+        sym.docs( cb.tags );
+
+    return sym;
+}
+
+/**
+ * @param {Identifier|Pattern|MethodDefinition} node
+ * @param {CommentBlock} cb
+ * @param {string} [optName]
+ * @return {FunctionSymbol}
+ */
+function function_decl( node, cb, optName )
+{
+    const sym = new FunctionSymbol( optName || node.name, symbolTable );
+
+    sym.decl_node( node.type === Syntax.Identifier ? node.parent : node );
+
+    return sym;
+}
+
+function function_ref( node, optName )
+{
+
+}
+
+export const topScope = { parent: null, children: [], ids: [] };
+let scopeNode = topScope,
+    topSymbol;
+
+/**
+ * @param {BaseNode|string} node
+ * @return {boolean}
+ */
+function creates_scope( node )
+{
+    return [
+        Syntax.Program,                 // Creates `module` scope if type is module or "use strict", otherwise `global` scope
+        Syntax.BlockStatement,
+        Syntax.FunctionDeclaration,
+        Syntax.FunctionExpression,
+        Syntax.ArrowFunctionExpression,
+        Syntax.CatchClause,
+        Syntax.SwitchStatement,
+        Syntax.WithStatement,
+        Syntax.ClassDeclaration,
+        Syntax.ClassExpression
+    ].includes( typeof node === 'string' ? node : node.type );
+}
+
+export function enter( node )
+{
+    if ( creates_scope( node ) )
+    {
+        const scope = { parent: scopeNode, children: [], ids: [] };
+        if ( scopeNode ) scopeNode.children.push( scope );
+        scopeNode = scope;
+    }
+
+    const comments = parse_comments( node );
+
+    if ( node.type === Syntax.Identifier || comments )
+        scopeNode.ids.push( { node, comments } );
+}
+
+export function exit( node )
+{
+    if ( creates_scope( node ) )
+        scopeNode = scopeNode.parent;
+}
+
+export function process_scopes( isModule = true )
+{
+    // globals.topSymbol
+    // if ( isModule )
 }
 

@@ -162,6 +162,7 @@ export function flatDump( obj )
 }
 
 export const globals = {
+    topSymbol: null,
     symbolTable: null,
     current: null,
     program: null

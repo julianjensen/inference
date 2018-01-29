@@ -6,16 +6,19 @@
  * @since 1.0.0
  * @date 20-Jan-2018
  *********************************************************************************************************************/
+
+
 "use strict";
 
-import { globals, isString, node_is }                 from "./utils";
-import { Syntax }                                     from 'espree';
-import { ModifierFlags, SymbolFlags, TransformFlags } from "./types";
+import { globals, isString, node_is } from "./utils";
+import { Syntax } from 'espree';
+import { TypeFlags } from "./types";
+import { create } from "./type";
 
 const
-    make_temp = () => `$_temp${~~( Math.random() * 1e5 )}`,
+    make_temp      = () => `$_temp${~~( Math.random() * 1e5 )}`,
     make_anonymous = () => `$_anon${~~( Math.random() * 1e5 )}`,
-    make_alias = ( actualName, aliasName ) => '_alias_' + actualName + '$' + JSON.stringify( aliasName ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' );
+    make_alias     = ( actualName, aliasName ) => '_alias_' + actualName + '$' + JSON.stringify( aliasName ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' );
 
 /**
  *
@@ -26,15 +29,17 @@ export class Symbol
      * @param {string} [name]
      * @param {?Symbol} [parent]
      */
-    constructor( name = 'global', parent = null )
+    constructor( name, parent = null )
     {
+        if ( !name ) name = make_anonymous();
+
+        if ( parent )
+            parent.add( this );
+
         this.symbols = new Map();
         this.parent = parent;
         this.node = null;
         this._name = name;
-        /** @type {TransformFlags} */
-        this.transformFlags = TransformFlags.None;
-        this.tempCounter = 1;
         /** @type {Declaration|Identifier} */
         this.decls = [];
         /** @type {Array<Identifier>} */
@@ -43,37 +48,44 @@ export class Symbol
         this.definitions = [];
         /** @type {Symbol} */
         this.aliasFor = null;
-        /** @type {ModifierFlags} */
-        this.modifiers = ModifierFlags.None;
+        /** @type {?Type} */
+        this.type = null;
+
     }
 
+    /**
+     * @return {string}
+     */
     get name()
     {
-        return this._name || this.tempName || '<missing name>';
+        return this._name || '<missing name>';
     }
 
+    /**
+     * @param {string} n
+     */
     set name( n )
     {
         this._name = n;
     }
 
     /**
-     * @param {SymbolFlags} type
+     * @param {TypeFlags|number} type
      * @return {Symbol}
      */
     as( type )
     {
         this.flags |= type;
 
-        if ( this.flags & SymbolFlags.JSContainer && !this.symbols )
+        if ( this.flags & TypeFlags.CONTAINER && !this.symbols )
             this.symbols = new Map();
 
         return this;
     }
 
     /**
-     * @param {SymbolFlags} type
-     * @return {SymbolFlags}
+     * @param {TypeFlags} type
+     * @return {TypeFlags|number}
      */
     flagged( type )
     {
@@ -81,7 +93,7 @@ export class Symbol
     }
 
     /**
-     * @return {SymbolFlags}
+     * @return {TypeFlags}
      */
     get_flags()
     {
@@ -89,7 +101,7 @@ export class Symbol
     }
 
     /**
-     * @param {SymbolFlags} type
+     * @param {TypeFlags} type
      * @return {Symbol}
      */
     not( type )
@@ -98,19 +110,17 @@ export class Symbol
         return this;
     }
 
-    temp_name()
-    {
-        this.tempName = `__[${this.fqn()}].${this.symbolTable.tempCounter++}`;
-        return this;
-    }
-
+    /**
+     * @param {string} name
+     * @return {Symbol}
+     */
     get_or_create( name )
     {
         let sym = this.symbols.get( name );
 
         if ( !sym )
         {
-            sym = new Symbol( name, this );
+            sym = new this.constructor( name, this );
             this.symbols.set( name, sym );
         }
 
@@ -127,7 +137,7 @@ export class Symbol
         if ( this.symbols.has( name ) )
             throw new Error( `Duplicate definition for alias "${name}"` );
 
-        const sym = this.get_or_create( name ).as( SymbolFlags.Alias );
+        const sym = this.get_or_create( name ).as( TypeFlags.ALIAS );
         sym.aliasFor = target;
         return sym;
     }
@@ -142,12 +152,32 @@ export class Symbol
     {
         if ( !name ) name = make_anonymous();
 
-        let sym = typeof name === 'string' ? this.get_or_create( name ) : this.get( name );
+        let sym = typeof name === 'string' ? this.get_or_create( name ) : this.get( name, true );
 
         if ( node ) this.decls.push( node );
         if ( definition ) this.definitions.push( definition );
 
         return sym;
+    }
+
+    /**
+     * @param {?(Node|Declaration|Identifier)} node
+     */
+    decl_node( node )
+    {
+        if ( node ) this.decls.push( node );
+        return this;
+    }
+
+    /**
+     *
+     * @param {Annotation} def
+     * @return {Symbol}
+     */
+    docs( def )
+    {
+        if ( def ) this.definitions.push( def );
+        return this;
     }
 
     /**
@@ -163,6 +193,17 @@ export class Symbol
         if ( node ) this.refs.push( node );
         if ( definition ) this.definitions.push( definition );
 
+        return sym;
+    }
+
+    /**
+     * @param {Symbol} sym
+     * @return {Symbol}
+     */
+    add( sym )
+    {
+        this.symbols.set( sym.name, sym );
+        this.as( TypeFlags.CONTAINER );
         return this;
     }
 
@@ -218,10 +259,9 @@ export class Symbol
                 {
                     const
                         aliasName = make_alias( this.name, next ), // '_alias_' + this.name + '$' + JSON.stringify( next ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' ),
-                        prop = experimental( next );
+                        prop      = experimental( next );
 
-                    sym.transformFlags |= TransformFlags.ContainsComputedPropertyName;
-                    sym = sym.alias( aliasName, prop ).as( SymbolFlags.ComputedNotInferred );
+                    sym = sym.alias( aliasName, prop ).as( TypeFlags.COMPUTED_INDEX );
                 }
             }
 
@@ -233,14 +273,21 @@ export class Symbol
         return experimental( Symbol.make_fqn( varNames ) );
     }
 
+    /**
+     * @return {Symbol}
+     */
     make_temp()
     {
         const
             tmpName = make_temp();
 
-        return this.decl( tmpName, null ).get( tmpName ).as( SymbolFlags.Transient );
+        return this.decl( tmpName, null ).get( [ tmpName ] ).as( TypeFlags.TRANSIENT );
     }
 
+    /**
+     * @param {string} name
+     * @return {?Symbol}
+     */
     get_name( name )
     {
         if ( !isString( name ) ) return null;
@@ -253,6 +300,11 @@ export class Symbol
         return null;
     }
 
+    /**
+     * @param {string} name
+     * @param {boolean} [createIfMissing=false]
+     * @return {boolean}
+     */
     get_own( name, createIfMissing = false )
     {
         if ( !isString( name ) ) return null;
@@ -267,6 +319,10 @@ export class Symbol
 
     }
 
+    /**
+     * @param {string} name
+     * @return {boolean}
+     */
     has_own( name )
     {
         if ( !isString( name ) ) return null;
@@ -274,18 +330,19 @@ export class Symbol
         return this.symbols.has( name );
     }
 
+    /**
+     * @param {string} name
+     * @return {boolean}
+     */
     has_name( name )
     {
-        if ( !isString( name ) ) return null;
-
-        if ( this.symbols.has( name ) )
-            return true;
-        else if ( this.parent )
-            return this.parent.has_name( name );
-
-        return false;
+        return !!this.get_name( name );
     }
 
+    /**
+     * @param {string|Identifier} id
+     * @return {boolean}
+     */
     has( id )
     {
         const name = isString( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
@@ -293,6 +350,10 @@ export class Symbol
         return this.has_name( name );
     }
 
+    /**
+     * @param {string|Identifier} id
+     * @return {boolean}
+     */
     own( id )
     {
         const name = isString( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
@@ -300,6 +361,10 @@ export class Symbol
         return this.has_own( name );
     }
 
+    /**
+     * @param {string} [indent]
+     * @return {string}
+     */
     asString( indent = '' )
     {
         let st = '';
@@ -314,9 +379,9 @@ export class Symbol
             st = '\n' + indent + subSyms.join( '\n' + indent );
         }
 
-        let aStr = ( this.flags & SymbolFlags.Alias ) ? ` => ${this.aliasFor.name} [${this.aliasFor.fqn().join( '.' )}]` : '';
+        let aStr = ( this.flags & TypeFlags.ALIAS ) ? ` => ${this.aliasFor.name} [${this.aliasFor.fqn().join( '.' )}]` : '';
 
-        return `${this.name}: ${SymbolFlags.asString( this.flags )}${aStr}${st}`;
+        return `${this.name}: ${TypeFlags.asString( this.flags )}${aStr}${st}`;
     }
 
     toString()
@@ -361,24 +426,58 @@ export class Symbol
  * @class
  * @extends Symbol
  */
-class FunctionSymbol extends Symbol
+export class FunctionSymbol extends Symbol
 {
+    /**
+     * @param {string} name
+     * @param {?Symbol} [parent]
+     */
     constructor( name, parent )
     {
         super( name, parent );
         this.params = [];
         this.defaults = [];
         this.returnType = null;
+        this.as( TypeFlags.CALLABLE );
+        this.type = create( 'function' );
+        this.minArity = 0;
     }
 
-    add_param( sym , index = this.params.length )
+    add_param( sym, initializer = null, index = this.params.length )
     {
         this.params[ index ] = sym;
+        this.defaults[ index ] = initializer;
+
+        sym.as( TypeFlags.PARAM );
+
+        if ( initializer )
+            sym.as( TypeFlags.CONTAINSEXPR );
+
+        return this;
     }
 
+    /**
+     * @param {Symbol} sym
+     */
     returns( sym )
     {
         this.returnType = sym;
+    }
+}
+
+/**
+ * @class
+ * @extends Symbol
+ */
+export class ObjectSymbol extends Symbol
+{
+    /**
+     * @param {string} name
+     * @param {?Symbol} [parent]
+     */
+    constructor( name, parent )
+    {
+        super( name, parent );
     }
 }
 

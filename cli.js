@@ -5,20 +5,22 @@
  * @date 19-Jan-2018
  *********************************************************************************************************************/
 
+
 "use strict";
 
-import program from 'commander';
-import fs from 'fs';
-import { promisify } from 'util';
-import { parse, prep } from './src/parse-file';
-import { globals } from "./src/utils";
+import program                from 'commander';
+import fs                     from 'fs';
+import { inspect, promisify } from 'util';
+import { parse, prep }        from './src/parse-file';
+import { globals }            from "./src/utils";
+import { settings }           from "./src/ts-imports";
 
 const
-    readFile = promisify( fs.readFile ),
-    pack = require( './package.json' ),
-    version = pack.version,
-    name = pack.name,
-    $ = o => JSON.stringify( o, null, 4 ),
+    readFile       = promisify( fs.readFile ),
+    pack           = require( './package.json' ),
+    version        = pack.version,
+    name           = pack.name,
+    $              = o => JSON.stringify( o, null, 4 ),
     defaultOptions = {
         loc:          true,
         range:        true,
@@ -53,11 +55,24 @@ globals.program = program;
  */
 async function process_file( fileName )
 {
+    const
+        source = await readFile( fileName, 'utf8' );
+
+    let ast;
+
+    if ( fileName.endsWith( '.ts' ) )
+    {
+        settings.loadParser( ts => {
+            ast = settings.parse( ts, source );
+            console.log( inspect( ast, { depth: 20, colors: true } ) );
+        } );
+
+        return null;
+    }
+
     defaultOptions.sourceType = program.script ? 'script' : 'module';
 
-    const
-        source = await readFile( fileName, 'utf8' ),
-        ast = parse( source, defaultOptions );
+    ast = parse( source, defaultOptions );
 
     return prep( ast, fileName );
 }
@@ -65,12 +80,16 @@ async function process_file( fileName )
 Promise.all( program.args.map( process_file ) )
     .then( files => {
         const
-            output = {
-                allTypes: files.reduce( ( at, t ) => at.concat( t.types ), [] ),
+            output = files && {
+                allTypes: files.reduce( ( at, t ) => t ? at.concat( t.types ) : at, [] ),
                 files
             };
 
-        output.allTypes = [ ...new Set( output.allTypes ) ];
 
-        console.log( $( output ) );
+        if ( output )
+        {
+            output.allTypes = [ ...new Set( output.allTypes ) ];
+
+            console.log( $( output ) );
+        }
     } );
