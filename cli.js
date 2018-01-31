@@ -64,7 +64,8 @@ async function process_file( fileName )
     {
         settings.loadParser( ts => {
             ast = settings.parse( ts, source );
-            console.log( inspect( ast, { depth: 20, colors: true } ) );
+            // console.log( inspect( ast, { depth: 20, colors: true } ) );
+            // settings.walk( ast );
         } );
 
         return null;
@@ -90,6 +91,6 @@ Promise.all( program.args.map( process_file ) )
         {
             output.allTypes = [ ...new Set( output.allTypes ) ];
 
-            console.log( $( output ) );
+            // console.log( $( output ) );
         }
     } );
