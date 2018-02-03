@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/af2f80c68ea00d127141148b002c741c057d7ac7/estraverse/index.d.ts",
+    "raw": "registry:dt/estraverse#0.0.0+20160803011219",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/af2f80c68ea00d127141148b002c741c057d7ac7/estraverse/index.d.ts"
+  }
+}

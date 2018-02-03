@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/f290918b0ecfdadd66025bb59c134d0b2111569e/doctrine/index.d.ts",
+    "raw": "registry:dt/doctrine#0.0.0+20160810200924",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/f290918b0ecfdadd66025bb59c134d0b2111569e/doctrine/index.d.ts"
+  }
+}

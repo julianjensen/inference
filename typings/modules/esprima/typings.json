@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/7bd7410c92e3b3964183f274ad98e98ec77b3157/esprima/index.d.ts",
+    "raw": "registry:dt/esprima#2.1.0+20160919195312",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/7bd7410c92e3b3964183f274ad98e98ec77b3157/esprima/index.d.ts"
+  }
+}

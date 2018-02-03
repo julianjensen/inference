@@ -13,7 +13,7 @@ import fs                     from 'fs';
 import { inspect, promisify } from 'util';
 import { parse, prep }        from './src/parse-file';
 import { globals }            from "./src/utils";
-import { settings }           from "./src/ts-imports";
+import { settings }           from "./src/ts/ts-imports";
 
 const
     readFile       = promisify( fs.readFile ),
@@ -62,11 +62,10 @@ async function process_file( fileName )
 
     if ( fileName.endsWith( '.ts' ) )
     {
-        settings.loadParser( ts => {
-            ast = settings.parse( ts, source );
+        settings.loadParser();
+        const ast = settings.parse( fileName, source );
             // console.log( inspect( ast, { depth: 20, colors: true } ) );
             // settings.walk( ast );
-        } );
 
         return null;
     }
@@ -93,4 +92,6 @@ Promise.all( program.args.map( process_file ) )
 
             // console.log( $( output ) );
         }
+
+        settings.dump_info();
     } );

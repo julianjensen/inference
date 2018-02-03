@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "doctrine": "registry:dt/doctrine#0.0.0+20160810200924",
+    "esprima": "registry:dt/esprima#2.1.0+20160919195312",
+    "estree": "registry:dt/estree#0.0.0+20160907174834"
+  }
+}
