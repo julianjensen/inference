@@ -10,10 +10,11 @@
 
 "use strict";
 
-import { globals, isString, node_is } from "./utils";
-import { Syntax } from 'espree';
-import { TypeFlags } from "./types";
-import { create } from "./type";
+import { array, object, number, string } from 'convenience';
+import { globals, isString, node_is }    from "../utils";
+import { Syntax }                        from 'espree';
+import { TypeFlags }                     from "../types";
+import { create }                        from "../type";
 
 const
     make_temp      = () => `$_temp${~~( Math.random() * 1e5 )}`,
@@ -21,7 +22,9 @@ const
     make_alias     = ( actualName, aliasName ) => '_alias_' + actualName + '$' + JSON.stringify( aliasName ).replace( /[",]/g, '' ).replace( /[[\]]/g, '_' );
 
 /**
- *
+ * @class
+ * @param {string} [name]
+ * @param {?Symbol} [parent]
  */
 export class Symbol
 {
@@ -253,7 +256,7 @@ export class Symbol
             {
                 let next = names.shift();
 
-                if ( isString( next ) )
+                if ( string( next ) )
                     sym = sym.get_own( next, createIfMissing );
                 else
                 {
@@ -290,7 +293,7 @@ export class Symbol
      */
     get_name( name )
     {
-        if ( !isString( name ) ) return null;
+        if ( !string( name ) ) return null;
 
         if ( this.symbols.has( name ) )
             return this.symbols.get( name );
@@ -307,7 +310,7 @@ export class Symbol
      */
     get_own( name, createIfMissing = false )
     {
-        if ( !isString( name ) ) return null;
+        if ( !string( name ) ) return null;
 
         const sym = this.symbols.get( name );
 
@@ -325,7 +328,7 @@ export class Symbol
      */
     has_own( name )
     {
-        if ( !isString( name ) ) return null;
+        if ( !string( name ) ) return null;
 
         return this.symbols.has( name );
     }
@@ -345,7 +348,7 @@ export class Symbol
      */
     has( id )
     {
-        const name = isString( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
+        const name = string( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
 
         return this.has_name( name );
     }
@@ -356,7 +359,7 @@ export class Symbol
      */
     own( id )
     {
-        const name = isString( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
+        const name = string( id ) ? id : node_is( id, Syntax.Identifier ) ? id.name : null;
 
         return this.has_own( name );
     }
@@ -395,9 +398,9 @@ export class Symbol
      */
     static make_fqn( node )
     {
-        if ( isString( node ) ) return [ node ];
+        if ( string( node ) ) return [ node ];
 
-        if ( Array.isArray( node ) && node.some( isString ) ) return node;
+        if ( Array.isArray( node ) && node.some( string ) ) return node;
 
         switch ( node.type )
         {
@@ -441,6 +444,8 @@ export class FunctionSymbol extends Symbol
         this.as( TypeFlags.CALLABLE );
         this.type = create( 'function' );
         this.minArity = 0;
+
+        this.typeParameters = [];
     }
 
     add_param( sym, initializer = null, index = this.params.length )
@@ -454,6 +459,16 @@ export class FunctionSymbol extends Symbol
             sym.as( TypeFlags.CONTAINSEXPR );
 
         return this;
+    }
+
+    add_type_arg( refOrName, index )
+    {
+        const type = string( refOrName ) ? new TypeParameter( refOrName ) : refOrName;
+
+        if ( number( index ) )
+            this.typeParameters[ index ] = type;
+        else
+            this.typeParameters.push( type );
     }
 
     /**
@@ -479,6 +494,76 @@ export class ObjectSymbol extends Symbol
     {
         super( name, parent );
     }
+}
+
+export class TypeParameter
+{
+    constructor( name )
+    {
+        this.name = name;
+    }
+
+    add_constraint( name )
+    {
+
+    }
+}
+
+export class TypeReference
+{
+    constructor( name )
+    {
+        this.name = name;
+        this.args = [];
+    }
+
+    add_arg( refOrName, index )
+    {
+        const type = string( refOrName ) ? new TypeReference( refOrName ) : refOrName;
+
+        if ( number( index ) )
+            this.args[ index ] = type;
+        else
+            this.args.push( type );
+    }
+}
+
+function make_something_with_generic_type( obj )
+{
+    add_generic_type( name );
+    add_generic_constraint( name );
+}
+
+function add_type_to_member( name )
+{
+    if ( is_name_the_super_generic_type( name ) )
+        add_generic_type_reference_to_super_generic_type();
+    else
+        add_generic_type( name );
+}
+
+function add_constraint_type_to_member_generic_type( name )
+{
+    if ( is_name_the_super_generic_type( name ) )
+        set_constraint_generic_type_to_reference_super_generic_type();
+    else
+        add_generic_type_constraint();
+}
+
+function add_type_predicate_to_method( paramName, genericTypeName )
+{
+    set_param_reference_from_name_or_throw( paramName );
+
+    if ( is_name_the_super_generic_type( genericTypeName ) )
+        set_constraint_generic_type_to_reference_super_generic_type();
+    else if ( is_name_the_method_generic_type( genericTypeName ) )
+        set_generic_type_to_reference_to_method_generic_type( genericTypeName );
+    else if ( is_normal_type( genericTypeName ) )
+        set_genetic_type_to_actual_type( reference_to( genericTypeName ) );
+    else
+        throw new SyntaxError( `Don't know what to do with "${paramName} is ${genericTypeName}"` );
+
+
 }
 
 // [

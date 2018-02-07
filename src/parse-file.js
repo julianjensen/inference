@@ -8,10 +8,10 @@
 
 import { parse as parser }                       from 'espree';
 import { traverse, attachComments, VisitorKeys } from 'estraverse';
-import { TypeFlags } from "./types";
+import { TypeFlags }                             from "./types";
 import { globals, store_ast }                    from "./utils";
-import { enter, exit }                          from "./doctags";
-import { Symbol }                                from "./symbols";
+import { enter, exit }                           from "./doctags";
+import { Symbol }                                from "./symbols/symbols";
 
 /**
  * @param {string} source       - The source module

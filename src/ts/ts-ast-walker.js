@@ -6,7 +6,9 @@
  *******************************************************************************************************/
 'use strict';
 
-import ts from 'typescript';
+import ts                       from 'typescript';
+import { fixEnums, syntaxKind } from "./ts-helpers";
+import { array }                from 'convenience';
 
 const
     has         = ( o, n ) => Reflect.has( o, n ),
@@ -180,26 +182,7 @@ const
         VariableStatement:                      [ 'decorators', 'modifiers', 'declarationList', 'jsDoc' ],
         VoidKeyword:                            [],
         WhileStatement:                         [ 'expression', 'statement' ]
-    },
-    fixEnums    = {
-        FirstAssignment:         'EqualsToken',
-        FirstBinaryOperator:     'LessThanToken',
-        FirstCompoundAssignment: 'PlusEqualsToken',
-        FirstJSDocTagNode:       'JSDocTag',
-        FirstLiteralToken:       'NumericLiteral',
-        FirstNode:               'QualifiedName',
-        FirstTypeNode:           'TypePredicate',
-        LastBinaryOperator:      'CaretEqualsToken',
-        LastTemplateToken:       'TemplateTail',
-        LastTypeNode:            'LiteralType'
     };
-
-export function name( node )
-{
-    const n = ts.SyntaxKind[ node.kind ];
-
-    return fixEnums[ n ] || n;
-}
 
 /**
  * @param {object|SourceFile} ast
@@ -210,27 +193,35 @@ export function name( node )
 export function traverse( ast, _enter, _leave, flat = false )
 {
     const
-        _cb   = cb => ( node, field, i ) => cb && object( node ) && has( node, 'kind' ) && cb.call( node, node, node.parent, field, i ),
+        _cb   = cb => ( node, parent, field, i, rec ) => cb && object( node ) && has( node, 'kind' ) && cb.call( node, node, parent, field, i, rec ),
         enter = _cb( _enter ),
         leave = _cb( _leave );
 
     /**
-     * @param {object} node
+     * @param {Node} node
+     * @param {?Node} parent
      * @param {string} field
      * @param {number} [i]
      * @return {boolean|*}
      */
-    function generic( node, field, i )
+    function generic( node, parent, field, i )
     {
         let stop,
             nodeName = ts.SyntaxKind[ node.kind ];
 
         nodeName = fixEnums[ nodeName ] || nodeName;
 
-        if ( flat )
-            return enter( node, field, i, recurse );
+        // if ( nodeName === 'tagName' && !has( node[ key ], 'kind' ) )
+        //     node[ key ].kind = syntaxKind.Identifier;
+        //
+        // if ( !has( node[ key ], 'kind' ) ) return null;
+        //
+        // if ( !node[ key ].parent || node[ key ].parent !== parent ) node[ key ].parent = parent;
 
-        stop = enter( node, field, i );
+        if ( flat )
+            return enter( node, parent, field, i, recurse );
+
+        stop = enter( node, parent, field, i );
 
         if ( stop === false ) return stop;
 
@@ -239,36 +230,46 @@ export function traverse( ast, _enter, _leave, flat = false )
         if ( stop !== false && fields && fields.length )
         {
             for ( const fieldName of fields )
-                if ( ( stop = descend( node[ fieldName ], fieldName ) ) === false ) break;
+                if ( ( stop = descend( node[ fieldName ], node, fieldName ) ) === false ) break;
         }
 
-        if ( stop !== false ) stop = leave( node, null );
+        if ( stop !== false ) stop = leave( node, parent, field, i );
 
         return stop;
     }
 
     /**
      * @param {?(object|Array<object>)} arr
+     * @param {?Node} parent
      * @param {string} name
+     * @param {number} [index]
      * @return {boolean|*}
      */
-    function descend( arr, name )
+    function descend( arr, parent, name, index )
     {
         let stop;
 
-        if ( !arr || ( !object( arr ) && !Array.isArray( arr ) ) ) return;
+        if ( !arr || ( !object( arr ) && !array( arr ) ) ) return;
 
-        if ( object( arr ) && has( arr, 'kind' ) ) return generic( arr, name );
+        if ( object( arr ) )
+        {
+            if ( name === 'tagName' && !has( arr, 'kind' ) ) arr.kind = syntaxKind.Identifier;
+            if ( !has( arr, 'kind' ) ) return;
 
-        if ( Array.isArray( arr ) )
+            if ( !arr.parent || arr.parent !== parent ) arr.parent = parent;
+
+            return generic( arr, parent, name, index );
+        }
+
+        if ( array( arr ) )
         {
             for ( const [ i, node ] of arr.entries() )
             {
-                if ( !has( node, 'kind' ) ) continue;
-                if ( ( ( stop = generic( node, name, i ) ) === false ) ) break;
+                // if ( !has( node, 'kind' ) ) continue;
+                if ( ( ( stop = descend( node, parent, name, i ) ) === false ) ) break;
             }
         }
-        else
+        else if ( !( arr instanceof Map ) )
             console.error( `What is it?`, arr );
 
         return stop;
@@ -282,13 +283,21 @@ export function traverse( ast, _enter, _leave, flat = false )
     {
         const [ field, index ] = node.parent ? find_field( node.parent, node ) : [];
 
-        return generic( node, field, index );
+        let exit = true;
+
+        if ( array( node ) )
+        {
+            node.some( n => ( exit = generic( n, node.parent, field, index ) ) === false );
+            return exit;
+        }
+
+        return generic( node, node.parent, field, index );
     }
 
     /**
      * @param {object} owner
      * @param {object} node
-     * @return {Array<string>}
+     * @return {[ string, number ]}
      */
     function find_field( owner, node )
     {
@@ -298,7 +307,7 @@ export function traverse( ast, _enter, _leave, flat = false )
 
             if ( value === node ) return [ key ];
 
-            if ( Array.isArray( value ) )
+            if ( array( value ) )
             {
                 const index = value.findIndex( n => n === node );
                 if ( index >= 0 ) return [ key, index ];

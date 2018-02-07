@@ -61,7 +61,7 @@ import unassociated_tag      from './doctags-unrelated';
 import { flatDump, globals } from "./utils";
 import { Syntax }            from 'espree';
 import { TypeFlags }         from "./types";
-import { FunctionSymbol }    from "./symbols";
+import { FunctionSymbol }    from "./symbols/symbols";
 import { parse_comments }    from "./jsdoc-parser";
 
 let symbolTable;

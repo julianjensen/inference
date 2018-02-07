@@ -1,142 +1,1063 @@
-    AmpersandAmpersandToken:  [],
-    AmpersandEqualsToken:  [],
-    AmpersandToken:  [],
-    AnyKeyword:  [],
-    ArrayLiteralExpression:  ['elements', 'multiLine'],
-    ArrayType:  ['elementType'],
-    ArrowFunction:  ['modifiers', 'typeParameters', 'parameters', 'type', 'equalsGreaterThanToken', 'body'],
-    AsExpression:  ['expression', 'type'],
-    AsteriskAsteriskToken:  [],
-    AsteriskToken:  [],
-    AtToken:  [],
-    BarBarToken:  [],
-    BarEqualsToken:  [],
-    BarToken:  [],
-    BinaryExpression:  ['left', 'operatorToken', 'right'],
-    BindingElement:  ['dotDotDotToken', 'name', 'initializer'],
-    Block:  ['multiLine', 'statements'],
-    BooleanKeyword:  [],
-    BreakStatement:  ['label'],
-    CallExpression:  ['expression', 'arguments', 'typeArguments'],
-    CallSignature:  ['typeParameters', 'parameters', 'type', 'jsDoc'],
-    CaretEqualsToken:  [],
-    CaretToken:  [],
-    CaseBlock:  ['clauses'],
-    CaseClause:  ['expression', 'statements'],
-    ClassDeclaration:  ['decorators', 'modifiers', 'name', 'typeParameters', 'heritageClauses', 'members', 'jsDoc'],
-    ColonToken:  [],
-    ComputedPropertyName:  ['expression'],
-    ConditionalExpression:  ['condition', 'questionToken', 'whenTrue', 'colonToken', 'whenFalse'],
-    ConstKeyword:  [],
-    ConstructSignature:  ['typeParameters', 'parameters', 'type', 'jsDoc'],
-    Constructor:  ['decorators', 'modifiers', 'typeParameters', 'parameters', 'type', 'body'],
-    ConstructorType:  ['typeParameters', 'parameters', 'type'],
-    ContinueStatement:  ['label'],
-    DeclareKeyword:  [],
-    DefaultClause:  ['statements'],
-    DoStatement:  ['statement', 'expression'],
-    DotDotDotToken:  [],
-    ElementAccessExpression:  ['expression', 'argumentExpression'],
-    EndOfFileToken:  [],
-    EnumDeclaration:  ['decorators', 'modifiers', 'name', 'members'],
-    EnumMember:  ['name', 'initializer'],
-    EqualsEqualsEqualsToken:  [],
-    EqualsGreaterThanToken:  [],
-    EqualsToken:  [],
-    ExclamationEqualsEqualsToken:  [],
-    ExportKeyword:  [],
-    ExpressionStatement:  ['expression'],
-    ExpressionWithTypeArguments:  ['expression', 'typeArguments'],
-    FalseKeyword:  [],
-    ForOfStatement:  ['awaitModifier', 'initializer', 'expression', 'statement'],
-    ForStatement:  ['initializer', 'condition', 'incrementor', 'statement'],
-    FunctionDeclaration:  ['decorators', 'modifiers', 'asteriskToken', 'name', 'typeParameters', 'parameters', 'type', 'body', 'jsDoc'],
-    FunctionType:  ['typeParameters', 'parameters', 'type'],
-    GreaterThanEqualsToken:  [],
-    GreaterThanGreaterThanGreaterThanToken:  [],
-    GreaterThanGreaterThanToken:  [],
-    GreaterThanToken:  [],
-    HeritageClause:  ['token', 'types'],
-    IfStatement:  ['expression', 'thenStatement', 'elseStatement'],
-    ImportEqualsDeclaration:  ['decorators', 'modifiers', 'name', 'moduleReference'],
-    IndexSignature:  ['decorators', 'modifiers', 'parameters', 'type'],
-    IndexedAccessType:  ['objectType', 'indexType'],
-    InterfaceDeclaration:  ['decorators', 'modifiers', 'name', 'typeParameters', 'heritageClauses', 'members', 'jsDoc'],
-    IntersectionType:  ['types'],
-    JSDocComment:  ['tags', 'comment'],
-    JSDocParameterTag:  ['atToken', 'tagName', 'typeExpression', 'name', 'isNameFirst', 'isBracketed', 'comment'],
-    JSDocReturnTag:  ['atToken', 'tagName', 'typeExpression', 'comment'],
-    JSDocTag:  ['atToken', 'tagName', 'comment'],
-    LabeledStatement:  ['label', 'statement'],
-    LessThanEqualsToken:  [],
-    LessThanLessThanEqualsToken:  [],
-    LessThanLessThanToken:  [],
-    LessThanToken:  [],
-    LiteralType:  ['literal'],
-    MappedType:  ['readonlyToken', 'typeParameter', 'questionToken', 'type'],
-    MethodDeclaration:  ['decorators', 'modifiers', 'asteriskToken', 'name', 'questionToken', 'typeParameters', 'parameters', 'type', 'body'],
-    MethodSignature:  ['modifiers', 'name', 'questionToken', 'typeParameters', 'parameters', 'type', 'jsDoc'],
-    MinusEqualsToken:  [],
-    MinusToken:  [],
-    ModuleBlock:  ['statements'],
-    ModuleDeclaration:  ['decorators', 'modifiers', 'name', 'body'],
-    NeverKeyword:  [],
-    NewExpression:  ['expression', 'typeArguments', 'arguments'],
-    NonNullExpression:  ['expression'],
-    NullKeyword:  [],
-    NumberKeyword:  [],
-    NumericLiteral:  ['text', 'numericLiteralFlags'],
-    ObjectBindingPattern:  ['elements'],
-    ObjectKeyword:  [],
-    ObjectLiteralExpression:  ['multiLine', 'properties'],
-    Parameter:  ['decorators', 'modifiers', 'dotDotDotToken', 'name', 'questionToken', 'type', 'initializer'],
-    ParenthesizedExpression:  ['expression'],
-    ParenthesizedType:  ['type'],
-    PercentToken:  [],
-    PlusEqualsToken:  [],
-    PlusToken:  [],
-    PostfixUnaryExpression:  ['operand', 'operator'],
-    PrefixUnaryExpression:  ['operator', 'operand'],
-    PrivateKeyword:  [],
-    PropertyAccessExpression:  ['expression', 'name'],
-    PropertyAssignment:  ['modifiers', 'name', 'questionToken', 'initializer'],
-    PropertyDeclaration:  ['decorators', 'modifiers', 'name', 'questionToken', 'type', 'initializer'],
-    PropertySignature:  ['modifiers', 'name', 'questionToken', 'type', 'jsDoc'],
-    QualifiedName:  ['left', 'right'],
-    QuestionToken:  [],
-    ReadonlyKeyword:  [],
-    RegularExpressionLiteral:  ['text'],
-    ReturnStatement:  ['expression'],
-    ShorthandPropertyAssignment:  ['name', 'questionToken'],
-    SlashToken:  [],
-    SourceFile:  ['text', 'bindDiagnostics', 'languageVersion', 'fileName', 'languageVariant', 'isDeclarationFile', 'scriptKind', 'hasNoDefaultLib', 'referencedFiles', 'typeReferenceDirectives', 'amdDependencies', 'moduleName', 'checkJsDirective', 'statements', 'endOfFileToken', 'externalModuleIndicator', 'nodeCount', 'identifierCount', 'identifiers', 'parseDiagnostics', 'path', 'imports', 'moduleAugmentations', 'ambientModuleNames', 'resolvedModules'],
-    StringKeyword:  [],
-    StringLiteral:  ['text'],
-    SwitchStatement:  ['expression', 'caseBlock'],
-    SymbolKeyword:  [],
-    TemplateExpression:  ['head', 'templateSpans'],
-    TemplateHead:  ['text'],
-    TemplateMiddle:  ['text'],
-    TemplateSpan:  ['expression', 'literal'],
-    TemplateTail:  ['text'],
-    ThisType:  [],
-    ThrowStatement:  ['expression'],
-    TrueKeyword:  [],
-    TryStatement:  ['tryBlock', 'catchClause', 'finallyBlock'],
-    TupleType:  ['elementTypes'],
-    TypeAliasDeclaration:  ['decorators', 'modifiers', 'name', 'typeParameters', 'type', 'jsDoc'],
-    TypeAssertionExpression:  ['type', 'expression'],
-    TypeLiteral:  ['members'],
-    TypeOfExpression:  ['expression'],
-    TypeOperator:  ['operator', 'type'],
-    TypeParameter:  ['name', 'constraint', 'default'],
-    TypePredicate:  ['parameterName', 'type'],
-    TypeQuery:  ['exprName'],
-    TypeReference:  ['typeName', 'typeArguments'],
-    UndefinedKeyword:  [],
-    UnionType:  ['types'],
-    VariableDeclaration:  ['name', 'type', 'initializer'],
-    VariableDeclarationList:  ['declarations'],
-    VariableStatement:  ['decorators', 'modifiers', 'declarationList', 'jsDoc'],
-    VoidKeyword:  [],
-    WhileStatement:  ['expression', 'statement'],
+root: "SourceFile" => root
+    statements[ 0 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("ReadonlyArray")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        members[ 0 ]: "PropertySignature" => InterfaceDeclaration
+            modifiers[ 0 ]: "ReadonlyKeyword" => PropertySignature
+            name: "Identifier ("length")" => PropertySignature
+            type: "NumberKeyword" => PropertySignature
+            jsDoc[ 0 ]: "JSDocComment" => PropertySignature
+        members[ 1 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("toString")" => MethodSignature
+            type: "StringKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+        members[ 2 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("toLocaleString")" => MethodSignature
+            type: "StringKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+        members[ 3 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("concat")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                dotDotDotToken: "DotDotDotToken" => Parameter
+                name: "Identifier ("items")" => Parameter
+                type: "ArrayType" => Parameter
+                    elementType: "TypeReference" => ArrayType
+                        typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                        typeArguments[ 0 ]: "TypeReference" => TypeReference
+                            typeName: "Identifier ("T")" => TypeReference
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("items")" => JSDocParameterTag
+        members[ 4 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("concat")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                dotDotDotToken: "DotDotDotToken" => Parameter
+                name: "Identifier ("items")" => Parameter
+                type: "ArrayType" => Parameter
+                    elementType: "ParenthesizedType" => ArrayType
+                        type: "UnionType" => ParenthesizedType
+                            types[ 0 ]: "TypeReference" => UnionType
+                                typeName: "Identifier ("T")" => TypeReference
+                            types[ 1 ]: "TypeReference" => UnionType
+                                typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                                typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                    typeName: "Identifier ("T")" => TypeReference
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("items")" => JSDocParameterTag
+        members[ 5 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("join")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("separator")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "StringKeyword" => Parameter
+            type: "StringKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("separator")" => JSDocParameterTag
+        members[ 6 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("slice")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("start")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("end")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("start")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("end")" => JSDocParameterTag
+        members[ 7 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("indexOf")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("searchElement")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("T")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("fromIndex")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "NumberKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("searchElement")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("fromIndex")" => JSDocParameterTag
+        members[ 8 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("lastIndexOf")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("searchElement")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("T")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("fromIndex")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "NumberKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("searchElement")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("fromIndex")" => JSDocParameterTag
+        members[ 9 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("every")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "BooleanKeyword" => FunctionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "BooleanKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+        members[ 10 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("some")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "BooleanKeyword" => FunctionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "BooleanKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+        members[ 11 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("forEach")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "VoidKeyword" => FunctionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "VoidKeyword" => MethodSignature
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+        members[ 12 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("map")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("U")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("U")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("U")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+
+        members[ 13 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("filter")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("S")" => TypeParameter
+                constraint: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("T")" => TypeReference
+
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypePredicate" => FunctionType
+                        parameterName: "Identifier ("value")" => TypePredicate
+                        type: "TypeReference" => TypePredicate
+                            typeName: "Identifier ("S")" => TypeReference
+
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("S")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+
+        members[ 14 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("filter")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("value")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("index")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "AnyKeyword" => FunctionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("thisArg")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "ArrayType" => MethodSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("thisArg")" => JSDocParameterTag
+        members[ 15 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduce")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("initialValue")" => JSDocParameterTag
+        members[ 16 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduce")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("T")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("initialValue")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("T")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("T")" => TypeReference
+        members[ 17 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduce")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("U")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("U")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("U")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("initialValue")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("U")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("U")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("initialValue")" => JSDocParameterTag
+        members[ 18 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduceRight")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("T")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("initialValue")" => JSDocParameterTag
+        members[ 19 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduceRight")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("T")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("initialValue")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("T")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("T")" => TypeReference
+        members[ 20 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("reduceRight")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("U")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("callbackfn")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("previousValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("U")" => TypeReference
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentValue")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("T")" => TypeReference
+                    parameters[ 2 ]: "Parameter" => FunctionType
+                        name: "Identifier ("currentIndex")" => Parameter
+                        type: "NumberKeyword" => Parameter
+                    parameters[ 3 ]: "Parameter" => FunctionType
+                        name: "Identifier ("array")" => Parameter
+                        type: "TypeReference" => Parameter
+                            typeName: "Identifier ("ReadonlyArray")" => TypeReference
+                            typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                typeName: "Identifier ("T")" => TypeReference
+                    type: "TypeReference" => FunctionType
+                        typeName: "Identifier ("U")" => TypeReference
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("initialValue")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("U")" => TypeReference
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("U")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("callbackfn")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("initialValue")" => JSDocParameterTag
+        members[ 21 ]: "IndexSignature" => InterfaceDeclaration
+            modifiers[ 0 ]: "ReadonlyKeyword" => IndexSignature
+            parameters[ 0 ]: "Parameter" => IndexSignature
+                name: "Identifier ("n")" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "TypeReference" => IndexSignature
+                typeName: "Identifier ("T")" => TypeReference
+    statements[ 1 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("ArrayConstructor")" => InterfaceDeclaration
+        members[ 0 ]: "ConstructSignature" => InterfaceDeclaration
+            parameters[ 0 ]: "Parameter" => ConstructSignature
+                name: "Identifier ("arrayLength")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "ArrayType" => ConstructSignature
+                elementType: "AnyKeyword" => ArrayType
+        members[ 1 ]: "ConstructSignature" => InterfaceDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => ConstructSignature
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => ConstructSignature
+                name: "Identifier ("arrayLength")" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "ArrayType" => ConstructSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+        members[ 2 ]: "ConstructSignature" => InterfaceDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => ConstructSignature
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => ConstructSignature
+                dotDotDotToken: "DotDotDotToken" => Parameter
+                name: "Identifier ("items")" => Parameter
+                type: "ArrayType" => Parameter
+                    elementType: "TypeReference" => ArrayType
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "ArrayType" => ConstructSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+        members[ 3 ]: "CallSignature" => InterfaceDeclaration
+            parameters[ 0 ]: "Parameter" => CallSignature
+                name: "Identifier ("arrayLength")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "ArrayType" => CallSignature
+                elementType: "AnyKeyword" => ArrayType
+        members[ 4 ]: "CallSignature" => InterfaceDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => CallSignature
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => CallSignature
+                name: "Identifier ("arrayLength")" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "ArrayType" => CallSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+        members[ 5 ]: "CallSignature" => InterfaceDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => CallSignature
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => CallSignature
+                dotDotDotToken: "DotDotDotToken" => Parameter
+                name: "Identifier ("items")" => Parameter
+                type: "ArrayType" => Parameter
+                    elementType: "TypeReference" => ArrayType
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "ArrayType" => CallSignature
+                elementType: "TypeReference" => ArrayType
+                    typeName: "Identifier ("T")" => TypeReference
+        members[ 6 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("isArray")" => MethodSignature
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("arg")" => Parameter
+                type: "AnyKeyword" => Parameter
+            type: "TypePredicate" => MethodSignature
+                parameterName: "Identifier ("arg")" => TypePredicate
+                type: "TypeReference" => TypePredicate
+                    typeName: "Identifier ("Array")" => TypeReference
+                    typeArguments[ 0 ]: "AnyKeyword" => TypeReference
+        members[ 7 ]: "PropertySignature" => InterfaceDeclaration
+            modifiers[ 0 ]: "ReadonlyKeyword" => PropertySignature
+            name: "Identifier ("prototype")" => PropertySignature
+            type: "TypeReference" => PropertySignature
+                typeName: "Identifier ("Array")" => TypeReference
+                typeArguments[ 0 ]: "AnyKeyword" => TypeReference
+    statements[ 2 ]: "VariableStatement" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => VariableStatement
+        declarationList: "VariableDeclarationList" => VariableStatement
+            declarations[ 0 ]: "VariableDeclaration" => VariableDeclarationList
+                name: "Identifier ("Array")" => VariableDeclaration
+                type: "TypeReference" => VariableDeclaration
+                    typeName: "Identifier ("ArrayConstructor")" => TypeReference
+    statements[ 3 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("TypedPropertyDescriptor")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        members[ 0 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("enumerable")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "BooleanKeyword" => PropertySignature
+        members[ 1 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("configurable")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "BooleanKeyword" => PropertySignature
+        members[ 2 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("writable")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "BooleanKeyword" => PropertySignature
+        members[ 3 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("value")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "TypeReference" => PropertySignature
+                typeName: "Identifier ("T")" => TypeReference
+        members[ 4 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("get")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "FunctionType" => PropertySignature
+                type: "TypeReference" => FunctionType
+                    typeName: "Identifier ("T")" => TypeReference
+        members[ 5 ]: "PropertySignature" => InterfaceDeclaration
+            name: "Identifier ("set")" => PropertySignature
+            questionToken: "QuestionToken" => PropertySignature
+            type: "FunctionType" => PropertySignature
+                parameters[ 0 ]: "Parameter" => FunctionType
+                    name: "Identifier ("value")" => Parameter
+                    type: "TypeReference" => Parameter
+                        typeName: "Identifier ("T")" => TypeReference
+                type: "VoidKeyword" => FunctionType
+    statements[ 4 ]: "TypeAliasDeclaration" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => TypeAliasDeclaration
+        name: "Identifier ("ClassDecorator")" => TypeAliasDeclaration
+        type: "FunctionType" => TypeAliasDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => FunctionType
+                name: "Identifier ("TFunction")" => TypeParameter
+                constraint: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("Function")" => TypeReference
+            parameters[ 0 ]: "Parameter" => FunctionType
+                name: "Identifier ("target")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("TFunction")" => TypeReference
+            type: "UnionType" => FunctionType
+                types[ 0 ]: "TypeReference" => UnionType
+                    typeName: "Identifier ("TFunction")" => TypeReference
+                types[ 1 ]: "VoidKeyword" => UnionType
+    statements[ 5 ]: "TypeAliasDeclaration" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => TypeAliasDeclaration
+        name: "Identifier ("PropertyDecorator")" => TypeAliasDeclaration
+        type: "FunctionType" => TypeAliasDeclaration
+            parameters[ 0 ]: "Parameter" => FunctionType
+                name: "Identifier ("target")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("Object")" => TypeReference
+            parameters[ 1 ]: "Parameter" => FunctionType
+                name: "Identifier ("propertyKey")" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "StringKeyword" => UnionType
+                    types[ 1 ]: "SymbolKeyword" => UnionType
+            type: "VoidKeyword" => FunctionType
+    statements[ 6 ]: "TypeAliasDeclaration" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => TypeAliasDeclaration
+        name: "Identifier ("MethodDecorator")" => TypeAliasDeclaration
+        type: "FunctionType" => TypeAliasDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => FunctionType
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => FunctionType
+                name: "Identifier ("target")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("Object")" => TypeReference
+            parameters[ 1 ]: "Parameter" => FunctionType
+                name: "Identifier ("propertyKey")" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "StringKeyword" => UnionType
+                    types[ 1 ]: "SymbolKeyword" => UnionType
+            parameters[ 2 ]: "Parameter" => FunctionType
+                name: "Identifier ("descriptor")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("TypedPropertyDescriptor")" => TypeReference
+                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "UnionType" => FunctionType
+                types[ 0 ]: "TypeReference" => UnionType
+                    typeName: "Identifier ("TypedPropertyDescriptor")" => TypeReference
+                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                        typeName: "Identifier ("T")" => TypeReference
+                types[ 1 ]: "VoidKeyword" => UnionType
+    statements[ 7 ]: "TypeAliasDeclaration" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => TypeAliasDeclaration
+        name: "Identifier ("ParameterDecorator")" => TypeAliasDeclaration
+        type: "FunctionType" => TypeAliasDeclaration
+            parameters[ 0 ]: "Parameter" => FunctionType
+                name: "Identifier ("target")" => Parameter
+                type: "TypeReference" => Parameter
+                    typeName: "Identifier ("Object")" => TypeReference
+            parameters[ 1 ]: "Parameter" => FunctionType
+                name: "Identifier ("propertyKey")" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "StringKeyword" => UnionType
+                    types[ 1 ]: "SymbolKeyword" => UnionType
+            parameters[ 2 ]: "Parameter" => FunctionType
+                name: "Identifier ("parameterIndex")" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "VoidKeyword" => FunctionType
+    statements[ 8 ]: "TypeAliasDeclaration" => SourceFile
+        modifiers[ 0 ]: "DeclareKeyword" => TypeAliasDeclaration
+        name: "Identifier ("PromiseConstructorLike")" => TypeAliasDeclaration
+        type: "ConstructorType" => TypeAliasDeclaration
+            typeParameters[ 0 ]: "TypeParameter" => ConstructorType
+                name: "Identifier ("T")" => TypeParameter
+            parameters[ 0 ]: "Parameter" => ConstructorType
+                name: "Identifier ("executor")" => Parameter
+                type: "FunctionType" => Parameter
+                    parameters[ 0 ]: "Parameter" => FunctionType
+                        name: "Identifier ("resolve")" => Parameter
+                        type: "FunctionType" => Parameter
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("value")" => Parameter
+                                questionToken: "QuestionToken" => Parameter
+                                type: "UnionType" => Parameter
+                                    types[ 0 ]: "TypeReference" => UnionType
+                                        typeName: "Identifier ("T")" => TypeReference
+                                    types[ 1 ]: "TypeReference" => UnionType
+                                        typeName: "Identifier ("PromiseLike")" => TypeReference
+                                        typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                            typeName: "Identifier ("T")" => TypeReference
+                            type: "VoidKeyword" => FunctionType
+                    parameters[ 1 ]: "Parameter" => FunctionType
+                        name: "Identifier ("reject")" => Parameter
+                        type: "FunctionType" => Parameter
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("reason")" => Parameter
+                                questionToken: "QuestionToken" => Parameter
+                                type: "AnyKeyword" => Parameter
+                            type: "VoidKeyword" => FunctionType
+                    type: "VoidKeyword" => FunctionType
+            type: "TypeReference" => ConstructorType
+                typeName: "Identifier ("PromiseLike")" => TypeReference
+                typeArguments[ 0 ]: "TypeReference" => TypeReference
+                    typeName: "Identifier ("T")" => TypeReference
+    statements[ 9 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("PromiseLike")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        members[ 0 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("then")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("TResult1")" => TypeParameter
+                default: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("T")" => TypeReference
+            typeParameters[ 1 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("TResult2")" => TypeParameter
+                default: "NeverKeyword" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("onfulfilled")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "ParenthesizedType" => UnionType
+                        type: "FunctionType" => ParenthesizedType
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("value")" => Parameter
+                                type: "TypeReference" => Parameter
+                                    typeName: "Identifier ("T")" => TypeReference
+                            type: "UnionType" => FunctionType
+                                types[ 0 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("TResult1")" => TypeReference
+                                types[ 1 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("PromiseLike")" => TypeReference
+                                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                        typeName: "Identifier ("TResult1")" => TypeReference
+                    types[ 1 ]: "UndefinedKeyword" => UnionType
+                    types[ 2 ]: "NullKeyword" => UnionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("onrejected")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "ParenthesizedType" => UnionType
+                        type: "FunctionType" => ParenthesizedType
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("reason")" => Parameter
+                                type: "AnyKeyword" => Parameter
+                            type: "UnionType" => FunctionType
+                                types[ 0 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("TResult2")" => TypeReference
+                                types[ 1 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("PromiseLike")" => TypeReference
+                                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                        typeName: "Identifier ("TResult2")" => TypeReference
+                    types[ 1 ]: "UndefinedKeyword" => UnionType
+                    types[ 2 ]: "NullKeyword" => UnionType
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("PromiseLike")" => TypeReference
+                typeArguments[ 0 ]: "UnionType" => TypeReference
+                    types[ 0 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("TResult1")" => TypeReference
+                    types[ 1 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("TResult2")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("onfulfilled")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("onrejected")" => JSDocParameterTag
+                tags[ 2 ]: "JSDocReturnTag" => JSDocComment
+                    atToken: "AtToken" => JSDocReturnTag
+                    tagName: "Identifier ("returns")" => JSDocReturnTag
+    statements[ 10 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("Promise")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        members[ 0 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("then")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("TResult1")" => TypeParameter
+                default: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("T")" => TypeReference
+            typeParameters[ 1 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("TResult2")" => TypeParameter
+                default: "NeverKeyword" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("onfulfilled")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "ParenthesizedType" => UnionType
+                        type: "FunctionType" => ParenthesizedType
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("value")" => Parameter
+                                type: "TypeReference" => Parameter
+                                    typeName: "Identifier ("T")" => TypeReference
+                            type: "UnionType" => FunctionType
+                                types[ 0 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("TResult1")" => TypeReference
+                                types[ 1 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("PromiseLike")" => TypeReference
+                                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                        typeName: "Identifier ("TResult1")" => TypeReference
+                    types[ 1 ]: "UndefinedKeyword" => UnionType
+                    types[ 2 ]: "NullKeyword" => UnionType
+            parameters[ 1 ]: "Parameter" => MethodSignature
+                name: "Identifier ("onrejected")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "ParenthesizedType" => UnionType
+                        type: "FunctionType" => ParenthesizedType
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("reason")" => Parameter
+                                type: "AnyKeyword" => Parameter
+                            type: "UnionType" => FunctionType
+                                types[ 0 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("TResult2")" => TypeReference
+                                types[ 1 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("PromiseLike")" => TypeReference
+                                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                        typeName: "Identifier ("TResult2")" => TypeReference
+                    types[ 1 ]: "UndefinedKeyword" => UnionType
+                    types[ 2 ]: "NullKeyword" => UnionType
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("Promise")" => TypeReference
+                typeArguments[ 0 ]: "UnionType" => TypeReference
+                    types[ 0 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("TResult1")" => TypeReference
+                    types[ 1 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("TResult2")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("onfulfilled")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("onrejected")" => JSDocParameterTag
+                tags[ 2 ]: "JSDocReturnTag" => JSDocComment
+                    atToken: "AtToken" => JSDocReturnTag
+                    tagName: "Identifier ("returns")" => JSDocReturnTag
+        members[ 1 ]: "MethodSignature" => InterfaceDeclaration
+            name: "Identifier ("catch")" => MethodSignature
+            typeParameters[ 0 ]: "TypeParameter" => MethodSignature
+                name: "Identifier ("TResult")" => TypeParameter
+                default: "NeverKeyword" => TypeParameter
+            parameters[ 0 ]: "Parameter" => MethodSignature
+                name: "Identifier ("onrejected")" => Parameter
+                questionToken: "QuestionToken" => Parameter
+                type: "UnionType" => Parameter
+                    types[ 0 ]: "ParenthesizedType" => UnionType
+                        type: "FunctionType" => ParenthesizedType
+                            parameters[ 0 ]: "Parameter" => FunctionType
+                                name: "Identifier ("reason")" => Parameter
+                                type: "AnyKeyword" => Parameter
+                            type: "UnionType" => FunctionType
+                                types[ 0 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("TResult")" => TypeReference
+                                types[ 1 ]: "TypeReference" => UnionType
+                                    typeName: "Identifier ("PromiseLike")" => TypeReference
+                                    typeArguments[ 0 ]: "TypeReference" => TypeReference
+                                        typeName: "Identifier ("TResult")" => TypeReference
+                    types[ 1 ]: "UndefinedKeyword" => UnionType
+                    types[ 2 ]: "NullKeyword" => UnionType
+            type: "TypeReference" => MethodSignature
+                typeName: "Identifier ("Promise")" => TypeReference
+                typeArguments[ 0 ]: "UnionType" => TypeReference
+                    types[ 0 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("T")" => TypeReference
+                    types[ 1 ]: "TypeReference" => UnionType
+                        typeName: "Identifier ("TResult")" => TypeReference
+            jsDoc[ 0 ]: "JSDocComment" => MethodSignature
+                tags[ 0 ]: "JSDocParameterTag" => JSDocComment
+                    atToken: "AtToken" => JSDocParameterTag
+                    tagName: "Identifier ("param")" => JSDocParameterTag
+                    name: "Identifier ("onrejected")" => JSDocParameterTag
+                tags[ 1 ]: "JSDocReturnTag" => JSDocComment
+                    atToken: "AtToken" => JSDocReturnTag
+                    tagName: "Identifier ("returns")" => JSDocReturnTag
+        jsDoc[ 0 ]: "JSDocComment" => InterfaceDeclaration
+    statements[ 11 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("ArrayLike")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        members[ 0 ]: "PropertySignature" => InterfaceDeclaration
+            modifiers[ 0 ]: "ReadonlyKeyword" => PropertySignature
+            name: "Identifier ("length")" => PropertySignature
+            type: "NumberKeyword" => PropertySignature
+        members[ 1 ]: "IndexSignature" => InterfaceDeclaration
+            modifiers[ 0 ]: "ReadonlyKeyword" => IndexSignature
+            parameters[ 0 ]: "Parameter" => IndexSignature
+                name: "Identifier ("n")" => Parameter
+                type: "NumberKeyword" => Parameter
+            type: "TypeReference" => IndexSignature
+                typeName: "Identifier ("T")" => TypeReference
+    statements[ 12 ]: "TypeAliasDeclaration" => SourceFile
+        name: "Identifier ("Partial")" => TypeAliasDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        type: "MappedType" => TypeAliasDeclaration
+            typeParameter: "TypeParameter" => MappedType
+                name: "Identifier ("P")" => TypeParameter
+                constraint: "TypeOperator" => TypeParameter
+                    type: "TypeReference" => TypeOperator
+                        typeName: "Identifier ("T")" => TypeReference
+            questionToken: "QuestionToken" => MappedType
+            type: "IndexedAccessType" => MappedType
+                objectType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("T")" => TypeReference
+                indexType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("P")" => TypeReference
+        jsDoc[ 0 ]: "JSDocComment" => TypeAliasDeclaration
+    statements[ 13 ]: "TypeAliasDeclaration" => SourceFile
+        name: "Identifier ("Readonly")" => TypeAliasDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        type: "MappedType" => TypeAliasDeclaration
+            readonlyToken: "ReadonlyKeyword" => MappedType
+            typeParameter: "TypeParameter" => MappedType
+                name: "Identifier ("P")" => TypeParameter
+                constraint: "TypeOperator" => TypeParameter
+                    type: "TypeReference" => TypeOperator
+                        typeName: "Identifier ("T")" => TypeReference
+            type: "IndexedAccessType" => MappedType
+                objectType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("T")" => TypeReference
+                indexType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("P")" => TypeReference
+        jsDoc[ 0 ]: "JSDocComment" => TypeAliasDeclaration
+    statements[ 14 ]: "TypeAliasDeclaration" => SourceFile
+        name: "Identifier ("Pick")" => TypeAliasDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        typeParameters[ 1 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("K")" => TypeParameter
+            constraint: "TypeOperator" => TypeParameter
+                type: "TypeReference" => TypeOperator
+                    typeName: "Identifier ("T")" => TypeReference
+        type: "MappedType" => TypeAliasDeclaration
+            typeParameter: "TypeParameter" => MappedType
+                name: "Identifier ("P")" => TypeParameter
+                constraint: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("K")" => TypeReference
+            type: "IndexedAccessType" => MappedType
+                objectType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("T")" => TypeReference
+                indexType: "TypeReference" => IndexedAccessType
+                    typeName: "Identifier ("P")" => TypeReference
+        jsDoc[ 0 ]: "JSDocComment" => TypeAliasDeclaration
+    statements[ 15 ]: "TypeAliasDeclaration" => SourceFile
+        name: "Identifier ("Record")" => TypeAliasDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("K")" => TypeParameter
+            constraint: "StringKeyword" => TypeParameter
+        typeParameters[ 1 ]: "TypeParameter" => TypeAliasDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        type: "MappedType" => TypeAliasDeclaration
+            typeParameter: "TypeParameter" => MappedType
+                name: "Identifier ("P")" => TypeParameter
+                constraint: "TypeReference" => TypeParameter
+                    typeName: "Identifier ("K")" => TypeReference
+            type: "TypeReference" => MappedType
+                typeName: "Identifier ("T")" => TypeReference
+        jsDoc[ 0 ]: "JSDocComment" => TypeAliasDeclaration
+    statements[ 16 ]: "InterfaceDeclaration" => SourceFile
+        name: "Identifier ("ThisType")" => InterfaceDeclaration
+        typeParameters[ 0 ]: "TypeParameter" => InterfaceDeclaration
+            name: "Identifier ("T")" => TypeParameter
+        jsDoc[ 0 ]: "JSDocComment" => InterfaceDeclaration
+    endOfFileToken: "EndOfFileToken" => SourceFile

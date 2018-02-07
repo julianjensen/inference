@@ -226,10 +226,17 @@
 "use strict";
 
 // import { visit } from 'typescript-walk';
-import { object, array, string, has } from '../../../convenience/index';
-import ts                             from 'typescript';
-import { type, name, nameOf }         from '../../../typeofs/index';
-import { traverse, name as nodeName }                   from './ts-ast-walker';
+import { object, number, array, has } from 'convenience'; // ../../../convenience/index';
+import ts                     from 'typescript';
+import {
+    indent,
+    show_copy_paste,
+    syntaxKind,
+    nodeName, show_fields, collect_fields
+} from './ts-helpers';
+import { traverse }           from './ts-ast-walker';
+import { inspect } from 'util';
+import { nameOf } from 'typeofs';
 
 // export const SyntaxKind = {};
 //
@@ -597,18 +604,6 @@ import { traverse, name as nodeName }                   from './ts-ast-walker';
 // /* @internal */
 // SyntaxKind[ SyntaxKind.LastContextualKeyword = 143 ] = "LastContextualKeyword";
 
-export const fixEnums = {
-    FirstAssignment:         'EqualsToken',
-    FirstBinaryOperator:     'LessThanToken',
-    FirstCompoundAssignment: 'PlusEqualsToken',
-    FirstJSDocTagNode:       'JSDocTag',
-    FirstLiteralToken:       'NumericLiteral',
-    FirstNode:               'QualifiedName',
-    FirstTypeNode:           'TypePredicate',
-    LastBinaryOperator:      'CaretEqualsToken',
-    LastTemplateToken:       'TemplateTail',
-    LastTypeNode:            'LiteralType'
-};
 
 const defaultOptions = {
     experimentalDecorators:     true,
@@ -616,223 +611,8 @@ const defaultOptions = {
     jsx:                        true
 };
 
-let SyntaxKind    = ts.SyntaxKind;
-// let ts;
 let getComments;
-let syntaxKind    = ts.SyntaxKind,
-    indent        = node => {
-        let i = 0,
-            p = node.parent;
-
-        while ( p )
-        {
-            i++;
-            p = p.parent;
-        }
-
-        return '    '.repeat( i );
-    },
-    seen          = new Set(),
-    from_keyword  = kw => kw && kw.endsWith( 'Keyword' ) ? kw.substring( 0, kw.length - 7 ).toLowerCase() : '',
-    from_type     = tp => tp.endsWith( 'Type' ) ? tp.substring( 0, tp.length - 4 ) : '',
-    to_func       = node => {
-        const name = syntaxKind[ node.kind ];
-
-        if ( !name ) return '';
-
-        const f = name.replace( /([a-z])([A-Z])/g, ( $0, $1, $2 ) => $1 + '_' + $2.toLowerCase() );
-
-        return f[ 0 ].toLowerCase() + f.substr( 1 );
-    },
-    show_kind     = ( node, ...args ) => {
-        let x = '';
-        if ( args.length ) x = ': [ ' + args.join( ', ' ) + ' ]';
-
-        console.log( `${indent( node )}${SyntaxKind[ node.kind ]}${x}` );
-    },
-    show_prefixed = ( pre, node, ...args ) => {
-        let x = '';
-        if ( args.length ) x = ': [ ' + args.join( ', ' ) + ' ]';
-
-        console.log( `${indent( node )}${pre} => ${SyntaxKind[ node.kind ]}${x}` );
-    };
-
-let cleaned,
-    excludeKeys = [ 'pos', 'end', 'parent', 'kind', 'flags', 'transformFlags', 'modifierFlagsCache' ],
-    typeFields  = new Map(),
-
-    object_name = obj => object( obj ) && has( obj, 'kind' ) ? syntaxKind[ obj.kind ] : nameOf( obj ),
-
-    add_sub     = ( c, ns ) => {
-
-        if ( ns === void 0 ) return c;
-
-        if ( array( ns ) ) return ns.reduce( ( cur, el ) => add_sub( cur, el ), c );
-
-        ns = object_name( ns ); // object( ns ) && has( ns, 'kind' ) ? syntaxKind[ ns.kind ] : nameOf( ns );
-
-        if ( !c.length )
-            return [ ns ];
-        else if ( !c.includes( ns ) )
-        {
-            c.push( ns );
-            return c;
-        }
-
-        return c;
-    },
-
-    pretty      = ( type, name, sub ) => {
-        if ( type === 'undefined' ) return type;
-        if ( type === 'object' ) return name;
-        if ( type !== 'array' ) return `${type} (${name})`;
-
-        if ( !sub.length ) sub = [ '*' ];
-
-        // if ( array( sub ) )
-        return `Array<${sub.join( '|' )}>`;
-        // else if ( string( sub ) )
-        //     return `${type} (Array<${sub}>)`;
-        //
-        // return `${type} (Array<*>)`;
-    };
-
-function field_info( node, key )
-{
-    const
-        obj = node[ key ],
-        r   = {
-            key,
-            type: type( obj ),
-            name: object_name( obj ),
-            sub:  [],
-            qual: true
-        };
-
-    if ( obj === null || obj === void 0 )
-        r.qual = false;
-
-    if ( !array( obj ) || !obj.length ) return r;
-
-    r.sub = add_sub( r.sub, obj[ 0 ] );
-
-    return r;
-}
-
-function comp_node( cur, repl )
-{
-    if ( cur.key !== repl.key ) return false;
-
-    add_sub( cur.sub, repl.sub );
-    repl.sub = cur.sub;
-
-    // const
-    //     lq = cur.sub === null || cur.sub === void 0 || ( string( cur.sub ) && cur.sub.toLowerCase() === 'undefined' ),
-    //     rq = repl.sub === null || repl.sub === void 0 || ( string( repl.sub ) && repl.sub.toLowerCase() === 'undefined' );
-    //
-    // if ( rq )
-    // {
-    //     if ( string( cur.sub ) && repl.sub !== cur.sub )
-    //         cur.sub = [ cur.sub, repl.sub ];
-    //     else if ( array( cur.sub ) && !cur.sub.includes( repl.sub ) )
-    //         cur.sub.push( repl.sub );
-    // }
-    //
-    // // if ( string( cur.sub ) && cur.sub.toLowerCase() === 'undefined' && string( repl.sub ) && repl.sub.toLowerCase() !== 'undefined' )
-    // //     cur.sub = repl.sub;
-
-    return !cur.qual && repl.qual;
-}
-
-function collect_fields( node )
-{
-    let keyList = Reflect.ownKeys( node ).filter( key => !excludeKeys.includes( key ) ),
-
-        current = typeFields.get( node.kind ),
-
-        expand  = list => list.map( key => field_info( node, key ) );
-
-    if ( !current )
-        typeFields.set( node.kind, expand( keyList ) );
-    else
-    {
-        const
-            newList  = expand( keyList ),
-            newTypes = [];
-
-        for ( const repl of newList )
-        {
-            const cur = current.find( c => c.key === repl.key );
-
-            if ( cur && comp_node( cur, repl ) )
-                Object.assign( cur, repl );
-            else if ( !cur )
-                newTypes.push( repl );
-        }
-
-        if ( newTypes.length )
-            typeFields.set( node.kind, current.concat( newTypes ) );
-    }
-}
-
-function show_fields()
-{
-    const
-        mapped = {};
-
-
-    [ ...typeFields ]
-        .forEach( ( [ kind, fields ] ) => {
-            let kn       = syntaxKind[ kind ];
-            kn           = fixEnums[ kn ] || kn;
-            mapped[ kn ] = fields;
-            // ki[ 0 ] = syntaxKind[ ki[ 0 ] ];
-            //
-            // return ki;
-        } );
-
-    for ( const kindName of Object.keys( mapped ).sort() )
-    {
-        console.log( `${kindName}:` );
-
-        const
-            fields = mapped[ kindName ],
-            f      = fields.map( ( { key, type, name, sub } ) => `${key}: ${pretty( type, name, sub )}` ).join( ', ' );
-
-        // console.log( fields );
-        console.log( `    ${f}` );
-    }
-}
-
-function show_copy_paste()
-{
-    const
-        mapped = {};
-
-
-    [ ...typeFields ]
-        .forEach( ( [ kind, fields ] ) => {
-            let kn       = syntaxKind[ kind ];
-            kn           = fixEnums[ kn ] || kn;
-            mapped[ kn ] = fields;
-            // mapped[ syntaxKind[ kind ] ] = fields;
-            // ki[ 0 ] = syntaxKind[ ki[ 0 ] ];
-            //
-            // return ki;
-        } );
-
-    for ( const kindName of Object.keys( mapped ).sort() )
-    {
-        // console.log( `${kindName}:` );
-
-        const
-            fields = mapped[ kindName ],
-            f      = ' [' + fields.map( ( { key, type, name, sub } ) => `'${key}'` ).join( ', ' ) + '],';
-
-        // console.log( fields );
-        console.log( `    ${kindName}: ${f}` );
-    }
-}
+let seen = new Set();
 
 
 export const settings = {
@@ -878,7 +658,7 @@ export const settings = {
         getComments = ( node, isTrailing ) => {
             if ( node.parent )
             {
-                const nodePos   = isTrailing ? node.end : node.pos;
+                const nodePos = isTrailing ? node.end : node.pos;
                 const parentPos = isTrailing ? node.parent.end : node.parent.pos;
 
                 if ( node.parent.kind === ts.SyntaxKind.SourceFile || nodePos !== parentPos )
@@ -887,7 +667,7 @@ export const settings = {
                                    ? ts.getTrailingCommentRanges( sourceFile.text, nodePos )
                                    : ts.getLeadingCommentRanges( sourceFile.text, nodePos );
 
-                    if ( Array.isArray( comments ) )
+                    if ( array( comments ) )
                     {
                         comments.forEach( ( comment ) => {
                             comment.type = syntaxKind[ comment.kind ];
@@ -900,20 +680,18 @@ export const settings = {
             }
         };
 
-        syntaxKind = ts.SyntaxKind;
-
         function is_node( node )
         {
             return object( node ) && !seen.has( node ) && has( node, 'kind' );
         }
 
-        function __walk( node, cb, key = '', indent = 0 )
+        function __walk( node, cb, key = '', indent = 0, parent )
         {
             if ( !is_node( node ) ) return;
 
             seen.add( node );
 
-            collect_fields( node );
+            collect_fields( node, parent );
 
             if ( cb( node, key, indent ) === false ) return false;
 
@@ -929,7 +707,7 @@ export const settings = {
                 {
 
                     // const r = cb( value, key, indent, rn => array( rn ) ? rn.some( n => __walk( n, cb, indent + 1 ) ) : __walk( rn, cb, indent + 1 ) );
-                    r = __walk( value, cb, key, indent + 1 );
+                    r = __walk( value, cb, key, indent + 1, node );
                     // r = __walk( value, cb, key, indent + 1 );
                 }
                 else if ( array( value ) && value.length )
@@ -940,7 +718,7 @@ export const settings = {
                         if ( !is_node( val ) ) return;
 
                         // const r = cb( val, key, indent, rn => array( rn ) ? rn.some( n => __walk( n, cb, indent + 1 ) ) : __walk( rn, cb, indent + 1 ) );
-                        r = __walk( val, cb, key, indent + 1 );
+                        r = __walk( val, cb, key, indent + 1, node );
                         if ( r === false ) return ( brk = true );
                     } );
 
@@ -953,50 +731,32 @@ export const settings = {
             return true;
         }
 
-        // cleaned = __walk( sourceFile, ( node, key, ind ) => {
-        //     let name = node.kind === syntaxKind.Identifier ? ' -> "' + node.text + '"' : '';
-        //
-        //     if ( !name && object( node.name ) )
-        //         name = ' -> "' + node.name.escapedText + '"';
-        //     else if ( !name && has( node, 'typeName' ) )
-        //         name = ' -> "' + node.typeName.escapedText + '"';
-        //
-        //
-        //     if ( key ) key = `[${key}]: `;
-        //
-        //     // console.log( `${'    '.repeat( ind )}${key}${syntaxKind[ node.kind ]}${name} [${Object.keys( node ).join( ', ' )}]` );
-        // } );
-        //
-        // // show_copy_paste();
-        //     // show_fields();
-        // // console.log( JSON.stringify( cleaned, null, 4 ) );
+        // __walk( sourceFile, () => {} );
 
-        const indent = node => {
-            let ind = '';
+        traverse( sourceFile, ( node, parent, field, index ) => {
+            let name = nodeName( node );
 
-            while ( node )
-            {
-                ind += '    ';
-                node = node.parent;
-            }
+            if ( name === 'Identifier' && node.escapedText )
+                name += ` ("${node.escapedText}")`;
+            // else if ( name === 'JSDocParameterTag' )
+            // {
+            //     const tnode = Object.assign( {}, node );
+            //     delete tnode.parent;
+            //
+            //     console.log( nameOf( node ) + ': ' + inspect( tnode, { depth: 1, colors: true } ) );
+            //     if ( tnode.tagName )
+            //         console.log( '----- tagName: ' + nameOf( tnode.tagName ) + ': ' + inspect( tnode.tagName, { depth: 1, colors: true } ) );
+            // }
 
-            return ind;
-        };
-
-        traverse( sourceFile, node => console.log( `${indent( node )}: "${nodeName( node )}"` ) );
+            console.log( `${indent( node )}${field || 'root'}${number( index ) ? `[ ${index} ]` : ''}: "${name}" => ${parent ? nodeName( parent ) : 'root'}` );
+        } );
 
         return sourceFile;
     },
 
     dump_info()
     {
-        show_copy_paste();
-    },
-
-    getNodeName( node )
-    {
-        if ( node.kind )
-            return syntaxKind[ node.kind ];
+        // show_fields();
     },
 
     _ignoredProperties: new Set( [
@@ -1039,329 +799,332 @@ export const settings = {
             return [ node.pos, node.end ];
     },
 
-    walk( ast )
-    {
-        class Visitor
-        {
-            constructor()
-            {
-                this.hasTypeParameters = new Set( [ syntaxKind.SignatureDeclaration, syntaxKind.ClassLikeDeclaration, syntaxKind.InterfaceDeclaration, syntaxKind.TypeAliasDeclaration, syntaxKind.JSDocTemplateTag ] );
-            }
-
-            has( node )
-            {
-                if ( typeof node === 'string' )
-                    return typeof this[ node ] === 'function';
-
-                return typeof this[ to_func( node ) ] === 'function';
-            }
-
-            jump( node )
-            {
-                let fn = typeof node === 'string' ? node : to_func( node );
-
-                if ( typeof this[ fn ] !== 'function' ) return '';
-
-                // console.log( `No handler for "${fn}"` );
-
-                return this[ fn ]( node );
-            }
-
-            get_params( params )
-            {
-                if ( !params || !params.length ) return '()';
-
-                return '( ' + params.map( p => this.parameter( p ) ).join( ', ' ) + ' )';
-            }
-
-            get_type_params( typeParams )
-            {
-                if ( !typeParams || !typeParams.length ) return '';
-
-                return '<' + typeParams.map( tp => this.type_parameter( tp ) ).join( ', ' ) + '>';
-            }
-
-            get_modifiers( modifiers )
-            {
-                if ( !modifiers || !modifiers.length ) return '';
-
-                const m = modifiers.map( n => from_keyword( n.kind ) ).join( ' ' );
-
-                return m ? m + ' ' : '';
-            }
-
-            FunctionType( node )
-            {
-                return this.CallSignature( node );
-            }
-
-            ConstructSignature( node )
-            {
-                return this.CallSignature( node, 'new ' );
-            }
-
-            CallSignature( node, prefix = '' )
-            {
-                let name = this.get_type_params( node.typeParameters );
-
-                if ( node.kind !== syntaxKind.PropertySignature ) name += this.get_params( node.parameters );
-
-                if ( node.type )
-                {
-                    const sep = node.kind === syntaxKind.FunctionType ? ' => ' : ': ';
-
-                    name += sep + this.TypeNode( node.type );
-                }
-
-                return this.get_modifiers( node.modifiers ) + prefix + name;
-            }
-
-            MethodSignature( node )
-            {
-                return this.CallSignature( node, this.property_name( node.name ) + node.questionToken ? '?' : '' );
-            }
-
-            PropertySignature( node )
-            {
-                return this.CallSignature( node, this.property_name( node.name ) + node.questionToken ? '?' : '' );
-            }
-
-            EntityName( node )
-            {
-                if ( node.left )
-                    return this.EntityName( node.left ) + '.' + node.right.text;
-
-                return node.text;
-            }
-
-            property_name( node )
-            {
-                switch ( node.kind )
-                {
-                    case syntaxKind.Identifier:
-                        return node.text;
-
-                    case syntaxKind.StringLiteral:
-                        return "'" + node.text + "'";
-
-                    case syntaxKind.NumericLiteral:
-                        return node.text;
-
-                    case syntaxKind.ComputedPropertyName:
-                        return this.ComputedPropertyName( node );
-                }
-
-                return 'prop name??';
-            }
-
-            DeclarationName( node )
-            {
-                if ( node.kind === syntaxKind.BindingPattern )
-                    return 'binding pattern';
-
-                return this.property_name( node );
-            }
-
-            ComputedPropertyName( node )
-            {
-                return 'expression';
-            }
-
-            BindingName( node )
-            {
-                return node.kind === syntaxKind.Identifier ? node.text : 'binding-name';
-            }
-
-            TypeNode( node )
-            {
-                const
-                    nodeName = syntaxKind[ node.kind ];
-
-                if ( nodeName === syntaxKind.ArrayType )
-                    return this.jump( node ) + '[]';
-
-                let kw = from_keyword( nodeName ) || from_type( nodeName ) || this.jump( node );
-
-                console.error( `No type_node name from ${nodeName}` );
-
-                return kw;
-            }
-
-            TypeReference( node )
-            {
-                let typeArgs = '';
-
-                if ( node.typeArguments ) typeArgs = '<' + node.typeArguments.map( ta => this.TypeNode( ta ) ).join( ', ' ) + '>';
-
-                return this.EntityName( node.typeName ) + typeArgs;
-            }
-
-            TypePredicate( node )
-            {
-                return node.parameterName.kind === syntaxKind.Identifier ? node.parameterName.text : 'ThisType' + ' is ' + this.type_node( node.type );
-            }
-
-            TypeElement( node )
-            {
-                return node.name + node.questionToken ? '?' : '';
-            }
-
-            TypeQuery( node )
-            {
-                return this.EntityName( node.exprName );
-            }
-
-            TupleType( tuple )
-            {
-                return '[' + tuple.elementTypes.map( t => this.type_node( t ) ).join( ', ' ) + ']';
-            }
-
-            type_parameter( node )
-            {
-                let name = node.name.text;
-
-                if ( node.constraint )
-                    name += ' extends ' + this.type_node( node.constraint );
-
-                if ( node.default )
-                    name += ' = ' + this.type_node( node.default );
-
-                return name;
-            }
-
-            union_type( node )
-            {
-                return node.types.map( tr => this.jump( tr ) ).join( ' | ' );
-            }
-
-            intersection_type( node )
-            {
-                console.log( SyntaxKind[ node.kind ] + ' -> ', Object.keys( node ) + ', type kind:', SyntaxKind[ node.type.kind ] );
-                return node.types ? node.types.map( tr => this.jump( tr ) ).join( ' & ' ) : this.jump( node.type );
-            }
-
-            parameter( node )
-            {
-                let name = this.get_modifiers( node.modifiers ) + node.dotDotDotToken ? '...' : '';
-
-                name += this.binding_name( node.name ) + ( node.questionToken ? '?' : '' ) + ( this.type ? ': ' + this.type_node( this.type ) : '' ) + ( node.initializer ? ' = initialize' : '' );
-
-                return name;
-            }
-
-            generic_node( node )
-            {
-                let name = '';
-
-                if ( node.name && node.name.kind === syntaxKind.Identifier )
-                    name = node.name.text;
-
-                if ( node.typeParameters )
-                    name += '<' + node.typeParameters.map( tp => this.type_parameter( tp ) ).join( ', ' ) + '>';
-
-                if ( node.parameters )
-                    name += '( ' + node.parameters.map( p => this.parameter( p ) ).join( ', ' );
-                else
-                    name += '()';
-
-                if ( node.type ) name += ': ' + this.node_type( node.type );
-                return name;
-            }
-
-            interface_declaration( node )
-            {
-                let ifc = this.get_modifiers( node.modifiers ) + node.name.text + this.get_type_params( node.typeParameters ) + ' {\n';
-
-                ifc += node.members.map( n => '    ' + this.jump( n ) + ';\n' ).join( ';\n    ' );
-
-                ifc += '\n}\n';
-
-                return ifc;
-            }
-
-            missing( node )
-            {
-                console.log( `error kind: ${node.kind} (${SyntaxKind[ node.kind ]})` );
-                return '';
-            }
-
-            show_kind( node )
-            {
-                let subs = [];
-
-                for ( const { value, key, computed } of settings.forEachProperty( node ) )
-                {
-                    if ( object( value ) && has( value, 'kind' ) )
-                        subs.push( { key, value } );
-                    else if ( array( value ) && value.length && object( value[ 0 ] ) && has( value[ 0 ], 'kind' ) )
-                        subs.push( { key, value } );
-
-                    show_kind( node, ...Object.keys( node ).filter( k => k !== 'parent' ) );
-                }
-
-                subs.forEach( ( { key, value } ) => {
-                    if ( object( value ) )
-                    {
-                        console.log( `${indent( value )}${key} =>` );
-                        this.show_kind( node );
-                    }
-                    else
-                    {
-                        console.log( `${indent( value )}${key}[] =>` );
-                        value.forEach( n => this.show_kind( n ) );
-                    }
-                } );
-            }
-
-            Default( node )
-            {
-                // if ( seen.has( node ) ) return;
-                //
-                // seen.add( node );
-
-                if ( node.kind === SyntaxKind.SourceFile )
-                {
-                    node.statements.forEach( n => this.show_kind( n ) );
-                    return false;
-                }
-
-                let name = '';
-
-                if ( this.has( node ) )
-                {
-                    name = this.jump( node );
-
-                    console.log( `${indent( node )}${name}` );
-
-                    return false;
-                }
-                else
-                {
-                    const mn = to_func( syntaxKind[ node.kind ] );
-
-                    if ( mn.endsWith( 'Type' ) ) return this.type_node( node );
-
-                    console.log( `${node.kind}:${syntaxKind[ node.kind ]} -> ${mn}` );
-
-                    if ( !mn )
-                        return this.missing( node );
-
-                    console.log( `Missing node kind: "${to_func( syntaxKind[ node.kind ] )}"` );
-                }
-            }
-        }
-
-        const v = new Visitor();
-
-        v.Default( ast );
-        // for ( const { key, value, computed } of settings.forEachProperty( ast ) )
-        // {
-        //
-        // }
-
-        // visit( ast, new class { Default( node ) { return v.Default( node );  } } );
-    }
-
-
-
+    // walk( ast )
+    // {
+    //     class Visitor
+    //     {
+    //         constructor()
+    //         {
+    //             this.hasTypeParameters = new Set( [ syntaxKind.SignatureDeclaration, syntaxKind.ClassLikeDeclaration, syntaxKind.InterfaceDeclaration, syntaxKind.TypeAliasDeclaration, syntaxKind.JSDocTemplateTag ] );
+    //         }
+    //
+    //         has( node )
+    //         {
+    //             if ( typeof node === 'string' )
+    //                 return typeof this[ node ] === 'function';
+    //
+    //             return typeof this[ to_func( node ) ] === 'function';
+    //         }
+    //
+    //         jump( node )
+    //         {
+    //             let fn = typeof node === 'string' ? node : to_func( node );
+    //
+    //             if ( typeof this[ fn ] !== 'function' ) return '';
+    //
+    //             // console.log( `No handler for "${fn}"` );
+    //
+    //             return this[ fn ]( node );
+    //         }
+    //
+    //         get_params( params )
+    //         {
+    //             if ( !params || !params.length ) return '()';
+    //
+    //             return '( ' + params.map( p => this.parameter( p ) ).join( ', ' ) + ' )';
+    //         }
+    //
+    //         get_type_params( typeParams )
+    //         {
+    //             if ( !typeParams || !typeParams.length ) return '';
+    //
+    //             return '<' + typeParams.map( tp => this.type_parameter( tp ) ).join( ', ' ) + '>';
+    //         }
+    //
+    //         get_modifiers( modifiers )
+    //         {
+    //             if ( !modifiers || !modifiers.length ) return '';
+    //
+    //             const m = modifiers.map( n => from_keyword( n.kind ) ).join( ' ' );
+    //
+    //             return m ? m + ' ' : '';
+    //         }
+    //
+    //         FunctionType( node )
+    //         {
+    //             return this.CallSignature( node );
+    //         }
+    //
+    //         ConstructSignature( node )
+    //         {
+    //             return this.CallSignature( node, 'new ' );
+    //         }
+    //
+    //         CallSignature( node, prefix = '' )
+    //         {
+    //             let name = this.get_type_params( node.typeParameters );
+    //
+    //             if ( node.kind !== syntaxKind.PropertySignature ) name += this.get_params( node.parameters );
+    //
+    //             if ( node.type )
+    //             {
+    //                 const sep = node.kind === syntaxKind.FunctionType ? ' => ' : ': ';
+    //
+    //                 name += sep + this.TypeNode( node.type );
+    //             }
+    //
+    //             return this.get_modifiers( node.modifiers ) + prefix + name;
+    //         }
+    //
+    //         MethodSignature( node )
+    //         {
+    //             return this.CallSignature( node, this.property_name( node.name ) + node.questionToken ? '?' : '' );
+    //         }
+    //
+    //         PropertySignature( node )
+    //         {
+    //             return this.CallSignature( node, this.property_name( node.name ) + node.questionToken ? '?' : '' );
+    //         }
+    //
+    //         EntityName( node )
+    //         {
+    //             if ( node.left )
+    //                 return this.EntityName( node.left ) + '.' + node.right.text;
+    //
+    //             return node.text;
+    //         }
+    //
+    //         property_name( node )
+    //         {
+    //             switch ( node.kind )
+    //             {
+    //                 case syntaxKind.Identifier:
+    //                     return node.text;
+    //
+    //                 case syntaxKind.StringLiteral:
+    //                     return "'" + node.text + "'";
+    //
+    //                 case syntaxKind.NumericLiteral:
+    //                     return node.text;
+    //
+    //                 case syntaxKind.ComputedPropertyName:
+    //                     return this.ComputedPropertyName( node );
+    //             }
+    //
+    //             return 'prop name??';
+    //         }
+    //
+    //         DeclarationName( node )
+    //         {
+    //             if ( node.kind === syntaxKind.BindingPattern )
+    //                 return 'binding pattern';
+    //
+    //             return this.property_name( node );
+    //         }
+    //
+    //         ComputedPropertyName( node )
+    //         {
+    //             return 'expression';
+    //         }
+    //
+    //         BindingName( node )
+    //         {
+    //             return node.kind === syntaxKind.Identifier ? node.text : 'binding-name';
+    //         }
+    //
+    //         TypeNode( node )
+    //         {
+    //             const
+    //                 nodeName = syntaxKind[ node.kind ];
+    //
+    //             if ( nodeName === syntaxKind.ArrayType )
+    //                 return this.jump( node ) + '[]';
+    //
+    //             let kw = from_keyword( nodeName ) || from_type( nodeName ) || this.jump( node );
+    //
+    //             console.error( `No type_node name from ${nodeName}` );
+    //
+    //             return kw;
+    //         }
+    //
+    //         TypeReference( node )
+    //         {
+    //             let typeArgs = '';
+    //
+    //             if ( node.typeArguments ) typeArgs = '<' + node.typeArguments.map( ta => this.TypeNode( ta ) ).join( ', ' ) + '>';
+    //
+    //             return this.EntityName( node.typeName ) + typeArgs;
+    //         }
+    //
+    //         TypePredicate( node )
+    //         {
+    //             return node.parameterName.kind === syntaxKind.Identifier ? node.parameterName.text : 'ThisType' + ' is ' + this.type_node( node.type );
+    //         }
+    //
+    //         TypeElement( node )
+    //         {
+    //             return node.name + node.questionToken ? '?' : '';
+    //         }
+    //
+    //         TypeQuery( node )
+    //         {
+    //             return this.EntityName( node.exprName );
+    //         }
+    //
+    //         TupleType( tuple )
+    //         {
+    //             return '[' + tuple.elementTypes.map( t => this.type_node( t ) ).join( ', ' ) + ']';
+    //         }
+    //
+    //         type_parameter( node )
+    //         {
+    //             let name = node.name.text;
+    //
+    //             if ( node.constraint )
+    //                 name += ' extends ' + this.type_node( node.constraint );
+    //
+    //             if ( node.default )
+    //                 name += ' = ' + this.type_node( node.default );
+    //
+    //             return name;
+    //         }
+    //
+    //         union_type( node )
+    //         {
+    //             return node.types.map( tr => this.jump( tr ) ).join( ' | ' );
+    //         }
+    //
+    //         intersection_type( node )
+    //         {
+    //             console.log( SyntaxKind[ node.kind ] + ' -> ', Object.keys( node ) + ', type kind:', SyntaxKind[ node.type.kind ] );
+    //             return node.types ? node.types.map( tr => this.jump( tr ) ).join( ' & ' ) : this.jump( node.type );
+    //         }
+    //
+    //         parameter( node )
+    //         {
+    //             let name = this.get_modifiers( node.modifiers ) + node.dotDotDotToken ? '...' : '';
+    //
+    //             name += this.binding_name( node.name ) + ( node.questionToken ? '?' : '' ) + ( this.type ? ': ' + this.type_node( this.type ) : '' ) + ( node.initializer ? ' = initialize' : '' );
+    //
+    //             return name;
+    //         }
+    //
+    //         generic_node( node )
+    //         {
+    //             let name = '';
+    //
+    //             if ( node.name && node.name.kind === syntaxKind.Identifier )
+    //                 name = node.name.text;
+    //
+    //             if ( node.typeParameters )
+    //                 name += '<' + node.typeParameters.map( tp => this.type_parameter( tp ) ).join( ', ' ) + '>';
+    //
+    //             if ( node.parameters )
+    //                 name += '( ' + node.parameters.map( p => this.parameter( p ) ).join( ', ' );
+    //             else
+    //                 name += '()';
+    //
+    //             if ( node.type ) name += ': ' + this.node_type( node.type );
+    //             return name;
+    //         }
+    //
+    //         interface_declaration( node )
+    //         {
+    //             let ifc = this.get_modifiers( node.modifiers ) + node.name.text + this.get_type_params( node.typeParameters ) + ' {\n';
+    //
+    //             ifc += node.members.map( n => '    ' + this.jump( n ) + ';\n' ).join( ';\n    ' );
+    //
+    //             ifc += '\n}\n';
+    //
+    //             return ifc;
+    //         }
+    //
+    //         missing( node )
+    //         {
+    //             console.log( `error kind: ${node.kind} (${SyntaxKind[ node.kind ]})` );
+    //             return '';
+    //         }
+    //
+    //         show_kind( node )
+    //         {
+    //             let subs = [];
+    //
+    //             for ( const { value, key, computed } of settings.forEachProperty( node ) )
+    //             {
+    //                 if ( object( value ) && has( value, 'kind' ) )
+    //                     subs.push( {
+    //                         key,
+    //                         value
+    //                     } );
+    //                 else if ( array( value ) && value.length && object( value[ 0 ] ) && has( value[ 0 ], 'kind' ) )
+    //                     subs.push( {
+    //                         key,
+    //                         value
+    //                     } );
+    //
+    //                 show_kind( node, ...Object.keys( node ).filter( k => k !== 'parent' ) );
+    //             }
+    //
+    //             subs.forEach( ( { key, value } ) => {
+    //                 if ( object( value ) )
+    //                 {
+    //                     console.log( `${indent( value )}${key} =>` );
+    //                     this.show_kind( node );
+    //                 }
+    //                 else
+    //                 {
+    //                     console.log( `${indent( value )}${key}[] =>` );
+    //                     value.forEach( n => this.show_kind( n ) );
+    //                 }
+    //             } );
+    //         }
+    //
+    //         Default( node )
+    //         {
+    //             // if ( seen.has( node ) ) return;
+    //             //
+    //             // seen.add( node );
+    //
+    //             if ( node.kind === SyntaxKind.SourceFile )
+    //             {
+    //                 node.statements.forEach( n => this.show_kind( n ) );
+    //                 return false;
+    //             }
+    //
+    //             let name = '';
+    //
+    //             if ( this.has( node ) )
+    //             {
+    //                 name = this.jump( node );
+    //
+    //                 console.log( `${indent( node )}${name}` );
+    //
+    //                 return false;
+    //             }
+    //             else
+    //             {
+    //                 const mn = to_func( syntaxKind[ node.kind ] );
+    //
+    //                 if ( mn.endsWith( 'Type' ) ) return this.type_node( node );
+    //
+    //                 console.log( `${node.kind}:${syntaxKind[ node.kind ]} -> ${mn}` );
+    //
+    //                 if ( !mn )
+    //                     return this.missing( node );
+    //
+    //                 console.log( `Missing node kind: "${to_func( syntaxKind[ node.kind ] )}"` );
+    //             }
+    //         }
+    //     }
+    //
+    //     const v = new Visitor();
+    //
+    //     v.Default( ast );
+    //     // for ( const { key, value, computed } of settings.forEachProperty( ast ) )
+    //     // {
+    //     //
+    //     // }
+    //
+    //     // visit( ast, new class { Default( node ) { return v.Default( node );  } } );
+    // }
 };
