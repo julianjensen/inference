@@ -7,7 +7,8 @@
 "use strict";
 
 import { nodeName } from "../ts/ts-helpers";
-import { get_type } from "./declaration";
+
+const { isArray: array } = Array;
 
 /**
  * In typeParameters:
@@ -44,9 +45,9 @@ export class TypeParameter
      */
     constructor( name, constraint, defaultVal, inMappedType = false )
     {
-        this.name = name;
-        this.constraint = constraint;
-        this.default = defaultVal;
+        this.name         = name;
+        this.constraint   = constraint;
+        this.default      = defaultVal;
         this.inMappedType = inMappedType;
     }
 
@@ -89,7 +90,7 @@ export class TypeReference
      */
     constructor( name, ...args )
     {
-        this.name = name;
+        this.name          = name;
         this.typeArguments = args;
     }
 
@@ -254,9 +255,9 @@ export class TypeAliasDeclaration
      */
     constructor( name, typeParameters, type )
     {
-        this.name = name;
+        this.name           = name;
         this.typeParameters = Array.isArray( typeParameters ) ? typeParameters : [ typeParameters ];
-        this.type = type;
+        this.type           = type;
     }
 }
 
@@ -273,8 +274,8 @@ export class MappedType
     constructor( typeParam, type, ro = false )
     {
         this.typeParam = typeParam;
-        this.type = type;
-        this.readOnly = ro;
+        this.type      = type;
+        this.readOnly  = ro;
     }
 
     /**
@@ -294,7 +295,7 @@ export class IndexedAccessType
     constructor( objectType, indexType )
     {
         this.objectType = objectType;
-        this.indexType = indexType;
+        this.indexType  = indexType;
     }
 
     /**
@@ -307,25 +308,43 @@ export class IndexedAccessType
 }
 
 const typeVisitors = {
-    TypeReference: parse_type_reference,
-    TypeParameter: parse_type_parameter,
-    TypeOperator: parse_type_operator,
-    TypePredicate: parse_type_predicate,
+    TypeReference:        parse_type_reference,
+    TypeParameter:        parse_type_parameter,
+    TypeOperator:         parse_type_operator,
+    TypePredicate:        parse_type_predicate,
     TypeAliasDeclaration: parse_type_alias_declaration,
-    UnionType: parse_union_type,
-    IntersectionType: parse_intersection_type,
-    TupleType: parse_tuple_type,
-    ParenthesizedType: parse_parenthesized_type,
-    MappedType: parse_mapped_type,
-    IndexedAccessType: parse_indexed_access_type
+    UnionType:            parse_union_type,
+    IntersectionType:     parse_intersection_type,
+    TupleType:            parse_tuple_type,
+    ParenthesizedType:    parse_parenthesized_type,
+    MappedType:           parse_mapped_type,
+    IndexedAccessType:    parse_indexed_access_type
 };
+
+export function to_generic_types( types )
+{
+    return new GenericTypes( ...types );
+}
 
 export function parse_type( node )
 {
+    if ( !node ) return null;
+
+    console.log( `node is array? ${Array.isArray( node )}, name: "${array( node ) ? '[ ' + node.map( n => nodeName( n ) ).join( ', ' ) + ' ]' : nodeName( node )}", count: ${array( node ) ? node.length : 'n/a'}` );
+    if ( array( node ) )
+    {
+        console.log( "Entering array..." );
+        const r = node.map( n => parse_type( n ) );
+        console.log( "Exiting array..." );
+        return r;
+    }
+
     const type = nodeName( node );
 
+    console.log( "Normal node: '" + type + "'" );
+
     if ( typeVisitors[ type ] ) return typeVisitors[ type ]( node );
-    else if ( type.endsWith( 'Type' ) || type.endsWith( 'Keyword' ) ) return get_type( nodeName );
+    else if ( type.endsWith( 'Type' ) || type.endsWith( 'Keyword' ) ) return nodeName.replace( /^(.*)(?:Type|Keyword)$/, '$1' );
 
     console.warn( `Parsing type, missing handler for ${type}` );
     return null;
@@ -355,7 +374,7 @@ function parse_mapped_type( node )
 {
     const
         typeParam = parse_type( node.typeParameter ),
-        type = parse_type( node.type );
+        type      = parse_type( node.type );
 
     return new MappedType( typeParam, type, !!node.readonlyToken );
 }
@@ -367,24 +386,24 @@ function parse_indexed_access_type( node )
 
 function parse_type_parameter( node )
 {
-    let nname = nodeName( node ),
-        n = node.parent,
+    let name     = nodeName( node ),
+        n        = node.parent,
         stopName = n && nodeName( n );
 
-    while ( n && nname !== 'MappedType' && stopName !== 'TypeAliasDefinition' )
+    while ( n && name !== 'MappedType' && stopName !== 'TypeAliasDefinition' )
     {
-        n = n.parent;
-        nname = stopName;
+        n        = n.parent;
+        name     = stopName;
         stopName = nodeName( n );
     }
 
     const
         inMappedType = name === 'MappedType',
-        name = node.name.escapedText,
-        constraint  = parse_type( node.constraint ),
-        defaultVal = parse_type( node.default );
+        id           = node.name.escapedText,
+        constraint   = parse_type( node.constraint ),
+        defaultVal   = parse_type( node.default );
 
-    return new TypeParameter( name, constraint, defaultVal, inMappedType );
+    return new TypeParameter( id, constraint, defaultVal, inMappedType );
 }
 
 function parse_type_reference( node )
@@ -405,7 +424,7 @@ function parse_type_predicate( node )
 {
     const
         name = node.parameterName.escapedText,
-        ref = parse_type( node.type );
+        ref  = parse_type( node.type );
 
     return new TypePredicate( name, ref );
 }
@@ -414,7 +433,7 @@ function parse_type_alias_declaration( node )
 {
     const
         name = node.name.escapedText,
-        tp = node.typeParameters.map( parse_type ),
+        tp   = node.typeParameters.map( parse_type ),
         type = parse_type( node.type );
 
     return new TypeAliasDeclaration( name, tp, type );
@@ -432,15 +451,26 @@ class GenericTypeDefinition
      */
     constructor( name, generic )
     {
-        this.name = name;
-        this.generic = generic;
+        this.name           = name;
+        this.generic        = generic;
+        this.instantiatedAs = null;
+    }
+
+    /**
+     * @param {?BaseType} [t]
+     */
+    instantiated_type( t )
+    {
+        if ( !t ) return this.instantiatedAs;
+
+        this.instantiatedAs = t;
     }
 }
 
 /**
  * @class
  */
-class GenericTypes
+export class GenericTypes
 {
     /**
      * @param {GenericTypeDefinition[]} types
@@ -450,14 +480,33 @@ class GenericTypes
         this.types = types;
     }
 
+    /**
+     * @return {number}
+     */
     count()
     {
         return this.types.length;
     }
 
-    resolve( type, index )
+    /**
+     * @param {BaseType} type
+     * @param {number} [index=0]
+     * @return {GenericTypes}
+     */
+    resolve( type, index = 0 )
     {
+        this.types[ index ].instantiated_type( type );
+        return this;
+    }
 
+    /**
+     * @param {BaseType[]} types
+     * @return {GenericTypes}
+     */
+    resolve_types( ...types )
+    {
+        types.forEach( ( t, i ) => this.resolve( t, i ) );
+        return this;
     }
 }
 

@@ -103,14 +103,19 @@
  * @date 03-Feb-2018
  *********************************************************************************************************************/
 
-"use strict";
-
-import { array }               from 'convenience';
-
 export const primitives = new Map();
 
 const
-    is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol' ].includes( str );
+    is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol', 'any' ].includes( str );
+
+/**
+ * @param {Type} type
+ * @param {string|Type} check
+ */
+export function is_a( type, check )
+{
+    return string( check ) ? type.is_a( check ) : check instanceof type;
+}
 
 /**
  * @param {string} typeName
@@ -195,11 +200,18 @@ export class Type
         const lcn = name.toLowerCase();
 
         this.isPrimitive = is_primitive( lcn );
-        this.boxable =  lcn !== 'undefined' && lcn !== 'null' && this.isPrimitive;
+        this.boxable =  lcn !== 'undefined' && lcn !== 'null' && lcn !== 'any' && this.isPrimitive;
+        this.boxedAs = null;
     }
 
+    /**
+     * @param {string|BaseType} typeString
+     * @return {boolean}
+     */
     is_a( typeString )
     {
+        if ( !string( typeString ) ) typeString = typeString.name.toLowerCase();
+
         return typeString === this.name || ( this.aliases && this.aliases.includes( typeString ) );
     }
 
@@ -266,7 +278,7 @@ export class StringType extends Type
     constructor()
     {
         super( 'string' );
-        this.boxedAs = 'String';
+        this.boxedAs = null;
     }
 }
 
@@ -279,7 +291,7 @@ export class NumberType extends Type
     constructor()
     {
         super( 'number' );
-        this.boxedAs = 'Number';
+        this.boxedAs = null;
     }
 }
 
@@ -292,7 +304,7 @@ export class BooleanType extends Type
     constructor()
     {
         super( 'boolean' );
-        this.boxedAs = 'Boolean';
+        this.boxedAs = null;
     }
 }
 
@@ -305,7 +317,7 @@ export class SymbolType extends Type
     constructor()
     {
         super( 'symbol' );
-        this.boxedAs = 'Symbol';
+        this.boxedAs = null;
     }
 }
 
@@ -318,203 +330,7 @@ primitives.set( 'symbol', new SymbolType() );
 primitives.set( 'any', new Any() );
 
 /**
- * @class
- */
-class NonPrimitive
-{
-    /** */
-    constructor()
-    {
-        this.staticMembers = new Map();   // Static members, accessible as Type.name (Type being Object, Array, or Function, or whatever class/function/object subtype)
-        this.prototypeMembers = new Map();   // The is what goes on the prototype chain.
-    }
-}
-
-/**
- * @class
- */
-export class ObjectType extends NonPrimitive
-{
-    /** */
-    constructor()
-    {
-        super();
-        this.name = '{}';
-        this.indexType = get_type( 'string' );
-        this.proto = 'Object';
-        this.isInstance = true;
-    }
-
-    add_property( name, value )
-    {
-        this.members.set( name, value );
-        return this;
-    }
-
-    add_properties( obj )
-    {
-        Object.entries( obj ).forEach( def => this.add_property( ...def ) );
-        return this;
-    }
-
-    get_property( name )
-    {
-        return this.members.get( name );
-    }
-}
-
-/**
- * Array static members:
- *
- * * `length`: `number`
- * * `name`: `string`
- * * `prototype`: `object`
- * * `isArray`: `function`
- * * `from`: `function`
- * * `of`: `function`
- * * `Symbol(Symbol.species)`
- *
- * Array methods on prototype:
- *
- * * `length`: `number`
- * * `constructor`: `function`
- * * `concat`: `function`
- * * `pop`: `function`
- * * `push`: `function`
- * * `shift`: `function`
- * * `unshift`: `function`
- * * `slice`: `function`
- * * `splice`: `function`
- * * `includes`: `function`
- * * `indexOf`: `function`
- * * `keys`: `function`
- * * `entries`: `function`
- * * `forEach`: `function`
- * * `filter`: `function`
- * * `map`: `function`
- * * `every`: `function`
- * * `some`: `function`
- * * `reduce`: `function`
- * * `reduceRight`: `function`
- * * `toString`: `function`
- * * `toLocaleString`: `function`
- * * `join`: `function`
- * * `reverse`: `function`
- * * `sort`: `function`
- * * `lastIndexOf`: `function`
- * * `copyWithin`: `function`
- * * `find`: `function`
- * * `findIndex`: `function`
- * * `fill`: `function`
- * * `Symbol(Symbol.iterator)`
- * * `Symbol(Symbol.unscopables)`
- *
- * @class
- */
-export class ArrayType extends ObjectType
-{
-    /** */
-    constructor()
-    {
-        super();
-        this.name = '[]';
-        this.indexType = get_type( 'number' );
-        this.proto = 'Array';
-        this.typeParameters = 'T';
-    }
-}
-
-/**
- * @class
- */
-export class FunctionType extends NonPrimitive
-{
-    /** */
-    constructor()
-    {
-        super();
-        this.name = '()';
-        this.proto = 'Function';
-        this.returns = null;
-        this.params = [];
-        this.typeParams = [];
-
-        this.proto = new ObjectType();
-        this.proto.add_properties( {
-            _constructor: new FunctionConstructor(),
-            _prototype: new ObjectType(),
-            length: new NumberType(),
-            name: new StringType(),
-            arguments: new Instance( 'arguments', new ArrayType(), 'any' )
-        } );
-        this.proto.add_property( 'constructor', new FunctionConstructor() );
-        this.proto.add_property( 'prototype', new ObjectType() );
-
-        this.proto.add_properties( {
-            length: new NumberType()
-        } );
-    }
-}
-
-/**
- * @class
- */
-export class FunctionInstance
-{
-    constructor( name )
-    {
-        this.type = new FunctionType();
-        this.proto = 'Function';
-        this.members = new Map();
-        this.returns = null;
-        this.params = [];
-        this.typeParams = [];
-    }
-}
-
-
-
-/**
- * @class
- */
-export class ClassType extends NonPrimitive
-{
-    /** */
-    constructor()
-    {
-        this.name = '()';
-        this.proto = 'Function';
-        this.newOnly = true;
-    }
-}
-
-/**
- * @example
- * let a = { xyz: 10 };
- *
- * let instance = new Instance( new ObjectType() ).add_property( 'xyz', new NumberType() );
- * instance.get_property( 'xyz' ).hint( 10 );
- *
- * new Variable( 'a', instance );
- *
- *
- * @class
- */
-export class Instance
-{
-    /**
-     * @param {?(ObjectType|ArrayType|FunctionType|ClassType)} [of]
-     * @param {object[]} tp
-     */
-    constructor( of, ...tp )
-    {
-        this.instance = of;
-        this.typeParameters = tp;
-    }
-}
-
-/**
- * @typedef {Object_|Array_|Function_|Null|Undefined|StringType|NumberType|BooleanType|SymbolType|Any} BaseType
+ * @typedef {ObjectType|ArrayType|FunctionType|Null|Undefined|StringType|NumberType|BooleanType|SymbolType|Any} BaseType
  */
 
 /**
@@ -533,49 +349,6 @@ export class Variable
         this.parent = null;
     }
 }
-
-/**
- * @class
- */
-export class ObjectInstance
-{
-    /** */
-    constructor()
-    {
-        this.proto = 'Object';
-        this.members = new Map();
-        this.members.set( 'constructor', 'ObjectConstructor' );
-    }
-}
-
-/**
- * @class
- * @param {string} name
- * @param {?Declaration} [proto]
- */
-export class Declaration
-{
-    /**
-     * @param {string} name
-     * @param {?Declaration} [proto]
-     */
-    constructor( name, proto )
-    {
-        this.name = name;
-        this.proto = proto;
-        this.types = new Set();
-        this.type = null;
-    }
-
-    add_type( typeNameOrRef, fixed = false )
-    {
-        if ( fixed )
-            this.type = typeNameOrRef;
-        else
-            this.types.add( typeNameOrRef );
-    }
-}
-
 
 // function type_dump( obj )
 // {
