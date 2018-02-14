@@ -6,6 +6,18 @@
  *******************************************************************************************************/
 "use strict";
 
+function huh()
+{
+    const g = Function( 'return this;' )();
+    return g;
+}
+
+module.exports = () => {
+    return new huh();
+};
+
+
+/*
 const
     has                   = ( o, n ) => Object.prototype.hasOwnProperty.call( o, n ),
     toString              = o => Object.prototype.toString.call( o ),
@@ -213,12 +225,6 @@ Object.keys( collected ).forEach( name => collected[ name ].forEach( str => to_t
 comparisons.any.forEach( str => to_trie( str, 'any' ) );
 comparisons.none.forEach( str => to_trie( str, 'none' ) );
 
-/**
- * @param {?Array} arr
- * @param {Array} [result=[]]
- * @param {Boolean} [deep=true]
- * @return {Array}
- */
 function flatten( arr, result = [], deep = true )
 {
     const
@@ -659,7 +665,7 @@ for ( const lines of exampleValidations )
         .map( arr => {
                 arr = arr
                     .map( str => str.replace( /(\b\S+\b)(($|\s+)\1)+/gi, '$1' ) )
-                    .map( str => str.endsWith( ' if' ) ? str.split( /\s+(if)\s*/ ) : str );
+                    .map( str => str.endsWith( ' if' ) ? str.split( /\s+(if)\s ) : str );
 
                 const newArr = [];
 
@@ -686,3 +692,4 @@ for ( const lines of exampleValidations )
 
     console.log( 'remapped\n', condensed );
 }
+*/

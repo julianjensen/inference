@@ -283,15 +283,17 @@ export function traverse( ast, _enter, _leave, flat = false )
     {
         const [ field, index ] = node.parent ? find_field( node.parent, node ) : [];
 
-        let exit = true;
+        return array( node ) ? node.map( ( n, i ) => generic( n, null, null, i ) ) : generic( node, node.parent, field, index );
 
-        if ( array( node ) )
-        {
-            node.some( n => ( exit = generic( n, node.parent, field, index ) ) === false );
-            return exit;
-        }
-
-        return generic( node, node.parent, field, index );
+        // let exit = true;
+        //
+        // if ( array( node ) )
+        // {
+        //     node.some( n => ( exit = generic( n, node.parent, field, index ) ) === false );
+        //     return exit;
+        // }
+        //
+        // return generic( node, node.parent, field, index );
     }
 
     /**

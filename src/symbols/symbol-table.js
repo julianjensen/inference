@@ -104,7 +104,7 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { GenericTypes, TypeParameter } from "./generics";
+import { TypeParameter } from "./define-libraries";
 import { TypeFlags }                   from "../types";
 import { string, array, object } from "convenience";
 import { globals, add } from "../symbols/globals";
@@ -451,7 +451,7 @@ export class Array_ extends Object_
         super();
         this.name = 'Array';
         this.proto = baseTypes.Function;
-        this.typeParameters = new GenericTypes( new TypeParameter( 'T' ) );
+        // this.typeParameters = new GenericTypes( new TypeParameter( 'T' ) );
     }
 
     /**
@@ -470,12 +470,14 @@ export class Array_ extends Object_
 export class ArrayType extends Array_
 {
     /**
-     * @param {string} name
+     * @param {?string} [name]
+     * @param {?BaseType} [type]
      */
-    constructor( name )
+    constructor( name, type )
     {
         super();
         this.name = name;
+        this.elementType = type;
     }
 
     /**
@@ -487,6 +489,27 @@ export class ArrayType extends Array_
     {
         return Object_._add_types( new Instance( this.prototypeMembers, new Object_().make_instance(), ArrayType, this.typeParameters ), ...types );
     }
+
+    /**
+     * @param {BaseType|String|TypeReference} type
+     */
+    add_element_type( type )
+    {
+        if ( !this.elementType )
+            this.elementType = type;
+        else if ( !array( this.elementType ) )
+            this.elementType = [ this.elementType, type ];
+        else
+            this.elementType.push( type );
+    }
+
+    /**
+     * @return {string}
+     */
+    toString()
+    {
+        return `${this.elementType}[]`;
+    }
 }
 
 /**
@@ -495,17 +518,30 @@ export class ArrayType extends Array_
 export class FunctionType extends Function_
 {
     /**
-     * @param {string} name
+     * @param {?string} [name]
      */
     constructor( name )
     {
         super();
         this.name = name;
         this.proto = baseTypes.Function;
-        /** @type {?GenericTypes} */
+        /** @type {?(GenericTypes|TypeParameter|TypeReference|Array<GenericTypes|TypeParameter|TypeReference>)} */
         this.typeParameters = null;
         this.returns = null;
         this.parameters = [];
+        this._declType = null;
+        this.isType = true;
+    }
+
+    /**
+     * @param {string} dt
+     * @return {string|FunctionType}
+     */
+    decl_type( dt )
+    {
+        if ( !dt ) return this._declType;
+        this._declType = dt;
+        return this;
     }
 
     /**
@@ -516,6 +552,20 @@ export class FunctionType extends Function_
     make_instance( types )
     {
         return Object_._add_types( new Instance( this.prototypeMembers, new Object_().make_instance(), FunctionType, this.typeParameters ), ...types );
+    }
+
+    /**
+     * @return {string}
+     */
+    toString()
+    {
+        const
+            retSep = this.isType ? ' => ' : ': ',
+            name = this.name || ( this._declType === 'constructor' ? 'new ' : '' ),
+            tp = this.typeParameters ? `<${this.typeParameters.join( ', ' )}>` : '',
+            p = this.parameters ? `( ${this.parameters.join( ', ' )} )` : '()';
+
+        return `${name}${tp}${p}${retSep}${this.returns}`;
     }
 }
 
@@ -781,6 +831,21 @@ export class Undefined extends Type
     constructor()
     {
         super( 'undefined' );
+        this.asVoid = false;
+    }
+
+    as_void()
+    {
+        this.asVoid = true;
+        return this;
+    }
+
+    /**
+     * @return {string}
+     */
+    toString()
+    {
+        return this.asVoid ? 'void' : 'undefined';
     }
 }
 

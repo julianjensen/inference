@@ -1,8 +1,8 @@
 "use strict";
 
 // import { visit } from 'typescript-walk';
-import { object, number, array, has } from 'convenience';
-import ts                             from 'typescript';
+import { object, number, array, has }  from 'convenience';
+import ts                              from 'typescript';
 import {
     indent,
     show_copy_paste,
@@ -10,11 +10,12 @@ import {
     nodeName,
     show_fields,
     collect_fields
-}                                     from './ts-helpers';
-import { traverse }                   from './ts-ast-walker';
-import { inspect }                    from 'util';
-import { nameOf }                     from 'typeofs';
-import { visitor } from "../symbols/define-libraries";
+}                                      from './ts-helpers';
+import { traverse }                    from './ts-ast-walker';
+import { inspect }                     from 'util';
+import { nameOf }                      from 'typeofs';
+import { visitor }                     from "../symbols/define-libraries";
+import { create_reporters, output } from "../utils";
 
 const defaultOptions = {
     experimentalDecorators:     true,
@@ -165,12 +166,28 @@ export const settings = {
         // console.log( 'named:', [ ...sourceFile.getNamedDeclarations().keys() ] );
         // console.log( 'compute named:', [ ...sourceFile.computeNamedDeclarations().keys() ] );
         // console.log( 'ReadonlyArray:', sourceFile.getNamedDeclarations().get( 'ReadonlyArray' ) );
-        return sourceFile;
+
+        const r = create_reporters( filename, code );
+
+        return {
+            ast: sourceFile,
+            fileName: filename,
+            source: code,
+            error: r.error,
+            fatal: r.fatal,
+            warn: r.warn,
+            log: r.log
+        };
     },
 
-    define_symbols( ast )
+    define_symbols( info )
     {
-        traverse( ast, visitor, null, true );
+        output.fatal = info.fatal;
+        output.error = info.error;
+        output.warn = info.warn;
+        output.log = info.log;
+
+        traverse( info.ast, visitor, null, true );
     },
 
     dump_info()

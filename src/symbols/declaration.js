@@ -103,6 +103,9 @@
  * @date 03-Feb-2018
  *********************************************************************************************************************/
 
+import { ClassType, FunctionType, ObjectType, ArrayType } from "./symbol-table";
+import { array, string } from "convenience";
+
 export const primitives = new Map();
 
 const

@@ -52,6 +52,7 @@
     },
     "dependencies": {
         "@std/esm": "^0.19.7",
+        "chalk": "^2.3.0",
         "commander": "^2.13.0",
         "convenience": "^1.1.5",
         "doctrine": "^2.1.0",
