@@ -4,8 +4,6 @@
  * @since 1.0.0
  * @date 04-Feb-2018
  *********************************************************************************************************************/
-
-
 "use strict";
 
 import { inspect }  from 'util';
@@ -16,10 +14,10 @@ import {
     ArrayType,
     FunctionType,
     ClassType,
-    ObjectType, get_type
+    ObjectType, get_type, create_type_alias
 }                   from "./symbol-table";
 
-const NodeFlags = {
+const NodeFlags   = {
     None:               0,
     Let:                1 << 0,  // Variable declaration
     Const:              1 << 1,  // Variable declaration
@@ -38,42 +36,50 @@ const NodeFlags = {
     AwaitContext:       1 << 14 // If node was parsed in the 'await' context created when parsing an async function
 };
 const
-    is_keyword  = ( mods, kw ) => !!mods && !!mods.find( n => nodeName( n ) === kw ),
-    is_optional = node => !!node && !!node.questionToken,
-    interfaces  = new Map(),
+      is_keyword  = ( mods, kw ) => !!mods && !!mods.find( n => nodeName( n ) === kw ),
+      is_optional = node => !!node && !!node.questionToken,
+      interfaces  = new Map(),
 
-    visitors    = {
-        SourceFile,
-        InterfaceDeclaration,
-        MethodSignature,
-        CallSignature,
-        ConstructSignature,
-        PropertySignature,
-        VariableDeclaration,
-        VariableStatement,
-        IndexSignature,
-        Parameter,
-        FunctionDeclaration:  parse_function_declaration,
-        TypeReference:        parse_type_reference,
-        TypeParameter:        parse_type_parameter,
-        TypeOperator:         parse_type_operator,
-        TypePredicate:        parse_type_predicate,
-        TypeAliasDeclaration: parse_type_alias_declaration,
-        UnionType:            parse_union_type,
-        IntersectionType:     parse_intersection_type,
-        TupleType:            parse_tuple_type,
-        ParenthesizedType:    parse_parenthesized_type,
-        MappedType:           parse_mapped_type,
-        IndexedAccessType:    parse_indexed_access_type,
+      visitors    = {
+          SourceFile,
+          InterfaceDeclaration,
+          ModuleDeclaration,
+          ClassDeclaration,
+          MethodSignature,
+          CallSignature,
+          ConstructSignature,
+          PropertyDeclaration: PropertySignature,
+          PropertySignature,
+          VariableDeclaration,
+          VariableStatement,
+          IndexSignature,
+          Parameter,
+          FunctionDeclaration:  parse_function_declaration,
+          TypeReference:        parse_type_reference,
+          TypeParameter:        parse_type_parameter,
+          TypeOperator:         parse_type_operator,
+          TypePredicate:        parse_type_predicate,
+          TypeAliasDeclaration: parse_type_alias_declaration,
+          UnionType:            parse_union_type,
+          IntersectionType:     parse_intersection_type,
+          TupleType:            parse_tuple_type,
+          ParenthesizedType:    parse_parenthesized_type,
+          MappedType:           parse_mapped_type,
+          IndexedAccessType:    parse_indexed_access_type,
+          TypeLiteral:          parse_type_literal,
 
-        ConstructorType: ConstructSignature,
-        ArrayType:      parse_array_type,
-        FunctionType:   parse_function_type,
-        StringKeyword:  () => get_type( '""' ),
-        NumberKeyword:  () => get_type( 'number' ),
-        BooleanKeyword: () => get_type( 'boolean' ),
-        VoidKeyword: () => get_type( 'undefined' ).as_void()
-    };
+          Constructor: ConstructSignature,
+          ConstructorType: ConstructSignature,
+          ArrayType:       parse_array_type,
+          FunctionType:    parse_function_type,
+          StringKeyword:   () => get_type( '""' ),
+          NumberKeyword:   () => get_type( 'number' ),
+          BooleanKeyword:  () => get_type( 'boolean' ),
+          VoidKeyword:     () => get_type( 'undefined' ).as_void(),
+          AnyKeyword: () => get_type( 'any' )
+      };
+
+class TypeDefinition {}
 
 /**
  * @param {Node} node
@@ -110,7 +116,7 @@ function VariableStatement( node, parent, field, index, recurse )
     if ( decls.flags & ( NodeFlags.Let | NodeFlags.Const ) )
         vars.forEach( v => v.varType = decls.flags & NodeFlags.Let ? 'let' : decls.flags & NodeFlags.Const ? 'const' : 'var' );
 
-    console.log( vars.map( v => `${v}` ).join( ';\n' ) );
+    // console.log( vars.map( v => `${v}` ).join( ';\n' ) );
 
     return vars;
 }
@@ -128,9 +134,9 @@ class Variable
      */
     constructor( name, type, init, ro = 'var' )
     {
-        this.name = name;
-        this.type = type;
-        this.init = init;
+        this.name    = name;
+        this.type    = type;
+        this.init    = init;
         this.varType = ro;
     }
 
@@ -174,7 +180,11 @@ function IndexSignature( node )
         readOnly:   is_keyword( node.modifiers, 'ReadonlyKeyword' ),
         parameters: node.parameters.map( parse_type ),
         type:       parse_type( node.type ),
-        declType:   'index'
+        declType:   'index',
+        toString()
+        {
+            return `${this.readOnly ? 'readonly ' : ''}[ ${this.parameters.map( p => `${p}` ).join( '; ' )} ]: ${this.type}`;
+        }
     };
 }
 
@@ -250,7 +260,8 @@ export function visitor( node, parent, field, index, recurse )
 function SourceFile( node, parent, field, index, recurse )
 {
     // console.log( 'idents:', node.identifiers );
-    recurse( node.statements );
+    const flatten = arr => arr.reduce( ( list, cur ) => list.concat( array( cur ) ? flatten( cur ) : cur ), [] );
+    console.log( `${flatten( recurse( node.statements ) ).join( '\n\n' )}` );
 }
 
 /**
@@ -271,26 +282,26 @@ function InterfaceDeclaration( node, parent, field, i, recurse )
     const
         name    = node.name.escapedText,
         types   = node.typeParameters && node.typeParameters.map( parse_type ),
-        members = node.members && node.members.map( recurse );
-
-    interfaces.set( node.name.escapedText,
-        {
+        members = node.members && node.members.map( recurse ),
+        st = members && members.length ? '\n    ' : '',
+        intr = {
             name,
             types,
             members,
-            declType: 'interface'
-        } );
+            declType: 'interface',
+            toString()
+            {
+                return `interface ${name}${types ? `<${types}>` : ''} {${st}${members.join( ';\n    ' )}${members && members.length ? ';\n' : ''}}`;
+            }
+        };
     //     name:    node.name.escapedText,
     //     types:   node.typeParameters && node.typeParameters.map( parse_type ),
     //     members: node.members && node.members.map( recurse )
     // } );
 
-    console.log( 'interface:',
-        inspect( interfaces.get( node.name.escapedText ),
-            {
-                colors: true,
-                depth:  10
-            } ) );
+    // console.log( `interface ${name}${types ? `types` : ''} {\n    ${members.join( '\n    ' )}\n}` );
+    // console.log( `${intr}` );
+    return intr;
 
     // return currentOwner;
     //
@@ -307,6 +318,57 @@ function InterfaceDeclaration( node, parent, field, i, recurse )
     // declare( klass, name );
     //
     // recurse( node.members );
+}
+
+/**
+ * @param {Node} node
+ * @param {?Node} parent
+ * @param {string} field
+ * @param {number} i
+ * @param {function} recurse
+ */
+function ClassDeclaration( node, parent, field, i, recurse )
+{
+    const
+        name    = node.name.escapedText,
+        types   = node.typeParameters && node.typeParameters.map( parse_type ),
+        members = node.members && node.members.map( recurse );
+
+        return {
+            name,
+            types,
+            members,
+            declType: 'class',
+            toString()
+            {
+                return `class ${name}${types ? `types` : ''} {\n    ${members.join( ';\n    ' )};\n}`;
+            }
+        };
+}
+
+/**
+ * @param {Node} node
+ * @param {?Node} parent
+ * @param {string} field
+ * @param {number} i
+ * @param {function} recurse
+ */
+function ModuleDeclaration( node, parent, field, i, recurse )
+{
+    const
+        name    = node.name.escapedText,
+        members = node.body.statements && node.body.statements.map( recurse ),
+        decl = new Decl( name, null );
+
+    return {
+        name,
+        members,
+        declType: 'namespace',
+        toString()
+        {
+            return `namespace ${name} {\n    ${members.join( ';\n    ' )};\n}`;
+        }
+    };
 }
 
 /**
@@ -393,7 +455,11 @@ function PropertySignature( node )
         name:     node.name.escapedText,
         readOnly: is_keyword( node.modifiers, 'ReadonlyKeyword' ),
         type:     parse_type( node.type ),
-        declType: 'property'
+        declType: 'property',
+        toString()
+        {
+            return `${this.readOnly ? 'readonly ' : ''}${this.name}: ${this.type}`;
+        }
     };
 
     // let name = node.name.escapedText,
@@ -425,7 +491,7 @@ function PropertySignature( node )
  *
  * @class
  */
-export class TypeParameter
+export class TypeParameter extends TypeDefinition
 {
     /**
      * @param {string} name
@@ -435,9 +501,10 @@ export class TypeParameter
      */
     constructor( name, constraint, defaultVal, inMappedType = false )
     {
-        this.name = name;
-        this.constraint = constraint;
-        this.default = defaultVal;
+        super();
+        this.name         = name;
+        this.constraint   = constraint;
+        this.default      = defaultVal;
         this.inMappedType = inMappedType;
     }
 
@@ -474,7 +541,7 @@ export class TypeParameter
 /**
  * @class
  */
-export class TypeReference
+export class TypeReference extends TypeDefinition
 {
     /**
      * @param {string} name
@@ -482,7 +549,8 @@ export class TypeReference
      */
     constructor( name, ...args )
     {
-        this.name = name;
+        super();
+        this.name          = name;
         this.typeArguments = args;
     }
 
@@ -503,7 +571,7 @@ export class TypeReference
 /**
  * @class
  */
-export class TypePredicate
+export class TypePredicate extends TypeDefinition
 {
     /**
      * @param {string} paramName
@@ -511,6 +579,7 @@ export class TypePredicate
      */
     constructor( paramName, type )
     {
+        super();
         this.name = paramName;
         this.type = type;
     }
@@ -528,13 +597,14 @@ export class TypePredicate
  * Prints as `keyof`
  * @class
  */
-export class TypeOperator
+export class TypeOperator extends TypeDefinition
 {
     /**
      * @param {TypeReference} ref
      */
     constructor( ref )
     {
+        super();
         this.type = ref;
     }
 
@@ -550,13 +620,14 @@ export class TypeOperator
 /**
  * @class
  */
-export class UnionType
+export class UnionType extends TypeDefinition
 {
     /**
      * @param {(TypeReference|BaseType)[]} types
      */
     constructor( ...types )
     {
+        super();
         this.types = types;
     }
 
@@ -572,13 +643,14 @@ export class UnionType
 /**
  * @class
  */
-export class IntersectionType
+export class IntersectionType extends TypeDefinition
 {
     /**
      * @param {(TypeReference|BaseType)[]} types
      */
     constructor( ...types )
     {
+        super();
         this.types = types;
     }
 
@@ -594,13 +666,14 @@ export class IntersectionType
 /**
  * @class
  */
-export class TupleType
+export class TupleType extends TypeDefinition
 {
     /**
      * @param {(TypeReference|BaseType)[]} types
      */
     constructor( ...types )
     {
+        super();
         this.types = types;
     }
 
@@ -616,13 +689,14 @@ export class TupleType
 /**
  * @class
  */
-export class ParenthesizedType
+export class ParenthesizedType extends TypeDefinition
 {
     /**
      * @param {(TypeReference|BaseType)} type
      */
     constructor( type )
     {
+        super();
         this.type = type;
     }
 
@@ -638,7 +712,7 @@ export class ParenthesizedType
 /**
  * @class
  */
-export class TypeAliasDeclaration
+export class TypeAliasDeclaration extends TypeDefinition
 {
     /**
      * @param {string} name
@@ -647,9 +721,39 @@ export class TypeAliasDeclaration
      */
     constructor( name, typeParameters, type )
     {
-        this.name = name;
+        super();
+        this.name           = name;
         this.typeParameters = typeParameters ? ( Array.isArray( typeParameters ) ? typeParameters : [ typeParameters ] ) : null;
-        this.type = type;
+        this.type           = type;
+
+        let underlyingName;
+
+        switch ( type.constructor.name )
+        {
+            case 'MappedType':
+                underlyingName = 'object';
+                break;
+
+            case 'FunctionType':
+                underlyingName = 'function';
+                break;
+
+            case 'ArrayType':
+                underlyingName = 'array';
+                break;
+
+            default:
+                if ( type instanceof TypeDefinition )
+                    underlyingName = 'typedef';
+                else
+                    underlyingName = type.name;
+                break;
+        }
+
+        this.typeAlias = create_type_alias( name, typeParameters, type.name );
+
+        if ( underlyingName === 'typedef' )
+            this.typeAlias.underlying = type;
     }
 
     /**
@@ -671,7 +775,7 @@ export class TypeAliasDeclaration
 /**
  * @class
  */
-export class MappedType
+export class MappedType extends TypeDefinition
 {
     /**
      * @param {TypeParameter} typeParam
@@ -680,10 +784,12 @@ export class MappedType
      */
     constructor( typeParam, type, ro = false )
     {
-        this.typeParam = typeParam;
-        this.type = type;
-        this.readOnly = ro;
+        super();
+        this.typeParam              = typeParam;
+        this.type                   = type;
+        this.readOnly               = ro;
         this.typeParam.inMappedType = true;
+        this.typeAlias              = create_type_alias();
 
     }
 
@@ -699,7 +805,7 @@ export class MappedType
 /**
  * @class
  */
-export class IndexedAccessType
+export class IndexedAccessType extends TypeDefinition
 {
     /**
      * @param objectType
@@ -707,8 +813,9 @@ export class IndexedAccessType
      */
     constructor( objectType, indexType )
     {
+        super();
         this.objectType = objectType;
-        this.indexType = indexType;
+        this.indexType  = indexType;
     }
 
     /**
@@ -821,8 +928,8 @@ function parse_type_parameter( node )
 
     while ( n && name !== 'MappedType' && stopName !== 'TypeAliasDefinition' )
     {
-        n = n.parent;
-        name = stopName;
+        n        = n.parent;
+        name     = stopName;
         stopName = nodeName( n );
     }
 
@@ -883,9 +990,40 @@ function parse_type_alias_declaration( node )
 
     const r = new TypeAliasDeclaration( name, tp, type );
 
-    console.log( `${r}` );
+    // console.log( `${r}` );
 
     return r;
+}
+
+/**
+ * @param {Node} node
+ * @param {?Node} parent
+ * @param {string} field
+ * @param {number} i
+ * @param {function} recurse
+ */
+function parse_type_literal( node, parent, field, i, recurse )
+{
+    const
+        name    = '$$type_literal_' + ( ~~( Math.random() * 1e7 ) ).toString( 16 ),
+        members = node.members && node.members.map( parse_type ),
+        joiner = members.length > 3 ? ';\n    ' : '; ';
+
+    interfaces.set( name,
+        {
+            name,
+            members,
+            declType: 'typeliteral'
+        } );
+
+    return {
+        name, members, declType: "typeLiteral",
+        toString()
+        {
+            return `{ ${members.join( joiner )} }`;
+        }
+    };
+    // console.log( `type literal "${name}":\n    ${members.join( '\n    ' )}` );
 }
 
 /**
@@ -899,8 +1037,8 @@ function parse_function_type( node )
         fn = new FunctionType( node.name ? node.name.escapedText : null );
 
     fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
-    fn.parameters = node.parameters ? node.parameters.map( parse_type ) : [];
-    fn.returns = parse_type( node.type );
+    fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
+    fn.returns        = node.type && parse_type( node.type );
 
     return fn;
 }
@@ -916,11 +1054,11 @@ function parse_function_declaration( node )
         fn = new FunctionType( node.name ? node.name.escapedText : null );
 
     fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
-    fn.parameters = node.parameters ? node.parameters.map( parse_type ) : [];
-    fn.returns = parse_type( node.type );
-    fn.isType = false;
+    fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
+    fn.returns        = parse_type( node.type );
+    fn.isType         = false;
 
-    console.log( `${is_keyword( node.modifiers, 'DeclareKeyword' ) ? 'declare ' : ''}function ${fn}` );
+    // console.log( `${is_keyword( node.modifiers, 'DeclareKeyword' ) ? 'declare ' : ''}function ${fn}` );
 
     return fn;
 }
@@ -936,8 +1074,8 @@ class GenericTypeDefinition
      */
     constructor( name, generic )
     {
-        this.name = name;
-        this.generic = generic;
+        this.name           = name;
+        this.generic        = generic;
         this.instantiatedAs = null;
     }
 

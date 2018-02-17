@@ -14,7 +14,6 @@ import { array, object, number, string } from 'convenience';
 import { globals, isString, node_is }    from "../utils";
 import { Syntax }                        from 'espree';
 import { TypeFlags }                     from "../types";
-import { create }                        from "../type";
 
 const
     make_temp      = () => `$_temp${~~( Math.random() * 1e5 )}`,
@@ -442,7 +441,7 @@ export class FunctionSymbol extends Symbol
         this.defaults = [];
         this.returnType = null;
         this.as( TypeFlags.CALLABLE );
-        this.type = create( 'function' );
+        // this.type = create( 'function' );
         this.minArity = 0;
 
         this.typeParameters = [];

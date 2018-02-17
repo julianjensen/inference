@@ -7,7 +7,7 @@
 "use strict";
 
 import { inspect } from 'util';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { number } from "convenience";
 
 const
@@ -196,7 +196,7 @@ export function create_reporters( fileName, source )
      */
     function fatal( msg, node, opts )
     {
-        opts = Object.assign( opts || {}, { noThrow: false, color: red } );
+        opts = Object.assign( opts || {}, { noThrow: false, color: red, show: true } );
 
         error( msg, node, opts );
     }
@@ -208,7 +208,7 @@ export function create_reporters( fileName, source )
      */
     function warn( msg, node, opts )
     {
-        opts = Object.assign( opts || {}, { noThrow: false, color: yellow } );
+        opts = Object.assign( opts || {}, { noThrow: true, color: yellow, show: true } );
 
         error( msg, node, opts );
     }
@@ -221,7 +221,7 @@ export function create_reporters( fileName, source )
      */
     function log( msg, node, opts )
     {
-        opts = Object.assign( opts || {}, { noThrow: false, color: cyan } );
+        opts = Object.assign( opts || {}, { noThrow: false, color: cyan, show: true } );
 
         error( msg, node, opts );
     }
@@ -229,19 +229,18 @@ export function create_reporters( fileName, source )
     /**
      * @param {string} msg
      * @param {Node} [node]
-     * @param {boolean} [noThrow=false]
-     * @param {boolean} [show=true]
-     * @param {boolean} [loc=true]
+     * @param {object} [opts]
      */
-    function error( msg, node, { noThrow = true, show = true, color = red } )
+    function error( msg, node, opts = {} )
     {
-        let [ start, end ] = get_start_end( node ),
+        let { noThrow = true, show = true, color = red } = opts,
+            [ start, end ] = get_start_end( node ),
             loc = loc_info( start, end ),
             fileLoc = loc && `In "${fileName}", line ${loc.start.line + 1}: `,
             txt = ( loc ? fileLoc : '' ) + msg;
 
         if ( show && node )
-            txt += '\n\n' + show_source( node, true );
+            txt += '\n\n' + show_source( node, 0 );
 
         if ( noThrow )
         {
@@ -254,18 +253,17 @@ export function create_reporters( fileName, source )
 
     /**
      * @param node
-     * @param indicateOffset
+     * @param indicate
      * @return {string}
      */
-    function show_source( node, indicateOffset )
+    function show_source( node, indicate )
     {
         let [ start, end ] = get_start_end( node ),
             loc = loc_info( start, end ),
-            useIndicator = number( indicateOffset ) && indicateOffset > -1,
             sline = loc.start.sourceLine,
-            indicator = useIndicator && ( ' '.repeat( indicateOffset - loc.start.lineOffset ) + '^' );
+            indicator = ' '.repeat( loc.start.offset ) + '^';
 
-        return useIndicator ? sline + '\n' + indicator : sline;
+        return sline + '\n' + indicator;
     }
 
     /**

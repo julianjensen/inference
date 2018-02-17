@@ -10,6 +10,8 @@ export const globals = {
 
 };
 
+export const baseTypes = {};
+
 /**
  * @param {string} name
  * @param {*} value
@@ -17,4 +19,13 @@ export const globals = {
 export function add( name, value )
 {
     globals[ name ] = value;
+}
+
+/**
+ * @param {BaseType} type
+ * @param {...string} names
+ */
+export function add_base_type( type, ...names )
+{
+    names.forEach( name => baseTypes[ name ] = type );
 }

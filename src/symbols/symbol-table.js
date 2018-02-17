@@ -104,20 +104,335 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { TypeParameter } from "./define-libraries";
 import { TypeFlags }                   from "../types";
 import { string, array, object } from "convenience";
-import { globals, add } from "../symbols/globals";
-
-export const baseTypes = {};
-add( 'baseTypes', baseTypes );
+import { globals, baseTypes, add_base_type, add } from "../symbols/globals";
 
 export const primitives = new Map();
 add( 'primitives', primitives );
 
 const
-    is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol', 'any' ].includes( str );
+    /**
+     * @enum
+     */
+    Match = {
+        NO: 0,
+        UNLIKELY: 1,
+        MAYBE: 2,
+        PROBABLY: 3,
+        YES: 4
+    };
 
+const
+    additionalTypes = new Map();
+
+const
+    toArray = o => o === null || o === void 0 ? [] : array( o ) ? o : [ o ],
+
+    forTypes = fn => types => toArray( types ).forEach( fn ),
+    filterTypes = fn => types => toArray( types ).filter( fn ),
+    mapTypes = fn => types => toArray( types ).map( fn ),
+    findTypes = fn => types => toArray( types ).find( fn ),
+    someTypes = fn => types => toArray( types ).some( fn ),
+    allTypes = fn => types => toArray( types ).every( fn ),
+
+    get_all_constructors = filterTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType === 'constructor' ),
+    is_constructable = someTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType === 'constructor' ),
+    get_all_callables = filterTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType !== 'constructor' ),
+    is_callable = someTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType !== 'constructor' );
+
+/**
+ * @class
+ */
+class Inst
+{
+    /**
+     * @param {Decl} decl
+     * @param {string} declType
+     * @param {?Scope} [scope]
+     */
+    constructor( decl, declType, scope = null )
+    {
+        this.instanceOf = decl;
+        this.members = new Map();
+        this.proto = decl.proto;
+        this.declType = declType;
+        this.scope = scope;
+    }
+
+    /**
+     * @param {Decl} decl
+     * @return {boolean}
+     */
+    is_instance_of( decl )
+    {
+        if ( decl === this.instanceOf ) return true;
+
+        return !!this.proto && this.proto.inheritance().includes( decl );
+    }
+
+    get_parent( parentName )
+    {
+        if ( this.instanceOf.name === parentName ) return this;
+    }
+}
+
+/**
+ * @class
+ */
+class DeclProto
+{
+    /**
+     * @param {Decl} owner
+     * @param {DeclProto} [nextProto]
+     */
+    constructor( owner, nextProto )
+    {
+        this.protoOf = owner;
+        this.members = new Map();
+        /** @type {?DeclProto} */
+        this.chain = nextProto;
+    }
+
+    add_prototype( p )
+    {
+        this.chain = p;
+    }
+
+    /**
+     * @returns {Array<Decl>}
+     */
+    inheritance()
+    {
+        return this.get_chain( false, this ).map( p => p.protoOf ).filter( p => !!p );
+    }
+
+    /**
+     * @param {boolean} [excludeSelf=false]
+     * @param {?DeclProto} [previous=null]
+     */
+    get_chain( excludeSelf = false, previous = null )
+    {
+        const
+            protos = excludeSelf ? [] : [ this ];
+
+        return protos.concat( this.chain && this.chain !== previous ? this.chain.get_chain() : [] );
+    }
+
+    from_chain( propName, previous = null )
+    {
+        if ( this.members.has( propName ) )
+            return this.members.get( propName );
+
+        if ( this.chain && this.chain !== previous )
+            return this.chain.from_chain( propName, this );
+
+        return void 0;
+    }
+}
+
+/**
+ * @class
+ */
+class Members
+{
+    /**
+     * @param {Decl} decl
+     */
+    constructor( decl, table )
+    {
+        this.table = table;
+        this.decl = decl;
+        this.name = decl.name;
+    }
+
+    /**
+     * @param {string|Decl|Inst} declSpec
+     * @return {boolean}
+     */
+    is( declSpec )
+    {
+        if ( typeof declSpec === 'string' )
+            return this.name === declSpec;
+        else if ( declSpec instanceof Decl )
+            return this.decl === declSpec;
+        else if ( declSpec instanceof Inst )
+            return this.decl === declSpec.instanceOf;
+    }
+}
+
+/**
+ * @class
+ */
+class Decl
+{
+    /**
+     * @param {string} name
+     * @param {BaseType} type
+     * @param {?DeclProto} proto
+     */
+    constructor( name, type, proto )
+    {
+        this.name = name;
+        this.members = new Map();
+        this.type = type;
+        this.proto = proto && new DeclProto( this, proto );
+    }
+
+    /**
+     * @return {boolean}
+     */
+    get_constructors()
+    {
+        const
+            con = this.proto && this.proto.from_chain( 'constructor' );
+
+        if ( con && con.inheritance().includes( 'Function' ) )
+        {
+            const c = get_all_constructors( con );
+            // @todo check parameters here to determine constructor in cases of overloaded funcs.
+            return !!c;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param name
+     * @return {*}
+     */
+    get_callables( name )
+    {
+        const funcs = this.get( name );
+
+        if ( funcs )
+        {
+            // @todo check params for overloaded variation if applicable
+            return get_all_callables( funcs );
+        }
+
+        return null;
+    }
+
+    is_callable()
+    {
+
+    }
+
+    /**
+     * @param {string} propName
+     * @return {*}
+     */
+    get( propName )
+    {
+        if ( this.members.has( propName ) )
+            return this.members.get( propName );
+
+        if ( this.proto && this.proto.chain )
+            return this.proto.chain.from_chain( propName, this.proto );
+    }
+
+    might_be( rough, name, ret, ...params )
+    {
+        let comps = [];
+
+        if ( name !== this.name ) return Match.NO;
+
+        switch ( rough )
+        {
+            case 'function':
+                if ( !( this.type instanceof FunctionType ) ) return Match.NO;
+                if ( ret !== void 0 )
+                    comps.push( compare_types( ret, this.type.returns ) );
+                if ( params )
+                    params
+
+        }
+    }
+
+    add( decl )
+    {
+    }
+}
+
+/**
+ * @class
+ */
+class SymbolTable
+{
+    /**
+     * @param {?SymbolTable} [parent=null]
+     * @param {?Scope} [scope=null]
+     */
+    constructor( parent = null, scope = null )
+    {
+        this.parent = parent;
+        this.members = new Map();
+        this.membersByName = new Map();
+        this.types = new Map();
+        this.scope = scope;
+    }
+
+    /**
+     * @return {SymbolTable}
+     */
+    get global()
+    {
+        if ( !this.parent ) return this;
+        return this.parent.global;
+    }
+
+    /**
+     * @param {Decl} decl
+     */
+    add( decl )
+    {
+        this.members.set( decl.signature, decl );
+        this.membersByName.set( decl.name, decl.signature );
+    }
+
+    /**
+     * @param type
+     */
+    add_type( type )
+    {
+        this.types.set( type.name, type );
+    }
+}
+
+/**
+ * @class
+ */
+class EnvironmentRecord
+{
+    /**
+     * @param {?EnvironmentRecord} [parent=null]
+     */
+    constructor( parent = null )
+    {
+
+    }
+}
+
+EnvironmentRecord.GLOBAL = 'global';
+
+/**
+ * @class
+ */
+class Scope
+{
+    /**
+     * @param {Scope} parent
+     * @param {?Decl} type
+     */
+    constructor( parent, type )
+    {
+        this.parent = parent;
+        this.type = type;
+    }
+
+
+}
 
 /**
  * @class
@@ -314,6 +629,7 @@ export class Object_     // class Object prototype methods   => instance prototy
         this.prototypeMembers = new Map();   // The is what goes on the prototype chain.
         this.proto = 'Function_';
         this.typeParameters = null;
+
     }
 
     /**
@@ -370,10 +686,8 @@ export class Object_     // class Object prototype methods   => instance prototy
     {
         if ( this.staticMembers.has( propName ) )
             return this.staticMembers.get( propName );
-        else if ( baseTypes.function.staticMembers.has( propName ) )
-            return baseTypes.function.staticMembers.get( propName );
 
-        return null;
+        return this.get_from_prototype( propName );
     }
 
     /**
@@ -412,8 +726,9 @@ export class Function_ extends Object_
     {
         super();
         this.name = 'Function';
-        this.proto = baseTypes.Object;
+        this.proto = baseTypes.object;
         this.parameters = [];
+        this.returns = null;
     }
 
     /**
@@ -424,10 +739,8 @@ export class Function_ extends Object_
     {
         if ( this.staticMembers.has( propName ) )
             return this.staticMembers.get( propName );
-        else if ( baseTypes.object.staticMembers.has( propName ) )
-            return baseTypes.object.staticMembers.get( propName );
 
-        return null;
+        return this.get_from_prototype( propName );
     }
 
     /**
@@ -436,7 +749,7 @@ export class Function_ extends Object_
      */
     get_from_prototype( propName )
     {
-        return this.prototypeMembers.has( propName ) ? this.prototypeMembers.get( propName ) : this.proto.get_from_prototype( propName );
+        return this.prototypeMembers.has( propName ) ? this.prototypeMembers.get( propName ) : this.proto ? this.proto.get_from_prototype( propName ) : void 0;
     }
 }
 
@@ -450,18 +763,18 @@ export class Array_ extends Object_
     {
         super();
         this.name = 'Array';
-        this.proto = baseTypes.Function;
+        this.proto = baseTypes.function;
         // this.typeParameters = new GenericTypes( new TypeParameter( 'T' ) );
     }
 
-    /**
-     * @param {string} propName
-     * @return {?BaseType}
-     */
-    get( propName )
-    {
-        return this.staticMembers.has( propName ) ? this.staticMembers.get( propName ) : this.proto.get( propName );
-    }
+    // /**
+    //  * @param {string} propName
+    //  * @return {?BaseType}
+    //  */
+    // get( propName )
+    // {
+    //     return this.staticMembers.has( propName ) ? this.staticMembers.get( propName ) : this.proto.get( propName );
+    // }
 }
 
 /**
@@ -471,7 +784,7 @@ export class ArrayType extends Array_
 {
     /**
      * @param {?string} [name]
-     * @param {?BaseType} [type]
+     * @param {?(BaseType|TypeParameter)} [type]
      */
     constructor( name, type )
     {
@@ -524,7 +837,7 @@ export class FunctionType extends Function_
     {
         super();
         this.name = name;
-        this.proto = baseTypes.Function;
+        this.proto = baseTypes.function;
         /** @type {?(GenericTypes|TypeParameter|TypeReference|Array<GenericTypes|TypeParameter|TypeReference>)} */
         this.typeParameters = null;
         this.returns = null;
@@ -560,12 +873,12 @@ export class FunctionType extends Function_
     toString()
     {
         const
-            retSep = this.isType ? ' => ' : ': ',
+            retSep = this.returns ? ( this.isType ? ' => ' : ': ' ) : '',
             name = this.name || ( this._declType === 'constructor' ? 'new ' : '' ),
             tp = this.typeParameters ? `<${this.typeParameters.join( ', ' )}>` : '',
-            p = this.parameters ? `( ${this.parameters.join( ', ' )} )` : '()';
+            p = this.parameters && this.parameters.length ? `( ${this.parameters.join( ', ' )} )` : '()';
 
-        return `${name}${tp}${p}${retSep}${this.returns}`;
+        return `${name}${tp}${p}${retSep}${this.returns || ''}${this.isType || this.declType === 'method' ? '' : ';'}`;
     }
 }
 
@@ -596,8 +909,94 @@ export class ObjectType extends Object_
     {
         super();
         this.name = name;
-        this.proto = baseTypes.Object;
+        this.proto = baseTypes.object;
+        this.usedAs = 'object';
     }
+
+    use_as( spec )
+    {
+        if ( !string( spec ) )
+            throw new TypeError( `Object use specifier must be a string, received a "${typeof spec}"` );
+
+        if ( ![ 'object', 'module', 'namespace' ].includes( spec ) )
+            throw new TypeError( `Object use specifier was invalid, received "${spec}"` );
+
+        this.usedAs = spec;
+        if ( spec !== 'object' )
+            this.proto = null;
+        else
+            this.proto = baseTypes.object;
+    }
+}
+
+/**
+ * @class
+ */
+class TypeAlias
+{
+    /**
+     * @param {string} name
+     * @param {?(TypeParameter|TypeParameter[])} typeParams
+     * @param {BaseType} [underlying]
+     */
+    constructor( name, typeParams, underlying )
+    {
+        this.name = name;
+        this.typeParameters = typeParams;
+        this.underlying = underlying;
+    }
+
+    /**
+     * @return {string}
+     */
+    toString()
+    {
+        return this.underlying ? this.underlying.toString() : '';
+    }
+}
+
+/**
+ * @param {string} name
+ * @param {?(TypeParameter|Array<TypeParameter>)} tp
+ * @param {string} kind
+ * @return {TypeAlias}
+ */
+export function create_type_alias( name, tp, kind )
+{
+    let t;
+
+    switch ( kind )
+    {
+        case 'function':
+            t = new FunctionType( name );
+            if ( tp ) t.typeParameters = t;
+            break;
+
+        case 'object':
+            t = new ObjectType( name );
+            if ( tp ) t.typeParameters = tp;
+            break;
+
+        case 'array':
+            t = new ArrayType( name, tp );
+            break;
+
+        case 'typedef':
+            break;
+
+        default:
+            if ( additionalTypes.has( kind ) )
+                t = additionalTypes.get( name );
+            else
+                t = baseTypes[ kind ];
+            break;
+    }
+
+    let r;
+
+    additionalTypes.set( name, r = new TypeAlias( name, tp, t ) );
+
+    return r;
 }
 
 /**
@@ -607,7 +1006,7 @@ export class ObjectType extends Object_
  */
 export function declare( type, name )
 {
-    console.log( `declare type: "${type}", name: "${name}", name:`, name );
+    // console.log( `declare type: "${type}", name: "${name}", name:`, name );
     if ( object( name ) ) console.trace();
 
     switch ( type )
@@ -663,243 +1062,30 @@ export function declare( type, name )
 //
 
 
-/**
- * @class
- */
-export class SymbolTable
-{
-    /**
-     * @param {SymbolTable} [parent]
-     */
-    constructor( parent = null )
-    {
-        this.members = new Map();
-        this.parent = parent;
-    }
 
-    /**
-     * @param {string} name
-     * @param {BaseType} type
-     * @return {SymbolTable}
-     */
-    declaration( name, type )
-    {
-        this.members.set( name, type );
-        return this;
-    }
+add_base_type( Object_, 'Object' );
+add_base_type( Function_, 'Function' );
+add_base_type( Array_, 'Array' );
+add_base_type( Instance, 'Instance' );
+add_base_type( new ObjectType(), 'object', '{}' );
+add_base_type( new FunctionType(), 'function', '(){}' );
+add_base_type( new ArrayType(), 'array', '[]' );
+add_base_type( new ClassType(), 'class', 'class{}' );
 
-    /**
-     * @param {string} name
-     * @param {Instance} inst
-     * @return {SymbolTable}
-     */
-    define( name, inst )
-    {
-        this.members.set( name, inst );
-        return this;
-    }
-
-    /**
-     * @param {string} name
-     * @return {BaseType}
-     */
-    get( name )
-    {
-        if ( this.members.has( name ) ) return this.members.get( name );
-        return this.parent ? this.parent.get( name ) : null;
-    }
-}
-
-baseTypes.object = new Object_();
-baseTypes.array = new Array_();
-baseTypes.function = new Function_();
-baseTypes.Object = Object_;
-baseTypes.Array = Array_;
-baseTypes.Function = Function_;
-baseTypes.Instance = Instance;
+// baseTypes.object = new Object_();
+// baseTypes.array = new Array_();
+// baseTypes.function = new Function_();
+// baseTypes.Object = Object_;
+// baseTypes.Array = Array_;
+// baseTypes.Function = Function_;
+// baseTypes.Instance = Instance;
 
 add( 'symbols', new SymbolTable() );
 
-baseTypes[ '[]' ] = baseTypes.array;
-baseTypes[ '{}' ] = baseTypes.object;
-baseTypes[ '(){}' ] = baseTypes.function;
+// baseTypes[ '[]' ] = baseTypes.array;
+// baseTypes[ '{}' ] = baseTypes.object;
+// baseTypes[ '(){}' ] = baseTypes.function;
 
-/**
- * @param {Type} type
- * @param {string|Type} check
- */
-export function is_a( type, check )
-{
-    return string( check ) ? type.is_a( check ) : check instanceof type;
-}
-
-/**
- * Possible types:
- * any, null, undefined, string, number, boolean, symbol, GenericType
- *
- * Extended types based on Object:
- * Object (object, {}), Array (array, []), Function (function)
- *
- *
- * @param {string|Array<string>} name
- * @class
- */
-export class Type
-{
-    /**
-     * @param {string|Array<string>} name
-     */
-    constructor( name )
-    {
-        if ( array( name ) )
-        {
-            this.name = name[ 0 ];
-            this.aliases = new Set( name.slice( 1 ) );
-        }
-        else
-        {
-            this.name = name;
-            this.aliases = null;
-        }
-
-        const lcn = name.toLowerCase();
-
-        this.isPrimitive = is_primitive( lcn );
-        this.boxable =  lcn !== 'undefined' && lcn !== 'null' && lcn !== 'any' && this.isPrimitive;
-        this.boxedAs = null;
-    }
-
-    /**
-     * @param {string|BaseType} typeString
-     * @return {boolean}
-     */
-    is_a( typeString )
-    {
-        if ( !string( typeString ) ) typeString = typeString.name.toLowerCase();
-
-        return typeString === this.name || ( this.aliases && this.aliases.includes( typeString ) );
-    }
-
-    /**
-     * @return {Type}
-     */
-    make_instance()
-    {
-        return this;
-    }
-
-    /**
-     * @return {string}
-     */
-    toString()
-    {
-        return this.name;
-    }
-}
-
-/**
- * @class
- */
-export class Any extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'any' );
-    }
-}
-
-
-/**
- * @class
- */
-export class Null extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'null' );
-    }
-}
-
-/**
- * @class
- */
-export class Undefined extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'undefined' );
-        this.asVoid = false;
-    }
-
-    as_void()
-    {
-        this.asVoid = true;
-        return this;
-    }
-
-    /**
-     * @return {string}
-     */
-    toString()
-    {
-        return this.asVoid ? 'void' : 'undefined';
-    }
-}
-
-/**
- * @class
- */
-export class StringType extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'string' );
-        this.boxedAs = null;
-    }
-}
-
-/**
- * @class
- */
-export class NumberType extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'number' );
-        this.boxedAs = null;
-    }
-}
-
-/**
- * @class
- */
-export class BooleanType extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'boolean' );
-        this.boxedAs = null;
-    }
-}
-
-/**
- * @class
- */
-export class SymbolType extends Type
-{
-    /** */
-    constructor()
-    {
-        super( 'symbol' );
-        this.boxedAs = null;
-    }
-}
 
 
 primitives.set( 'null', new Null() );
@@ -920,6 +1106,13 @@ get_type( 'string' ).boxedAs = globals.symbols.get( 'String' );
 get_type( 'boolean' ).boxedAs = globals.symbols.get( 'Boolean' );
 get_type( 'symbol' ).boxedAs = globals.symbols.get( 'Symbol' );
 
+baseTypes[ 'null' ] = primitives.get( 'null' );
+baseTypes[ 'undefined' ] = primitives.get( 'undefined' );
+baseTypes[ 'string' ] = primitives.get( 'string' );
+baseTypes[ 'number' ] = primitives.get( 'number' );
+baseTypes[ 'boolean' ] = primitives.get( 'boolean' );
+baseTypes[ 'symbol' ] = primitives.get( 'symbol' );
+baseTypes[ 'any' ] = primitives.get( 'any' );
 
 /**
  * @typedef {ObjectType|ArrayType|FunctionType|Null|Undefined|StringType|NumberType|BooleanType|SymbolType|Any} BaseType
@@ -979,19 +1172,20 @@ export function get_type( typeName )
     switch ( typeName.replace( /\s+/g, '' ).toLowerCase() )
     {
         case 'class{}':
-        case 'class':       return ClassType;
+        case 'class':       return baseTypes.class;
 
         case '()':
         case 'function':
         case 'function()':
-        case '(){}':       return FunctionType;
+        case '(){}':       return baseTypes.function;
 
+        case 'namespace':
         case '{}':
-        case 'object':      return ObjectType;
+        case 'object':      return baseTypes.object;
 
         case 'arraytype':
         case '[]':
-        case 'array':       return ArrayType;
+        case 'array':       return baseTypes.array;
 
         case 'nullkeyword':
         case 'null':
