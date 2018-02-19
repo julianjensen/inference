@@ -65,8 +65,38 @@ function ordinaryGetPrototypeOf( o )
  * > NOTE
  * > The loop in step 8 guarantees that there will be no circularities in any prototype chain that only includes objects
  * > that use the ordinary object definitions for [[GetPrototypeOf]] and [[SetPrototypeOf]].
+ *
+ * @param {object} o
+ * @param {?object} v
  */
 function ordinarySetPrototypeOf( o, v )
+{
+
+}
+
+/**
+ * 9.1.3.1 OrdinaryIsExtensible ( O )
+ *
+ * When the abstract operation OrdinaryIsExtensible is called with Object O, the following steps are taken:
+ *
+ * @param o
+ */
+function ordinaryIsExtensible( o )
+{
+
+}
+
+/**
+ * 9.1.4.1 OrdinaryPreventExtensions ( O )
+ *
+ * When the abstract operation OrdinaryPreventExtensions is called with Object O, the following steps are taken:
+ *
+ * 1. Set O.[[Extensible]] to false.
+ * 2. Return true.
+ *
+ * @param {object} o
+ */
+function ordinaryPreventExtension( o )
 {
 
 }
@@ -104,25 +134,34 @@ class OrdinaryObject
         return ordinarySetPrototypeOf( this, v );
     }
 
+    /**
+     * 9.1.3 [[IsExtensible]] ( )
+     *
+     * When the [[IsExtensible]] internal method of O is called, the following steps are taken:
+     */
+    isExtensible()
+    {
+        return ordinaryIsExtensible( this );
+    }
+
+    /**
+     * 9.1.4 [[PreventExtensions]] ( )
+     *
+     * When the [[PreventExtensions]] internal method of O is called, the following steps are taken\
+     */
+    preventExtension()
+    {
+        return ordinaryPreventExtension( this );
+    }
+
+    getOwnProperty( p )
+    {
+
+    }
+
     /*
 
-    9.1.3[[IsExtensible]] ( )
-    When the [[IsExtensible]] internal method of O is called, the following steps are taken:
 
-    Return ! OrdinaryIsExtensible(O).
-    9.1.3.1OrdinaryIsExtensible ( O )
-    When the abstract operation OrdinaryIsExtensible is called with Object O, the following steps are taken:
-
-    Return O.[[Extensible]].
-    9.1.4[[PreventExtensions]] ( )
-    When the [[PreventExtensions]] internal method of O is called, the following steps are taken:
-
-    Return ! OrdinaryPreventExtensions(O).
-    9.1.4.1OrdinaryPreventExtensions ( O )
-    When the abstract operation OrdinaryPreventExtensions is called with Object O, the following steps are taken:
-
-    Set O.[[Extensible]] to false.
-    Return true.
     9.1.5[[GetOwnProperty]] ( P )
     When the [[GetOwnProperty]] internal method of O is called with property key P, the following steps are taken:
 

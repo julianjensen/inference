@@ -8,7 +8,7 @@
 
 import { array, string, has } from 'convenience';
 
-const is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol', 'any' ].includes( str );
+export const is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol', 'any' ].includes( str );
 
 /**
  * Possible types:

@@ -1,359 +1,18 @@
 /** ******************************************************************************************************************
  * @file All declarations, as soon as I figure out how it all works.
- *
- * ```
- * function xyz() {}
- * // xyz.constructor is `Function`
- * // Now xyz.prototype has one property: constructor
- * // xyz.prototype.constructor is the function `xyz`
- * xyz.prototype.abc = "abc";
- *
- * xyz() // calls the function: xyz.prototype.constructor()
- *
- * const a = new xyz(); // xyz.constructor( xyz.prototype ).constructor()
- * ```
- *
- * For new:
- * 1. this = Object.create( xyz.prototype )
- * 2. return this.constructor() || this
- *
- * `Function` is the boxed version of `function() {}`
- *      * `length: number`
- *      * `name: string`
- *      * `prototype: function`
- *
- * `Function.prototype`
- *      * `length`: `number`
- *      * `name`: `string`
- *      * `arguments`: `undefined`
- *      * `caller`: `undefined`
- *      * `constructor`: `function`
- *      * `apply`: `function`
- *      * `bind`: `function`
- *      * `call`: `function`
- *      * `toString`: `function`
- *      * `Symbol.hasInstance`
- *
- * `function() {}` a function instance
- *      * `length`: `number`
- *      * `name`: `string`
- *      * `arguments`: `object`
- *      * `caller`: `object`
- *      * `prototype`: `object`
- *
- * `class {}`
- *      * `length: number`
- *      * `prototype: function`
- *
- * `class xyz {}`:
- *      * `length: number`
- *      * `name: string`
- *      * `prototype: function`
- *
- * `method() {}`
- * Missing `arguments`, `caller`, and `prototype`. The `constructor` is `Function`
- *      * `length`: `number`
- *      * `name`: `string`
- *
- *
- * `Object`:
- * `{}.constructor` is the same as this. This is `interface ObjectConstructor` in the ts definition file.
- *      * `length`: `number`
- *      * `name`: `string`
- *      * `prototype`: `object`
- *      * `assign`: `function`
- *      * `getOwnPropertyDescriptor`: `function`
- *      * `getOwnPropertyDescriptors`: `function`
- *      * `getOwnPropertyNames`: `function`
- *      * `getOwnPropertySymbols`: `function`
- *      * `is`: `function`
- *      * `preventExtensions`: `function`
- *      * `seal`: `function`
- *      * `create`: `function`
- *      * `defineProperties`: `function`
- *      * `defineProperty`: `function`
- *      * `freeze`: `function`
- *      * `getPrototypeOf`: `function`
- *      * `setPrototypeOf`: `function`
- *      * `isExtensible`: `function`
- *      * `isFrozen`: `function`
- *      * `isSealed`: `function`
- *      * `keys`: `function`
- *      * `entries`: `function`
- *      * `values`: `function`
- *
- *
- * `Object.prototype`:
- * This is the `interface Object` in the ts definition file and `{}.constructor.prototype` === `Object.prototype`.
- *      * `constructor`: `function`
- *      * `__defineGetter__`: `function`
- *      * `__defineSetter__`: `function`
- *      * `hasOwnProperty`: `function`
- *      * `__lookupGetter__`: `function`
- *      * `__lookupSetter__`: `function`
- *      * `isPrototypeOf`: `function`
- *      * `propertyIsEnumerable`: `function`
- *      * `toString`: `function`
- *      * `valueOf`: `function`
- *      * `__proto__`: `get` -> `function`, `set` -> `function`
- *      * `toLocaleString`: `function`
- *
  * @author Julian Jensen <jjdanois@gmail.com>
  * @since 1.0.0
  * @date 03-Feb-2018
  *********************************************************************************************************************/
 "use strict";
 
-import { TypeFlags }                   from "../types";
-import { string, array, object } from "convenience";
+import { TypeFlags }                              from "../types";
+import { string, array, object }                  from "convenience";
 import { globals, baseTypes, add_base_type, add } from "../symbols/globals";
 
 export const primitives = new Map();
 add( 'primitives', primitives );
 
-const
-    /**
-     * @enum
-     */
-    Match = {
-        NO: 0,
-        UNLIKELY: 1,
-        MAYBE: 2,
-        PROBABLY: 3,
-        YES: 4
-    };
-
-const
-    additionalTypes = new Map();
-
-const
-    toArray = o => o === null || o === void 0 ? [] : array( o ) ? o : [ o ],
-
-    forTypes = fn => types => toArray( types ).forEach( fn ),
-    filterTypes = fn => types => toArray( types ).filter( fn ),
-    mapTypes = fn => types => toArray( types ).map( fn ),
-    findTypes = fn => types => toArray( types ).find( fn ),
-    someTypes = fn => types => toArray( types ).some( fn ),
-    allTypes = fn => types => toArray( types ).every( fn ),
-
-    get_all_constructors = filterTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType === 'constructor' ),
-    is_constructable = someTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType === 'constructor' ),
-    get_all_callables = filterTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType !== 'constructor' ),
-    is_callable = someTypes( t => t.is_instance_of( 'Function' ) && t.get_parent( 'Function' ).declType !== 'constructor' );
-
-/**
- * @class
- */
-class Inst
-{
-    /**
-     * @param {Decl} decl
-     * @param {string} declType
-     * @param {?Scope} [scope]
-     */
-    constructor( decl, declType, scope = null )
-    {
-        this.instanceOf = decl;
-        this.members = new Map();
-        this.proto = decl.proto;
-        this.declType = declType;
-        this.scope = scope;
-    }
-
-    /**
-     * @param {Decl} decl
-     * @return {boolean}
-     */
-    is_instance_of( decl )
-    {
-        if ( decl === this.instanceOf ) return true;
-
-        return !!this.proto && this.proto.inheritance().includes( decl );
-    }
-
-    get_parent( parentName )
-    {
-        if ( this.instanceOf.name === parentName ) return this;
-    }
-}
-
-/**
- * @class
- */
-class DeclProto
-{
-    /**
-     * @param {Decl} owner
-     * @param {DeclProto} [nextProto]
-     */
-    constructor( owner, nextProto )
-    {
-        this.protoOf = owner;
-        this.members = new Map();
-        /** @type {?DeclProto} */
-        this.chain = nextProto;
-    }
-
-    add_prototype( p )
-    {
-        this.chain = p;
-    }
-
-    /**
-     * @returns {Array<Decl>}
-     */
-    inheritance()
-    {
-        return this.get_chain( false, this ).map( p => p.protoOf ).filter( p => !!p );
-    }
-
-    /**
-     * @param {boolean} [excludeSelf=false]
-     * @param {?DeclProto} [previous=null]
-     */
-    get_chain( excludeSelf = false, previous = null )
-    {
-        const
-            protos = excludeSelf ? [] : [ this ];
-
-        return protos.concat( this.chain && this.chain !== previous ? this.chain.get_chain() : [] );
-    }
-
-    from_chain( propName, previous = null )
-    {
-        if ( this.members.has( propName ) )
-            return this.members.get( propName );
-
-        if ( this.chain && this.chain !== previous )
-            return this.chain.from_chain( propName, this );
-
-        return void 0;
-    }
-}
-
-/**
- * @class
- */
-class Members
-{
-    /**
-     * @param {Decl} decl
-     */
-    constructor( decl, table )
-    {
-        this.table = table;
-        this.decl = decl;
-        this.name = decl.name;
-    }
-
-    /**
-     * @param {string|Decl|Inst} declSpec
-     * @return {boolean}
-     */
-    is( declSpec )
-    {
-        if ( typeof declSpec === 'string' )
-            return this.name === declSpec;
-        else if ( declSpec instanceof Decl )
-            return this.decl === declSpec;
-        else if ( declSpec instanceof Inst )
-            return this.decl === declSpec.instanceOf;
-    }
-}
-
-/**
- * @class
- */
-class Decl
-{
-    /**
-     * @param {string} name
-     * @param {BaseType} type
-     * @param {?DeclProto} proto
-     */
-    constructor( name, type, proto )
-    {
-        this.name = name;
-        this.members = new Map();
-        this.type = type;
-        this.proto = proto && new DeclProto( this, proto );
-    }
-
-    /**
-     * @return {boolean}
-     */
-    get_constructors()
-    {
-        const
-            con = this.proto && this.proto.from_chain( 'constructor' );
-
-        if ( con && con.inheritance().includes( 'Function' ) )
-        {
-            const c = get_all_constructors( con );
-            // @todo check parameters here to determine constructor in cases of overloaded funcs.
-            return !!c;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param name
-     * @return {*}
-     */
-    get_callables( name )
-    {
-        const funcs = this.get( name );
-
-        if ( funcs )
-        {
-            // @todo check params for overloaded variation if applicable
-            return get_all_callables( funcs );
-        }
-
-        return null;
-    }
-
-    is_callable()
-    {
-
-    }
-
-    /**
-     * @param {string} propName
-     * @return {*}
-     */
-    get( propName )
-    {
-        if ( this.members.has( propName ) )
-            return this.members.get( propName );
-
-        if ( this.proto && this.proto.chain )
-            return this.proto.chain.from_chain( propName, this.proto );
-    }
-
-    might_be( rough, name, ret, ...params )
-    {
-        let comps = [];
-
-        if ( name !== this.name ) return Match.NO;
-
-        switch ( rough )
-        {
-            case 'function':
-                if ( !( this.type instanceof FunctionType ) ) return Match.NO;
-                if ( ret !== void 0 )
-                    comps.push( compare_types( ret, this.type.returns ) );
-                if ( params )
-                    params
-
-        }
-    }
-
-    add( decl )
-    {
-    }
-}
 
 /**
  * @class
@@ -513,193 +172,6 @@ export class Instance
     _prototype()
     {
         return this.proto;
-    }
-}
-
-/**
- * {}.*
- *      <empty>
- *
- * {}.prototype
- *      undefined
- *
- * {}.constructor
- *      Object.*
- *
- * {}.constructor.prototype
- *      Object.prototype.*
- *
- * {}.* = {}.* => {} => Object.prototype.*
- *
- * Object.constructor = Function
- *
- * class Object
- * {
- *      static constructor = Function
- *
- *      constructor = Object
- *
- *      hasOwnProperty( name )
- *      {}
- *
- *      static assign()
- *      {}
- *
- *      static seal()
- *      {}
- *
- *      //...
- * }
- *
- * class Object extends Function {}
- * class Function extends Object {}
- *
- * Object instance {}
- * {}
- * {}.prototype is undefined, doesn't exist
- * // Circular here:
- * {}.constructor => Object
- * {}.constructor.prototype => Object.prototype
- * {}.constructor.prototype.constructor => Object
- *
- * getPrototypeOf( {} ) => Object.prototype => null
- * or
- * {}.__proto__ => Object.prototype
- * Object.prototype.__proto__ => null
- *
- * {}.__proto__.__proto__ => null
- *
- * new Object()
- * {}.x = { x: ... } => Object.prototype.x
- *
- * Function.x = { x: ... } => Function.prototype.x => Object.prototype.x
- *
- * Object methods on Object.prototype
- *
- *      * `constructor`: `function`
- *      * `__defineGetter__`: `function`
- *      * `__defineSetter__`: `function`
- *      * `hasOwnProperty`: `function`
- *      * `__lookupGetter__`: `function`
- *      * `__lookupSetter__`: `function`
- *      * `isPrototypeOf`: `function`
- *      * `propertyIsEnumerable`: `function`
- *      * `toString`: `function`
- *      * `valueOf`: `function`
- *      * `__proto__`: `get` -> `function`, `set` -> `function`
- *      * `toLocaleString`: `function`
- *
- * Object static methods on Object.*
- *
- *      * `length`: `number`
- *      * `name`: `string`
- *      * `prototype`: `object`
- *      * `assign`: `function`
- *      * `getOwnPropertyDescriptor`: `function`
- *      * `getOwnPropertyDescriptors`: `function`
- *      * `getOwnPropertyNames`: `function`
- *      * `getOwnPropertySymbols`: `function`
- *      * `is`: `function`
- *      * `preventExtensions`: `function`
- *      * `seal`: `function`
- *      * `create`: `function`
- *      * `defineProperties`: `function`
- *      * `defineProperty`: `function`
- *      * `freeze`: `function`
- *      * `getPrototypeOf`: `function`
- *      * `setPrototypeOf`: `function`
- *      * `isExtensible`: `function`
- *      * `isFrozen`: `function`
- *      * `isSealed`: `function`
- *      * `keys`: `function`
- *      * `entries`: `function`
- *      * `values`: `function`
- *
- * These are the static members of the Object class and are only accessible by direct access, i.e. `Object.assign()`
- *
- * @class
- */
-export class Object_     // class Object prototype methods   => instance prototype members
-{
-    /** */
-    constructor()
-    {
-        this.name = 'Object';
-        this.staticMembers = new Map();   // Static members, accessible as Type.name (Type being Object, Array, or Function, or whatever class/function/object subtype)
-        this.prototypeMembers = new Map();   // The is what goes on the prototype chain.
-        this.proto = 'Function_';
-        this.typeParameters = null;
-
-    }
-
-    /**
-     * @param {BaseType[]} [types]
-     * @return {Instance}
-     */
-    make_instance( ...types )
-    {
-        return Object_._add_types( new Instance( this.prototypeMembers, null, Object_, this.typeParameters ), ...types );
-    }
-
-    /**
-     * @param {Instance} inst
-     * @param {BaseType[]} types
-     * @return {Instance}
-     * @protected
-     */
-    static _add_types( inst, ...types )
-    {
-        if ( types.length ) inst.materialize( ...types );
-
-        return inst;
-    }
-
-    /**
-     * @param {string} name
-     * @param {BaseType|Object_} type
-     * @param {boolean} [isStatic]
-     * @return {Object_}
-     */
-    add_prop( name, type, isStatic = false )
-    {
-        if ( isStatic ) return this.add_static_prop( name, type );
-        this.prototypeMembers.set( name, type );
-        return this;
-    }
-
-    /**
-     * @param {string} name
-     * @param {BaseType|Object_} type
-     * @return {Object_}
-     */
-    add_static_prop( name, type )
-    {
-        this.staticMembers.set( name, type );
-        return this;
-    }
-
-    /**
-     * @param {string} propName
-     * @return {* | undefined}
-     */
-    get( propName )
-    {
-        if ( this.staticMembers.has( propName ) )
-            return this.staticMembers.get( propName );
-
-        return this.get_from_prototype( propName );
-    }
-
-    /**
-     * @param {string} propName
-     * @return {?BaseType}
-     */
-    get_from_prototype( propName )
-    {
-        if ( this.prototypeMembers.has( propName ) )
-            return this.prototypeMembers.get( propName );
-
-        return null;
     }
 }
 
@@ -874,9 +346,9 @@ export class FunctionType extends Function_
     {
         const
             retSep = this.returns ? ( this.isType ? ' => ' : ': ' ) : '',
-            name = this.name || ( this._declType === 'constructor' ? 'new ' : '' ),
-            tp = this.typeParameters ? `<${this.typeParameters.join( ', ' )}>` : '',
-            p = this.parameters && this.parameters.length ? `( ${this.parameters.join( ', ' )} )` : '()';
+            name   = this.name || ( this._declType === 'constructor' ? 'new ' : '' ),
+            tp     = this.typeParameters ? `<${this.typeParameters.join( ', ' )}>` : '',
+            p      = this.parameters && this.parameters.length ? `( ${this.parameters.join( ', ' )} )` : '()';
 
         return `${name}${tp}${p}${retSep}${this.returns || ''}${this.isType || this.declType === 'method' ? '' : ';'}`;
     }
@@ -897,37 +369,6 @@ export class ClassType extends FunctionType
     }
 }
 
-/**
- * @class
- */
-export class ObjectType extends Object_
-{
-    /**
-     * @param {string} name
-     */
-    constructor( name )
-    {
-        super();
-        this.name = name;
-        this.proto = baseTypes.object;
-        this.usedAs = 'object';
-    }
-
-    use_as( spec )
-    {
-        if ( !string( spec ) )
-            throw new TypeError( `Object use specifier must be a string, received a "${typeof spec}"` );
-
-        if ( ![ 'object', 'module', 'namespace' ].includes( spec ) )
-            throw new TypeError( `Object use specifier was invalid, received "${spec}"` );
-
-        this.usedAs = spec;
-        if ( spec !== 'object' )
-            this.proto = null;
-        else
-            this.proto = baseTypes.object;
-    }
-}
 
 /**
  * @class
@@ -1012,18 +453,23 @@ export function declare( type, name )
     switch ( type )
     {
         case 'interface':
-        case 'class':       return new ClassType( name );
+        case 'class':
+            return new ClassType( name );
 
-        case 'function':    return new FunctionType( name );
+        case 'function':
+            return new FunctionType( name );
 
         case 'namespace':
-        case 'object':      return new ObjectType( name );
+        case 'object':
+            return new ObjectType( name );
 
-        case 'array':       return new ArrayType( name );
+        case 'array':
+            return new ArrayType( name );
 
-        default:            const ntype = get_type( name );
-                            // eslint-disable-next-line new-cap
-                            return typeof ntype === 'function' ? new ntype( name ) : new Instance( null, null, ntype );
+        default:
+            const ntype = get_type( name );
+            // eslint-disable-next-line new-cap
+            return typeof ntype === 'function' ? new ntype( name ) : new Instance( null, null, ntype );
     }
 }
 
@@ -1172,93 +618,92 @@ export function get_type( typeName )
     switch ( typeName.replace( /\s+/g, '' ).toLowerCase() )
     {
         case 'class{}':
-        case 'class':       return baseTypes.class;
+        case 'class':
+            return baseTypes.class;
 
         case '()':
         case 'function':
         case 'function()':
-        case '(){}':       return baseTypes.function;
+        case '(){}':
+            return baseTypes.function;
 
         case 'namespace':
         case '{}':
-        case 'object':      return baseTypes.object;
+        case 'object':
+            return baseTypes.object;
 
         case 'arraytype':
         case '[]':
-        case 'array':       return baseTypes.array;
+        case 'array':
+            return baseTypes.array;
 
         case 'nullkeyword':
         case 'null':
-        case null:          return primitives.get( 'null' );
+        case null:
+            return primitives.get( 'null' );
 
         case 'voidkeyword':
         case 'undefinedkeyword':
         case 'undefined':
-        case undefined:     return primitives.get( 'undefined' );
+        case undefined:
+            return primitives.get( 'undefined' );
 
         case '""':
         case "''":
         case "``":
-        case 'string':      return primitives.get( 'string' );
+        case 'string':
+            return primitives.get( 'string' );
 
         case 'numberkeyword':
-        case 'number':      return primitives.get( 'number' );
+        case 'number':
+            return primitives.get( 'number' );
 
         case 'booleankeyword':
-        case 'boolean':     return primitives.get( 'boolean' );
+        case 'boolean':
+            return primitives.get( 'boolean' );
 
-        case 'symbol':      return primitives.get( 'symbol' );
+        case 'symbol':
+            return primitives.get( 'symbol' );
 
         case 'anykeyword':
         case 'any':
-        case '*':           return primitives.get( 'any' );
+        case '*':
+            return primitives.get( 'any' );
     }
 }
 
+/*
 
+        names                                  = [
 
-// function type_dump( obj )
-// {
-//     const
-//         has = ( o, n ) => !!o && Reflect.has( o, n ),
-//
-//         toName = o => ( has( o, 'name' ) ? `"${o.name}"`  : '-' ) + ` (${typeof o})`,
-//
-//         name = toName( obj ),
-//         cname = has( obj, 'constructor' ) ? toName( obj.constructor ) : '-',
-//         pcname = has( obj, 'prototype' ) && has( obj.prototype, 'constructor' ) ? toName( obj.prototype.constructor ) : '-',
-//
-//         _proto = !!obj && Object.getPrototypeOf( obj ),
-//         protoName = _proto && toName( _proto ),
-//         cProtoName = _proto && has( _proto, 'constructor' ) ? toName( _proto.constructor ) : '-',
-//         pcProtoName = _proto && has( _proto, 'prototype' ) && has( _proto.prototype, 'constructor' ) ? toName( _proto.prototype.constructor ) : '-',
-//
-//         descs = !!obj ? Object.getOwnPropertyDescriptors( obj ) : [],
-//         syms = !!obj ? Object.getOwnPropertySymbols( obj ) : [],
-//         names = [ 'name: ' + name, 'constr. name: ' + cname, 'proto.constr. name: ' + pcname,
-//                   'get prototype:',
-//                   'proto.name: ' + protoName, 'proto.constr. name: ' + cProtoName, 'proto.proto.constr. name: ' + pcProtoName,
-//                   '\n',
-//                   'own names: [ ' + ( !!obj ? Reflect.ownKeys( obj ).map( t => typeof t === 'symbol' ? t.toString() : '' + t ).sort().join( ', ' ) : '' ) + ' ]',
-//                   '\n',
-//                   'Own props:',
-//                   '\n'
-//                 ]. join( '\n' );
-//
-//     let output = [];
-//
-//     for ( const [ key, desc ] of Object.entries( descs ) )
-//     {
-//         if ( has( desc, 'value' ) )
-//             output.push( ` *      * \`${key}\`: \`${typeof desc.value}\`` );
-//         else
-//             output.push( ` *      * \`${key}\`: \`get\` -> \`${typeof desc.get}\`, \`set\` -> \`${typeof desc.set}\`` );
-//
-//     }
-//
-//     for ( const key of syms )
-//         output.push( ` *      * \`${key.toString()}\`` );
-//
-//     console.log( `\n----------------\n${names}` + output.join( '\n' ) + `\n----------------` );
-// }
-//
+            'name: ' + name, 'constr. name: ' + cname, 'proto.constr. name: ' + pcname,
+            'get prototype:',
+            'proto.name: ' + protoName, 'proto.constr. name: ' + cProtoName, 'proto.proto.constr. name: ' + pcProtoName,
+            '\n',
+            'own names (' + ownKeys.length + '): [ ' + ( !!obj ? ownKeys.map( t => typeof t === 'symbol' ? t.toString() : '' + t ).sort().join( ', ' ) : '' ) + ' ]',
+            '\n',
+            'Own props ( ' + ( Object.keys( descs ).length + syms.length ) + '):',
+            '\n'
+        ].join( '\n' );
+
+    let output     = [],
+        sortedKeys = Object.keys( descs ).sort();
+
+    for ( const key of sortedKeys )
+    {
+        const desc = descs[ key ];
+
+        if ( has( desc, 'value' ) )
+            output.push( ` *      * \`${key}\`: \`${typeof desc.value}\`` );
+        else
+            output.push( ` *      * \`${key}\`: \`get\` -> \`${typeof desc.get}\`, \`set\` -> \`${typeof desc.set}\`` );
+
+    }
+
+    for ( const key of syms )
+        output.push( ` *      * \`${key.toString()}\`` );
+
+    console.log( `\n----------------\n${names}` + output.join( '\n' ) + `\n----------------` );
+
+ */
+

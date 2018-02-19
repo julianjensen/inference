@@ -4,18 +4,23 @@
  * @since 1.0.0
  * @date 04-Feb-2018
  *********************************************************************************************************************/
+
+
 "use strict";
 
-import { inspect }  from 'util';
-import { nodeName } from "../ts/ts-helpers";
-import { array }    from "convenience";
-import { output }   from "../utils";
+import { inspect }                                                          from 'util';
+import { nodeName }                                                         from "../ts/ts-helpers";
+import { array }                                                            from "convenience";
+import { output }                                                           from "../utils";
 import {
-    ArrayType,
-    FunctionType,
-    ClassType,
-    ObjectType, get_type, create_type_alias
-}                   from "./symbol-table";
+    get_type,
+    create_type_alias,
+    create_constructor,
+    parser_create_interface,
+    parser_create_callable,
+    parser_create_object,
+    context
+} from "./declaration";
 
 const NodeFlags   = {
     None:               0,
@@ -90,14 +95,26 @@ class TypeDefinition {}
  */
 function Parameter( node, parent, field, index, recurse )
 {
-    return {
+    const p = {
         name:        node.name.escapedText,
         rest:        !!node.dotDotDotToken,
         type:        !!node.type && parse_type( node.type ),
         initializer: node.initializer && ( recurse ? recurse( node.initializer ) : parse_type( node.initializer ) ),
         optional:    is_optional( node ),
         toString() { return `${this.rest ? '...' : ''}${this.name}${this.optional ? '?' : ''}: ${this.type}${this.initializer ? ` = ${this.initializer} : ''` : ''}`; }
-    };
+    },
+    callable = p.type && p.type.isCallable;
+
+    if ( p.rest )
+    {
+        let od
+    }
+    else
+    {
+        let od = callable ? parser_create_callable( p.name ) : parser_create_object( p.name );
+        if ( p.initializer ) od.initializer( p.initializer );
+        if ( p.optional ) od.optional = true;
+    }
 }
 
 /**
@@ -114,45 +131,45 @@ function VariableStatement( node, parent, field, index, recurse )
         vars  = decls.declarations.map( ( n, i ) => VariableDeclaration( n, decls, 'declarationList', i, recurse ) );
 
     if ( decls.flags & ( NodeFlags.Let | NodeFlags.Const ) )
-        vars.forEach( v => v.varType = decls.flags & NodeFlags.Let ? 'let' : decls.flags & NodeFlags.Const ? 'const' : 'var' );
+        vars.forEach( v => v.general_type( decls.flags & NodeFlags.Let ? 'let' : decls.flags & NodeFlags.Const ? 'const' : 'var' ) );
 
     // console.log( vars.map( v => `${v}` ).join( ';\n' ) );
 
     return vars;
 }
 
-/**
- * @class
- */
-class Variable
-{
-    /**
-     * @param name
-     * @param type
-     * @param init
-     * @param ro
-     */
-    constructor( name, type, init, ro = 'var' )
-    {
-        this.name    = name;
-        this.type    = type;
-        this.init    = init;
-        this.varType = ro;
-    }
-
-    /**
-     * 536870914
-     * 536870914
-     * @return {string}
-     */
-    toString()
-    {
-        const
-            init = this.init ? ` = ${this.init}` : '';
-
-        return `declare ${this.varType} ${this.name}: ${this.type}${init};`;
-    }
-}
+// /**
+//  * @class
+//  */
+// class Variable
+// {
+//     /**
+//      * @param name
+//      * @param type
+//      * @param init
+//      * @param ro
+//      */
+//     constructor( name, type, init, ro = 'var' )
+//     {
+//         this.name    = name;
+//         this.type    = type;
+//         this.init    = init;
+//         this.varType = ro;
+//     }
+//
+//     /**
+//      * 536870914
+//      * 536870914
+//      * @return {string}
+//      */
+//     toString()
+//     {
+//         const
+//             init = this.init ? ` = ${this.init}` : '';
+//
+//         return `declare ${this.varType} ${this.name}: ${this.type}${init};`;
+//     }
+// }
 
 /**
  * @param {Node} node
@@ -163,7 +180,13 @@ class Variable
  */
 function VariableDeclaration( node, parent, field, index, recurse )
 {
-    return new Variable( node.name.escapedText, parse_type( node.type ), node.initializer && recurse( node.initializer ) );
+    const v = context.current().add( node.name.escapedText, parse_type( node.type ) ).decl_node( node ).general_type( 'var' );
+    if ( node.initializer )
+        v.initializer( recurse( node.initializer ) );
+
+    return v;
+
+    // return new Variable( node.name.escapedText, parse_type( node.type ), node.initializer && recurse( node.initializer ) );
     // return {
     //     name:        node.name.escapedText,
     //     type:        parse_type( node.type ),
@@ -380,6 +403,7 @@ function ModuleDeclaration( node, parent, field, i, recurse )
  */
 function MethodSignature( node, parent, field, i, recurse )
 {
+    return ConstructSignature( node, parent, field, i, recurse );
     const
         fn = parse_function_type( node, parent, field, i, recurse );
 
@@ -406,9 +430,15 @@ function MethodSignature( node, parent, field, i, recurse )
 function CallSignature( node, parent, field, i, recurse )
 {
     const
-        fn = parse_function_type( node, parent, field, i, recurse );
+        fn = parse_function_type( node, parent, field, i, recurse ),
+        fd = create_constructor();
 
-    return fn.decl_type( 'call' );
+    fd.add_types( fn.typeParameters ).add_params( fn.parameters ).decl_node( node );
+
+    fd.type = fn.type;
+
+    return fd;
+
     // return {
     //     declType: 'call',
     //     returns:  node.type && parse_type( node.type ),
@@ -427,16 +457,14 @@ function CallSignature( node, parent, field, i, recurse )
 function ConstructSignature( node, parent, field, i, recurse )
 {
     const
-        fn = parse_function_type( node, parent, field, i, recurse );
+        fn = parse_function_type( node, parent, field, i, recurse ),
+        fd = create_constructor();
 
-    return fn.decl_type( 'constructor' );
+    fd.add_types( fn.typeParameters ).add_params( fn.parameters ).decl_node( node );
 
-    // return {
-    //     declType: 'constructor',
-    //     returns:  node.type && parse_type( node.type ),
-    //     params:   node.parameters && recurse( node.parameters ),
-    //     types:    node.typeParameters && node.typeParameters.map( parse_type )
-    // };
+    fd.type = fn.type;
+
+    return fd;
 }
 
 
@@ -451,19 +479,22 @@ function ConstructSignature( node, parent, field, i, recurse )
  */
 function PropertySignature( node )
 {
-    return {
-        name:     node.name.escapedText,
-        readOnly: is_keyword( node.modifiers, 'ReadonlyKeyword' ),
-        type:     parse_type( node.type ),
-        declType: 'property',
-        toString()
-        {
-            return `${this.readOnly ? 'readonly ' : ''}${this.name}: ${this.type}`;
-        }
-    };
+    // return {
+    //     name:     node.name.escapedText,
+    //     readOnly: is_keyword( node.modifiers, 'ReadonlyKeyword' ),
+    //     type:     parse_type( node.type ),
+    //     declType: 'property',
+    //     toString()
+    //     {
+    //         return `${this.readOnly ? 'readonly ' : ''}${this.name}: ${this.type}`;
+    //     }
+    // };
 
-    // let name = node.name.escapedText,
-    //     decl = declare( name, type );
+    const
+        prop = parser_create_object( node.name.escapedText );
+
+    prop.readOnly = is_keyword( node.modifiers, 'ReadonlyKeyword' );
+    prop.type = parse_type( node.type );
 }
 
 /**
@@ -1033,14 +1064,19 @@ function parse_type_literal( node, parent, field, i, recurse )
  */
 function parse_function_type( node )
 {
-    const
-        fn = new FunctionType( node.name ? node.name.escapedText : null );
+    // const
+    //     fn = new FunctionType( node.name ? node.name.escapedText : null );
+    //
+    // fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
+    // fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
+    // fn.returns        = node.type && parse_type( node.type );
 
-    fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
-    fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
-    fn.returns        = node.type && parse_type( node.type );
-
-    return fn;
+    return {
+        name: node.name ? node.name.escapedText : null,
+        typeParameters: node.typeParameters && node.typeParameters.map( parse_type ),
+        parameters: node.parameters ? node.parameters.map( parse_type ) : [],
+        type: node.type && parse_type( node.type )
+    };
 }
 
 /**
