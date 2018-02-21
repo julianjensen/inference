@@ -8,19 +8,17 @@
 
 "use strict";
 
-import { inspect }                                                          from 'util';
-import { nodeName }                                                         from "../ts/ts-helpers";
-import { array }                                                            from "convenience";
-import { output }                                                           from "../utils";
+import { inspect }  from 'util';
+import { nodeName } from "../ts/ts-helpers";
+import { array }    from "convenience";
+import { output }   from "../utils";
 import {
     get_type,
     create_type_alias,
     create_constructor,
-    parser_create_interface,
-    parser_create_callable,
-    parser_create_object,
+    parser,
     context
-} from "./declaration";
+}                   from "./declaration";
 
 const NodeFlags   = {
     None:               0,
@@ -53,7 +51,7 @@ const
           MethodSignature,
           CallSignature,
           ConstructSignature,
-          PropertyDeclaration: PropertySignature,
+          PropertyDeclaration:  PropertySignature,
           PropertySignature,
           VariableDeclaration,
           VariableStatement,
@@ -73,7 +71,7 @@ const
           IndexedAccessType:    parse_indexed_access_type,
           TypeLiteral:          parse_type_literal,
 
-          Constructor: ConstructSignature,
+          Constructor:     ConstructSignature,
           ConstructorType: ConstructSignature,
           ArrayType:       parse_array_type,
           FunctionType:    parse_function_type,
@@ -81,10 +79,8 @@ const
           NumberKeyword:   () => get_type( 'number' ),
           BooleanKeyword:  () => get_type( 'boolean' ),
           VoidKeyword:     () => get_type( 'undefined' ).as_void(),
-          AnyKeyword: () => get_type( 'any' )
+          AnyKeyword:      () => get_type( 'any' )
       };
-
-class TypeDefinition {}
 
 /**
  * @param {Node} node
@@ -95,6 +91,7 @@ class TypeDefinition {}
  */
 function Parameter( node, parent, field, index, recurse )
 {
+
     const p = {
         name:        node.name.escapedText,
         rest:        !!node.dotDotDotToken,
@@ -102,19 +99,9 @@ function Parameter( node, parent, field, index, recurse )
         initializer: node.initializer && ( recurse ? recurse( node.initializer ) : parse_type( node.initializer ) ),
         optional:    is_optional( node ),
         toString() { return `${this.rest ? '...' : ''}${this.name}${this.optional ? '?' : ''}: ${this.type}${this.initializer ? ` = ${this.initializer} : ''` : ''}`; }
-    },
-    callable = p.type && p.type.isCallable;
+    };
 
-    if ( p.rest )
-    {
-        let od
-    }
-    else
-    {
-        let od = callable ? parser_create_callable( p.name ) : parser_create_object( p.name );
-        if ( p.initializer ) od.initializer( p.initializer );
-        if ( p.optional ) od.optional = true;
-    }
+    return parser.parameter( p.name, p.type );
 }
 
 /**
@@ -296,51 +283,15 @@ function SourceFile( node, parent, field, index, recurse )
  */
 function InterfaceDeclaration( node, parent, field, i, recurse )
 {
-    // const i = {
-    //     name: node.name.escapedText,
-    //     types: node.typeParameters && node.typeParameters.map( parse_type ),
-    //     members: node.members && node.members.map( recurse );
-    // };
-
     const
-        name    = node.name.escapedText,
-        types   = node.typeParameters && node.typeParameters.map( parse_type ),
-        members = node.members && node.members.map( recurse ),
-        st = members && members.length ? '\n    ' : '',
-        intr = {
-            name,
-            types,
-            members,
-            declType: 'interface',
-            toString()
-            {
-                return `interface ${name}${types ? `<${types}>` : ''} {${st}${members.join( ';\n    ' )}${members && members.length ? ';\n' : ''}}`;
-            }
-        };
-    //     name:    node.name.escapedText,
-    //     types:   node.typeParameters && node.typeParameters.map( parse_type ),
-    //     members: node.members && node.members.map( recurse )
-    // } );
+        name  = node.name.escapedText,
+        types = node.typeParameters && node.typeParameters.map( parse_type );
 
-    // console.log( `interface ${name}${types ? `types` : ''} {\n    ${members.join( '\n    ' )}\n}` );
-    // console.log( `${intr}` );
-    return intr;
+    parser.interface( name, types );
 
-    // return currentOwner;
-    //
-    //
-    //
-    // let name     = node.name.escapedText,
-    //     info     = typescriptToSymbol( name ),
-    //     generics = parse_type( node.typeParameters ),
-    //     klass    = info.isA || declare( name, 'interface' );
-    //
-    // klass.typeParameters = new GenericTypes( ...( array( generics ) ? generics : [ generics ] ) );
-    //
-    // currentOwner = info;
-    // declare( klass, name );
-    //
-    // recurse( node.members );
+    if ( node.members ) node.members.map( recurse );
+
+    context.pop();
 }
 
 /**
@@ -354,19 +305,13 @@ function ClassDeclaration( node, parent, field, i, recurse )
 {
     const
         name    = node.name.escapedText,
-        types   = node.typeParameters && node.typeParameters.map( parse_type ),
-        members = node.members && node.members.map( recurse );
+        types   = node.typeParameters && node.typeParameters.map( parse_type );
 
-        return {
-            name,
-            types,
-            members,
-            declType: 'class',
-            toString()
-            {
-                return `class ${name}${types ? `types` : ''} {\n    ${members.join( ';\n    ' )};\n}`;
-            }
-        };
+    parser.interface( name, types );
+
+    if ( node.members ) node.members.map( recurse );
+
+    context.pop();
 }
 
 /**
@@ -378,20 +323,11 @@ function ClassDeclaration( node, parent, field, i, recurse )
  */
 function ModuleDeclaration( node, parent, field, i, recurse )
 {
-    const
-        name    = node.name.escapedText,
-        members = node.body.statements && node.body.statements.map( recurse ),
-        decl = new Decl( name, null );
+    parser.object( node.name.escapedText );
 
-    return {
-        name,
-        members,
-        declType: 'namespace',
-        toString()
-        {
-            return `namespace ${name} {\n    ${members.join( ';\n    ' )};\n}`;
-        }
-    };
+    if ( node.body.statements ) node.body.statements.map( recurse );
+
+    context.pop();
 }
 
 /**
@@ -403,21 +339,15 @@ function ModuleDeclaration( node, parent, field, i, recurse )
  */
 function MethodSignature( node, parent, field, i, recurse )
 {
-    return ConstructSignature( node, parent, field, i, recurse );
     const
-        fn = parse_function_type( node, parent, field, i, recurse );
+        // fn = parse_function_type( node ),
+        m = parser.method(); // fn.name, fn.type, fn.parameters, fn.typeParameters );
 
-    fn.isType = false;
+    return function_bit_by_bit( node, m );
 
-    return fn.decl_type( 'method' );
-
-    // return {
-    //     name:     node.name.escapedText,
-    //     returns:  node.type && parse_type( node.type ),
-    //     params:   node.parameters && recurse( node.parameters ),
-    //     types:    node.typeParameters && node.typeParameters.map( parse_type ),
-    //     declType: 'method'
-    // };
+    // m.isType = false;
+    //
+    // return fn.general_type( 'method' ).decl_node( node );
 }
 
 /**
@@ -430,21 +360,12 @@ function MethodSignature( node, parent, field, i, recurse )
 function CallSignature( node, parent, field, i, recurse )
 {
     const
-        fn = parse_function_type( node, parent, field, i, recurse ),
-        fd = create_constructor();
+        fn = parse_function_type( node, false ),
+        c = parser.call( fn.type, fn.parameters, fn.typeParameters );
 
-    fd.add_types( fn.typeParameters ).add_params( fn.parameters ).decl_node( node );
+    c.general_type( 'call' ).decl_node( node );
 
-    fd.type = fn.type;
-
-    return fd;
-
-    // return {
-    //     declType: 'call',
-    //     returns:  node.type && parse_type( node.type ),
-    //     params:   node.parameters && recurse( node.parameters ),
-    //     types:    node.typeParameters && node.typeParameters.map( parse_type )
-    // };
+    return c;
 }
 
 /**
@@ -457,16 +378,54 @@ function CallSignature( node, parent, field, i, recurse )
 function ConstructSignature( node, parent, field, i, recurse )
 {
     const
-        fn = parse_function_type( node, parent, field, i, recurse ),
-        fd = create_constructor();
+        fn = parse_function_type( node, false ),
+        c = parser.construct( fn.type, fn.args, fn.typeParameters );
 
-    fd.add_types( fn.typeParameters ).add_params( fn.parameters ).decl_node( node );
+    c.general_type( 'constructor' ).decl_node( node );
 
-    fd.type = fn.type;
-
-    return fd;
+    return c;
 }
 
+const
+    owners = [];
+
+/**
+ * @param {Node} node
+ * @param {{fn: *, add_type_params: function(*=): ObjectDeclaration, add_type: function(*=): (ObjectDeclaration|*), add_params: function(*=): ObjectDeclaration, add_name: function(*=): (*|ObjectDeclaration|{enum})}} fn
+ * @return {ObjectDeclaration}
+ */
+function function_bit_by_bit( node, fn )
+{
+    if ( node.name ) fn.add_name( node.name.escapedText );
+
+    if ( node.typeParameters ) fn.add_type_params( node.typeParameters.map( parse_type ) );
+    if ( node.type ) fn.add_type( parse_type( node.type ) );
+    if ( node.parameters ) fn.add_params( node.parameters.map( parse_type ) );
+
+    fn.type.isType = true;
+
+    params.forEach( p => p.owner( fn ) );
+
+
+    return fn;
+
+}
+
+/**
+ * @todo This becomes a new type, we should add it properly and wire up the proto chain
+ *
+ * @param {Node} node
+ * @param {boolean} [hasName=true]
+ */
+function parse_function_type( node, hasName = true )
+{
+    return {
+        name:           hasName && node.name ? node.name.escapedText : null,
+        typeParameters: node.typeParameters && node.typeParameters.map( parse_type ),
+        parameters:     node.parameters ? node.parameters.map( parse_type ) : [],
+        type:           node.type && parse_type( node.type )
+    };
+}
 
 /**
  * members[ 0 ]: "PropertySignature" => InterfaceDeclaration
@@ -491,11 +450,28 @@ function PropertySignature( node )
     // };
 
     const
-        prop = parser_create_object( node.name.escapedText );
+        prop = parser.property( node.name.escapedText, prop.type );
 
     prop.readOnly = is_keyword( node.modifiers, 'ReadonlyKeyword' );
-    prop.type = parse_type( node.type );
+
+    return prop;
 }
+
+/**
+ * @class
+ */
+class TypeDefinition
+{
+    /**
+     *
+     */
+    constructor()
+    {
+        this.parent = null;
+    }
+}
+
+
 
 /**
  * In typeParameters:
@@ -537,6 +513,7 @@ export class TypeParameter extends TypeDefinition
         this.constraint   = constraint;
         this.default      = defaultVal;
         this.inMappedType = inMappedType;
+        this.owner        = null;
     }
 
     /**
@@ -583,6 +560,7 @@ export class TypeReference extends TypeDefinition
         super();
         this.name          = name;
         this.typeArguments = args;
+        this.refTarget     = null;
     }
 
     /**
@@ -611,8 +589,9 @@ export class TypePredicate extends TypeDefinition
     constructor( paramName, type )
     {
         super();
-        this.name = paramName;
-        this.type = type;
+        this.name      = paramName;
+        this.type      = type;
+        this.refTarget = null;
     }
 
     /**
@@ -636,7 +615,20 @@ export class TypeOperator extends TypeDefinition
     constructor( ref )
     {
         super();
-        this.type = ref;
+        this.type      = ref;
+        this.refTarget = null;
+    }
+
+    /**
+     * @param {Array<TypeParameter>} refs
+     * @return {Array<string>}
+     */
+    refName( refs )
+    {
+        if ( refs )
+            this.refTarget = refs[ 0 ];
+        else
+            return [ this.type.refName ];
     }
 
     /**
@@ -662,6 +654,11 @@ export class UnionType extends TypeDefinition
         this.types = types;
     }
 
+    resolve( res )
+    {
+        this.types.forEach( t => t.resolve( res ) );
+    }
+
     /**
      * @return {string}
      */
@@ -685,6 +682,11 @@ export class IntersectionType extends TypeDefinition
         this.types = types;
     }
 
+    resolve( res )
+    {
+        this.types.forEach( t => t.resolve( res ) );
+    }
+
     /**
      * @return {string}
      */
@@ -706,6 +708,18 @@ export class TupleType extends TypeDefinition
     {
         super();
         this.types = types;
+    }
+
+    /**
+     * @param {Array<TypeParameter>} refs
+     * @return {Array<string>}
+     */
+    refName( refs )
+    {
+        if ( refs )
+            refs.forEach( ( rn, i ) => this.types[ i ].refName( rn ) );
+        else
+            return this.types.map( t => t.refName() );
     }
 
     /**
@@ -1038,7 +1052,7 @@ function parse_type_literal( node, parent, field, i, recurse )
     const
         name    = '$$type_literal_' + ( ~~( Math.random() * 1e7 ) ).toString( 16 ),
         members = node.members && node.members.map( parse_type ),
-        joiner = members.length > 3 ? ';\n    ' : '; ';
+        joiner  = members.length > 3 ? ';\n    ' : '; ';
 
     interfaces.set( name,
         {
@@ -1048,7 +1062,9 @@ function parse_type_literal( node, parent, field, i, recurse )
         } );
 
     return {
-        name, members, declType: "typeLiteral",
+        name,
+        members,
+        declType: "typeLiteral",
         toString()
         {
             return `{ ${members.join( joiner )} }`;
@@ -1057,137 +1073,16 @@ function parse_type_literal( node, parent, field, i, recurse )
     // console.log( `type literal "${name}":\n    ${members.join( '\n    ' )}` );
 }
 
-/**
- * @todo This becomes a new type, we should add it properly and wire up the proto chain
- *
- * @param node
- */
-function parse_function_type( node )
+function resolve_type_references( decl )
 {
-    // const
-    //     fn = new FunctionType( node.name ? node.name.escapedText : null );
-    //
-    // fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
-    // fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
-    // fn.returns        = node.type && parse_type( node.type );
+    let t = decl.typeParameters;
 
-    return {
-        name: node.name ? node.name.escapedText : null,
-        typeParameters: node.typeParameters && node.typeParameters.map( parse_type ),
-        parameters: node.parameters ? node.parameters.map( parse_type ) : [],
-        type: node.type && parse_type( node.type )
-    };
+    t = array( t ) ? t : t ? [ t ] : [];
+
+    if ( !t.length ) return;
+
+    t.forEach( type => {
+
+    } );
 }
-
-/**
- * @todo Technically, this is a declaration as opposed to a type/definition, will need fixing
- *
- * @param node
- */
-function parse_function_declaration( node )
-{
-    const
-        fn = new FunctionType( node.name ? node.name.escapedText : null );
-
-    fn.typeParameters = node.typeParameters && node.typeParameters.map( parse_type );
-    fn.parameters     = node.parameters ? node.parameters.map( parse_type ) : [];
-    fn.returns        = parse_type( node.type );
-    fn.isType         = false;
-
-    // console.log( `${is_keyword( node.modifiers, 'DeclareKeyword' ) ? 'declare ' : ''}function ${fn}` );
-
-    return fn;
-}
-
-/**
- * @class
- */
-class GenericTypeDefinition
-{
-    /**
-     * @param {string} name
-     * @param {TypeReference|TypeParameter|TypePredicate} generic
-     */
-    constructor( name, generic )
-    {
-        this.name           = name;
-        this.generic        = generic;
-        this.instantiatedAs = null;
-    }
-
-    /**
-     * @param {?BaseType} [t]
-     */
-    instantiated_type( t )
-    {
-        if ( !t ) return this.instantiatedAs;
-
-        this.instantiatedAs = t;
-    }
-}
-
-/**
- * @class
- */
-export class GenericTypes
-{
-    /**
-     * @param {GenericTypeDefinition[]} types
-     */
-    constructor( ...types )
-    {
-        this.types = types;
-    }
-
-    /**
-     * @return {number}
-     */
-    count()
-    {
-        return this.types.length;
-    }
-
-    /**
-     * @param {BaseType} type
-     * @param {number} [index=0]
-     * @return {GenericTypes}
-     */
-    resolve( type, index = 0 )
-    {
-        this.types[ index ].instantiated_type( type );
-        return this;
-    }
-
-    /**
-     * @param {BaseType[]} types
-     * @return {GenericTypes}
-     */
-    resolve_types( ...types )
-    {
-        types.forEach( ( t, i ) => this.resolve( t, i ) );
-        return this;
-    }
-}
-
-export function to_generic_types( types )
-{
-    return new GenericTypes( ...types );
-}
-
-
-/**
- * To define:
- *
- * 1. Define container with optional type parameters
- * 2. Add members with optional type parameters
- *
- * To instantiate:
- *
- * 1. Define an instance
- * 2. Materialize container generic types
- * 3. On first use of a member:
- *    1. Materialize type parameters declared on the member
- *    2. Materialize any remaining type parameters from the container
- *    3. Repeat step two until all types are materialized.
- */
 

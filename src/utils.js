@@ -7,6 +7,7 @@
 "use strict";
 
 import { inspect } from 'util';
+import { EventEmitter } from "events";
 import chalk from 'chalk';
 import { number } from "convenience";
 
@@ -18,6 +19,11 @@ const
      * @return {boolean}
      */
     has = ( o, n ) => Reflect.has( o, n );
+
+    // eslint-disable-next-line new-parens
+export const events = new class extends EventEmitter {};
+
+
 
 /**
  * @param {*} o

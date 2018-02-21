@@ -345,7 +345,7 @@ make_enum_from_object( ObjectFlags, ObjectFlags );
  * @property {Array<TypeParameter>} outerTypeParameters - Outer type parameters (undefined if none)
  * @property {Array<TypeParameter>} localTypeParameters - Local type parameters (undefined if none)
  * @property {TypeParameter} thisType                   - The "this" type (undefined if none)
- * @property {>Type} [resolvedBaseConstructorType]      -Resolved base constructor type of class
+ * @property {Type} [resolvedBaseConstructorType]      -Resolved base constructor type of class
  * @property {Array<Type>} resolvedBaseTypes            - Resolved base types
  */
 
