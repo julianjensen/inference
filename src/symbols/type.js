@@ -1,16 +1,128 @@
 /** ******************************************************************************************************************
  * @file Pure type handler.
+ *
+ * Classes, interfaces, enums, and type aliases are named types. More specificity:
+ *
+ * For example, given the declaration
+ *
+ * `interface Pair<T1, T2> { first: T1; second: T2; }`
+ *
+ * the type reference
+ *
+ * `Pair<string, Entity>`
+ *
+ * is indistinguishable from the type
+ *
+ * `{ first: string; second: Entity; }`
+ *
+ *
+ *
+ * Types are:
+ *
+ * ### Top
+ * `any`
+ *
+ * ### primitive types
+ * `number` => `Number`
+ * `boolean` => `Boolean`
+ * `string` => `String`
+ * `symbol` => `Symbol`
+ * `void` => `Void`     // Possible values are `null` and `undefined`
+ * `null`
+ * `undefined`
+ * `enum` => `Enum`     // This is a subtype of `Number`
+ * `"literal"`          // A string literal is a type, as well.
+ *
+ * ### object types
+ * Object members are properties, call signatures, construct signatures, and index signatures.
+ * Created by object type literals, array type literals, tuple type literals, function type literals,
+ * constructor type literals, object literals, array literals, function expressions, function declarations,
+ * constructor function types created via class declaration, namespace types
+ *
+ * class
+ * interface
+ * array
+ * `tuple`
+ *      interface KeyValuePair<K, V> extends Array<K | V> { 0: K; 1: V; }
+ *      var x: KeyValuePair<number, string> = [10, "ten"];
+ *
+ * `function`
+ * An object with one or more call signatures is a function type.
+ *
+ * The type of a parameter in a signature is determined as follows:
+ *
+ * * If the declaration includes a type annotation, the parameter is of that type.
+ * * Otherwise, if the declaration includes an initializer expression (which is permitted only when the parameter list occurs in conjunction with a function body), the parameter type is the widened form (section [3.12](#3.12)) of the type of the initializer expression.
+ * * Otherwise, if the declaration specifies a binding pattern, the parameter type is the implied type of that binding pattern (section [5.2.3](#5.2.3)).
+ * * Otherwise, if the parameter is a rest parameter, the parameter type is `any[]`.
+ * * Otherwise, the parameter type is `any`.
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ * `constructor`
+ * An object with one or more call signatures is a function type.
+ *
+ * ### union types
+ * one of multiple types
+ *
+ * Union types have the following subtype relationships:
+ *
+ * * A union type *U* is a subtype of a type *T* if each type in *U* is a subtype of *T*.
+ * * A type *T* is a subtype of a union type *U* if *T* is a subtype of any type in *U*.
+ *
+ * Similarly, union types have the following assignability relationships:
+ *
+ * * A union type *U* is assignable to a type *T* if each type in *U* is assignable to *T*.
+ * * A type *T* is assignable to a union type *U* if *T* is assignable to any type in *U*
+ *
+ * ### intersection types
+ * all of multiple types
+ *
+ * Intersection types have the following subtype relationships:
+
+ * * An intersection type *I* is a subtype of a type *T* if any type in *I* is a subtype of *T*.
+ * * A type *T* is a subtype of an intersection type *I* if *T* is a subtype of each type in *I*.
+ *
+ * Similarly, intersection types have the following assignability relationships:
+ *
+ * * An intersection type *I* is assignable to a type *T* if any type in *I* is assignable to *T*.
+ * * A type *T* is assignable to an intersection type *I* if *T* is assignable to each type in *I*.
+ *
+ * ```X & ( A | B ) => X & A | X & B```
+ *
+ * ### type parameters
+ *
+ * The base constraint of a type parameter T is defined as follows:
+ *
+ * * If T has no declared constraint, T's base constraint is the empty object type {}.
+ * * If T's declared constraint is a type parameter, T's base constraint is that of the type parameter.
+ * * Otherwise, T's base constraint is T's declared constraint.
+ *
+ *
+ * Type reference is a name of a named type with optional type parameters if the referenced type is generic.
+ * A type reference must have the same number of type arguments as the generic type it references and each arguments
+ * must satisfy the constraint of the type parameters of the generic type.
+ *
  * @author Julian Jensen <jjdanois@gmail.com>
  * @since 1.0.0
  * @date 20-Feb-2018
  *********************************************************************************************************************/
 
+
 "use strict";
 
 import { output }   from "../utils";
+import { TypeFlags } from "../types";
 
 const
     is_primitive = str => [ 'null', 'undefined', 'string', 'number', 'boolean', 'symbol', 'any', 'never' ].includes( str );
+
+
 
 /**
  * @class
@@ -26,6 +138,8 @@ class BaseType
         this.name = name;
         this.parent = parent;
         this.primitive = null;
+        /** @type {TypeFlags} */
+        this.flags = TypeFlags.Any;
     }
 
     one_to_other( type1, type2 )
