@@ -8,7 +8,7 @@
 
 import { TypeFlags }                              from "../types";
 import { string, array, object }                  from "convenience";
-import { globals, baseTypes, add_base_type, add } from "../symbols/globals";
+import { globals, baseTypes, add_base_type, add } from "./globals";
 
 export const primitives = new Map();
 add( 'primitives', primitives );

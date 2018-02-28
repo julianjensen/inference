@@ -4,12 +4,29 @@
  * @version 1.0.0
  * @copyright Planet3, Inc.
  *******************************************************************************************************/
+
 'use strict';
 
-import { TypeFlags, SymbolFlags, Ternary, Variance, IndexKind, ObjectFlags, ModifierFlags } from "../types";
+import {
+    TypeFlags,
+    SymbolFlags,
+    Ternary,
+    Variance,
+    IndexKind,
+    ObjectFlags,
+    ModifierFlags,
+    CharacterCodes
+}                     from "../types";
+import { SyntaxKind } from "../ts/ts-helpers";
 
 const
-    enumRelation = new Map();
+    strictNullChecks = false,
+    enumRelation = new Map(),
+    subtypeRelation = new Map(),
+    assignableRelation = new Map(),
+    definitelyAssignableRelation = new Map(),
+    comparableRelation = new Map(),
+    identityRelation = new Map();
 
 let maybeKeys; // string[];
 let sourceStack; // Type[];
@@ -19,29 +36,28 @@ let depth                     = 0;
 let expandingFlags            = ExpandingFlags.None;
 let overflow                  = false;
 let isIntersectionConstituent = false;
+let nextSymbolId = 1;
 
 
-class SymbolRelations
-{
-    constructor( name )
-    {
-        this.name = name;
-        this.escapedName = name;
+/**
+ * @interface SymbolRelations
+ * @this Type
+ */
+const SymbolRelations = {
 
-        /** @type {SymbolFlags} */
-        this.flags = SymbolFlags.None;
-    }
-
+    /**
+     * @param {Symbol} targetSymbol
+     * @return {boolean}
+     */
     isEnumTypeRelatedTo( targetSymbol )
     {
         if ( this === targetSymbol ) return true;
 
         const
-            id       = this.getSymbolId() + "," + targetSymbol.getSymbolId(),
+            id       = this.id + "," + targetSymbol.id,
             relation = enumRelation.get( id );
 
-        if ( relation !== undefined )
-            return relation;
+        if ( relation !== undefined ) return relation;
 
         if ( this.escapedName !== targetSymbol.escapedName || !( this.flags & SymbolFlags.RegularEnum ) || !( targetSymbol.flags & SymbolFlags.RegularEnum ) )
         {
@@ -51,11 +67,11 @@ class SymbolRelations
 
         const targetEnumType = targetSymbol.getTypeOfSymbol();
 
-        for ( const property of getPropertiesOfType( this.getTypeOfSymbol() ) )
+        for ( const property of this.getTypeOfSymbol().getPropertiesOfType() )
         {
             if ( property.flags & SymbolFlags.EnumMember )
             {
-                const targetProperty = getPropertyOfType( targetEnumType, property.escapedName );
+                const targetProperty = targetEnumType.getPropertyOfType( property.escapedName );
 
                 if ( !targetProperty || !( targetProperty.flags & SymbolFlags.EnumMember ) )
                 {
@@ -71,15 +87,12 @@ class SymbolRelations
 }
 
 
-
-class TypeRelations
-{
-    constructor()
-    {
-        /** @type {TypeFlags} */
-        this.flags = TypeFlags.Any;
-    }
-
+/**
+ * @interface TypeRelations
+ * @extends Type
+ * @this Type
+ */
+const TypeRelations = {
     isEmptyResolvedType()
     {
         return this.members.size === 0 &&
@@ -87,7 +100,7 @@ class TypeRelations
             this.constructSignatures.length === 0 &&
             !this.stringIndexInfo &&
             !this.numberIndexInfo;
-    }
+    },
 
     isEmptyObjectType()
     {
@@ -100,7 +113,7 @@ class TypeRelations
                    : this.flags & TypeFlags.Intersection
                      ? !forEach( this.types, t => !this.isEmptyObjectType() )
                      : false;
-    }
+    },
 
     isSimpleTypeRelatedTo( target, relation )
     {
@@ -108,36 +121,32 @@ class TypeRelations
             s = this.flags,
             t = target.flags;
 
-        if ( t & TypeFlags.Any || s & TypeFlags.Never || this === wildcardType ) return true;
+        if ( t & TypeFlags.Any || s & TypeFlags.Never ) return true;
 
         if ( t & TypeFlags.Never ) return false;
 
         if ( s & TypeFlags.StringLike && t & TypeFlags.String ) return true;
 
-        if ( s & TypeFlags.StringLiteral && s & TypeFlags.EnumLiteral &&
-            t & TypeFlags.StringLiteral && !( t & TypeFlags.EnumLiteral ) &&
-            this.value === target.value )
+        if ( s & TypeFlags.StringLiteral && s & TypeFlags.EnumLiteral && t & TypeFlags.StringLiteral && !( t & TypeFlags.EnumLiteral ) && this.value === target.value )
             return true;
 
         if ( s & TypeFlags.NumberLike && t & TypeFlags.Number ) return true;
-        if ( s & TypeFlags.NumberLiteral && s & TypeFlags.EnumLiteral &&
-            t & TypeFlags.NumberLiteral && !( t & TypeFlags.EnumLiteral ) &&
-            this.value === target.value )
+
+        if ( s & TypeFlags.NumberLiteral && s & TypeFlags.EnumLiteral && t & TypeFlags.NumberLiteral && !( t & TypeFlags.EnumLiteral ) && this.value === target.value )
             return true;
 
         if ( s & TypeFlags.BooleanLike && t & TypeFlags.Boolean ) return true;
 
         if ( s & TypeFlags.ESSymbolLike && t & TypeFlags.ESSymbol ) return true;
 
-        if ( s & TypeFlags.Enum && t & TypeFlags.Enum && this.isEnumTypeRelatedTo( this.symbol, target.symbol ) ) return true;
+        if ( s & TypeFlags.Enum && t & TypeFlags.Enum && this.symbol.isEnumTypeRelatedTo( target.symbol ) ) return true;
 
         if ( s & TypeFlags.EnumLiteral && t & TypeFlags.EnumLiteral )
         {
-            if ( s & TypeFlags.Union && t & TypeFlags.Union && this.isEnumTypeRelatedTo( source.symbol, target.symbol ) ) return true;
+            if ( s & TypeFlags.Union && t & TypeFlags.Union && this.symbol.isEnumTypeRelatedTo( target.symbol ) ) return true;
 
-            if ( s & TypeFlags.Literal && t & TypeFlags.Literal &&
-                source.value === target.value &&
-                isEnumTypeRelatedTo( getParentOfSymbol( source.symbol ), getParentOfSymbol( target.symbol ) ) )
+            if ( s & TypeFlags.Literal && t & TypeFlags.Literal && this.value === target.value &&
+                this.symbol.parent.isEnumTypeRelatedTo( target.symbol.parent ) )
                 return true;
         }
 
@@ -156,12 +165,12 @@ class TypeRelations
             // Type number or any numeric literal type is assignable to any numeric enum type or any
             // numeric enum literal type. This rule exists for backwards compatibility reasons because
             // bit-flag enum types sometimes look like literal enum types with numeric literal values.
-            if ( s & ( TypeFlags.Number | TypeFlags.NumberLiteral ) && !( s & TypeFlags.EnumLiteral ) && (
-                t & TypeFlags.Enum || t & TypeFlags.NumberLiteral && t & TypeFlags.EnumLiteral ) ) return true;
+            if ( s & ( TypeFlags.Number | TypeFlags.NumberLiteral ) && !( s & TypeFlags.EnumLiteral ) &&
+               ( t & TypeFlags.Enum || t & TypeFlags.NumberLiteral && t & TypeFlags.EnumLiteral ) ) return true;
         }
 
         return false;
-    }
+    },
 
     isTypeRelatedTo( target, relation )
     {
@@ -186,10 +195,10 @@ class TypeRelations
         }
 
         if ( this.flags & TypeFlags.StructuredOrInstantiable || target.flags & TypeFlags.StructuredOrInstantiable )
-            return this.checkTypeRelatedTo( target, relation );
+            return this.isRelatedTo( target, relation ) !== Ternary.False;
 
         return false;
-    }
+    },
 
     isUnionOrIntersectionTypeWithoutNullableConstituents()
     {
@@ -208,7 +217,7 @@ class TypeRelations
         }
 
         return false;
-    }
+    },
 
     /**
      * Compare two types and return
@@ -216,13 +225,13 @@ class TypeRelations
      * * Ternary.Maybe if they are related with assumptions of other relationships, or
      * * Ternary.False if they are not related.
      */
-    isRelatedTo( target )
+    isRelatedTo( target, relation )
     {
-        if ( this.flags & TypeFlags.StringOrNumberLiteral && this.flags & TypeFlags.FreshLiteral )
-            return this.regularType.isRelatedTo( target );
-
         if ( target.flags & TypeFlags.StringOrNumberLiteral && target.flags & TypeFlags.FreshLiteral )
             target = target.regularType;
+
+        if ( this.flags & TypeFlags.StringOrNumberLiteral && this.flags & TypeFlags.FreshLiteral )
+            return this.regularType.isRelatedTo( target );
 
         if ( this.flags & TypeFlags.Substitution )
         {
@@ -270,9 +279,9 @@ class TypeRelations
             return Ternary.False;
         }
 
-        let result                          = Ternary.False,
-            isIntersectionConstituent           = false;
+        let result                          = Ternary.False;
 
+        isIntersectionConstituent           = false;
 
         const
             saveIsIntersectionConstituent = isIntersectionConstituent;
@@ -320,7 +329,7 @@ class TypeRelations
         isIntersectionConstituent = saveIsIntersectionConstituent;
 
         return result;
-    }
+    },
 
     isIdenticalTo( target )
     {
@@ -374,7 +383,7 @@ class TypeRelations
             return this.substitute.isRelatedTo( target.substitute );
 
         return Ternary.False;
-    }
+    },
 
     hasExcessProperties( target, discriminant )
     {
@@ -397,7 +406,7 @@ class TypeRelations
             }
         }
         return false;
-    }
+    },
 
     eachTypeRelatedToSomeType( target )
     {
@@ -415,7 +424,7 @@ class TypeRelations
             result &= related;
         }
         return result;
-    }
+    },
 
     typeRelatedToSomeType( target )
     {
@@ -433,12 +442,12 @@ class TypeRelations
         }
 
         return Ternary.False;
-    }
+    },
 
     isIgnoredJsxProperty( sourceProp, targetMemberType )
     {
         return this.getObjectFlags() & ObjectFlags.JsxAttributes && !( isUnhyphenatedJsxName( sourceProp.escapedName ) || targetMemberType );
-    }
+    },
 
     findMatchingDiscriminantType( target )
     {
@@ -474,7 +483,7 @@ class TypeRelations
             }
         }
         return match;
-    }
+    },
 
     typeRelatedToEachType( target )
     {
@@ -492,7 +501,7 @@ class TypeRelations
             result &= related;
         }
         return result;
-    }
+    },
 
     someTypeRelatedToType( target )
     {
@@ -511,7 +520,7 @@ class TypeRelations
         }
 
         return Ternary.False;
-    }
+    },
 
     eachTypeRelatedToType( target )
     {
@@ -528,7 +537,7 @@ class TypeRelations
         }
 
         return result;
-    }
+    },
 
     typeArgumentsRelatedTo( target, variances )
     {
@@ -589,7 +598,7 @@ class TypeRelations
             }
         }
         return result;
-    }
+    },
 
     // Determine if possibly recursive types are related. First, check if the result is already available in the global cache.
     // Second, check if we have already started a comparison of the given two types in which case we assume the result to be true.
@@ -667,7 +676,7 @@ class TypeRelations
         }
 
         return result;
-    }
+    },
 
     structuredTypeRelatedTo( target )
     {
@@ -851,7 +860,26 @@ class TypeRelations
             // relates to X. Thus, we include intersection types on the source side here.
         }
         return Ternary.False;
-    }
+    },
+
+    /**
+     * For a type parameter, return the base constraint of the type parameter. For the string, number,
+     * boolean, and symbol primitive types, return the corresponding object types. Otherwise return the
+     * type itself. Note that the apparent type of a union type is the union type itself.
+     *
+     * @param {Type} type
+     */
+    getApparentType(type)
+    {
+    const t = type.flags & TypeFlags.TypeVariable ? type.getBaseConstraintOfType() || emptyObjectType : type;
+    return t.flags & TypeFlags.Intersection ? t.getApparentTypeOfIntersectionType() :
+    t.flags & TypeFlags.StringLike ? globalStringType :
+    t.flags & TypeFlags.NumberLike ? globalNumberType :
+    t.flags & TypeFlags.BooleanLike ? globalBooleanType :
+    t.flags & TypeFlags.ESSymbolLike ? getGlobalESSymbolType() :
+    t.flags & TypeFlags.NonPrimitive ? emptyObjectType :
+    t;
+},
 
     __type_change( target, sourceIsPrimitive )
     {
@@ -885,7 +913,7 @@ class TypeRelations
             if ( result )
                 return result;
         }
-    }
+    },
 
     // A type [P in S]: X is related to a type [Q in T]: Y if T is related to S and X' is
     // related to Y, where X' is an instantiation of X in which P is replaced with Q. Notice
@@ -908,7 +936,7 @@ class TypeRelations
             }
         }
         return Ternary.False;
-    }
+    },
 
     propertiesRelatedTo( target )
     {
@@ -993,7 +1021,7 @@ class TypeRelations
             }
         }
         return result;
-    }
+    },
 
     /**
      * A type is 'weak' if it is an object type with at least one optional property
@@ -1015,7 +1043,7 @@ class TypeRelations
             return every( this.types, isWeakType );
 
         return false;
-    }
+    },
 
     hasCommonProperties( target )
     {
@@ -1028,7 +1056,7 @@ class TypeRelations
         }
 
         return false;
-    }
+    },
 
     propertiesIdenticalTo( target )
     {
@@ -1059,7 +1087,7 @@ class TypeRelations
         }
 
         return result;
-    }
+    },
 
     signaturesRelatedTo( target, kind )
     {
@@ -1136,7 +1164,7 @@ class TypeRelations
             }
         }
         return result;
-    }
+    },
 
     /**
      * See signatureAssignableTo, compareSignaturesIdentical
@@ -1145,7 +1173,7 @@ class TypeRelations
     {
         ( erase ? this.getErasedSignature() : this ).compareSignaturesRelated( erase ? target.getErasedSignature() : target,
             CallbackCheck.None, /*ignoreReturnTypes*/ false, isRelatedTo );
-    }
+    },
 
     signaturesIdenticalTo( target, kind )
     {
@@ -1169,7 +1197,7 @@ class TypeRelations
         }
 
         return result;
-    }
+    },
 
     eachPropertyRelatedTo( target, kind )
     {
@@ -1190,12 +1218,12 @@ class TypeRelations
             }
         }
         return result;
-    }
+    },
 
     static indexInfoRelatedTo( sourceInfo, targetInfo )
     {
         return sourceInfo.type.isRelatedTo( targetInfo.type );
-    }
+    },
 
     indexTypesRelatedTo( target, kind, sourceIsPrimitive )
     {
@@ -1235,7 +1263,7 @@ class TypeRelations
             return related;
         }
         return Ternary.False;
-    }
+    },
 
     indexTypesIdenticalTo( target, indexKind )
     {
@@ -1250,7 +1278,7 @@ class TypeRelations
             return sourceInfo.type.isRelatedTo( targetInfo.type );
 
         return Ternary.False;
-    }
+    },
 
     constructorVisibilitiesAreCompatible( targetSignature )
     {
@@ -1274,12 +1302,12 @@ class TypeRelations
             return true;
 
         return false;
-    }
+    },
 
     getConstraintForRelation()
     {
         return relation === definitelyAssignableRelation ? undefined : this.getConstraintOfType();
-    }
+    },
 
     // Return an array containing the variance of each type parameter. The variance is effectively
     // a digest of the type comparisons that occur for each type argument when instantiations of the
@@ -1328,19 +1356,18 @@ class TypeRelations
             this.variances = variances;
         }
         return variances;
-    }
+    },
 
     /**
      * Checks if 'source' is related to 'target' (e.g.: is a assignable to).
-     * @param source The left-hand-side of the relation.
      * @param target The right-hand-side of the relation.
      * @param relation The relation considered. One of 'identityRelation', 'subtypeRelation', 'assignableRelation', or 'comparableRelation'.
      * Used as both to determine which checks are performed and as a cache of previously computed results.
      */
-    checkTypeRelatedTo( source, target, relation )
+    checkTypeRelatedTo( target, relation )
     {
         return this.isRelatedTo( target ) !== Ternary.False;
-    }
+    },
 
     // Return a type reference where the source type parameter is replaced with the target marker
     // type, and flag the result as a marker type reference.
@@ -1349,7 +1376,7 @@ class TypeRelations
         const result = this.createTypeReference( map( this.typeParameters, t => t === source ? target : t ) );
         result.objectFlags |= ObjectFlags.MarkerType;
         return result;
-    }
+    },
 
     // Return true if the given type reference has a 'void' type argument for a covariant type parameter.
     // See comment at call in recursiveTypeRelatedTo for when this case matters.
@@ -1362,17 +1389,17 @@ class TypeRelations
         }
 
         return false;
-    }
+    },
 
     isUnconstrainedTypeParameter()
     {
         return this.flags & TypeFlags.TypeParameter && !this.getConstraintFromTypeParameter();
-    }
+    },
 
     isTypeReferenceWithGenericArguments()
     {
         return this.getObjectFlags() & ObjectFlags.Reference && some( this.typeArguments, t => t.isUnconstrainedTypeParameter() || t.isTypeReferenceWithGenericArguments() );
-    }
+    },
 
     /**
      * getTypeReferenceId(A<T, number, U>) returns "111=0-12=1"
@@ -1401,7 +1428,7 @@ class TypeRelations
         }
 
         return result;
-    }
+    },
 
 
     /**
@@ -1421,7 +1448,7 @@ class TypeRelations
         }
 
         return this.id + "," + target.id;
-    }
+    },
 
     // Invoke the callback for each underlying property symbol of the given symbol and return the first
     // value that isn't undefined.
@@ -1443,13 +1470,13 @@ class TypeRelations
         }
 
         return callback( this );
-    }
+    },
 
     // Return the declaring class type of a property or undefined if property not declared in class
     getDeclaringClass()
     {
         return this.parent && this.parent.flags & SymbolFlags.Class ? this.getParentOfSymbol().getDeclaredTypeOfSymbol() : undefined;
-    }
+    },
 
     // Return true if some underlying source property is declared in a class that derives
     // from the given base class.
@@ -1459,14 +1486,14 @@ class TypeRelations
             const sourceClass = sp.getDeclaringClass();
             return sourceClass ? sourceClass.hasBaseType( baseClass ) : false;
         } );
-    }
+    },
 
     // Return true if source property is a valid override of protected parts of target property.
     isValidOverrideOf( targetProp )
     {
         return !targetProp.forEachProperty( tp => tp.getDeclarationModifierFlagsFromSymbol() & ModifierFlags.Protected ?
                                                    !this.isPropertyInClassDerivedFrom( tp.getDeclaringClass() ) : false );
-    }
+    },
 
     // Return true if the given class derives from each of the declaring classes of the protected
     // constituents of the given property.
@@ -1474,7 +1501,7 @@ class TypeRelations
     {
         return prop.forEachProperty( p => p.getDeclarationModifierFlagsFromSymbol() & ModifierFlags.Protected ?
                                            !this.hasBaseType( p.getDeclaringClass() ) : false ) ? undefined : this;
-    }
+    },
 
 // Return true if the given type is deeply nested. We consider this to be the case when structural type comparisons
 // for 5 or more occurrences or instantiations of the type have been recorded on the given stack. It is possible,
@@ -1502,12 +1529,12 @@ class TypeRelations
             }
         }
         return false;
-    }
+    },
 
     isPropertyIdenticalTo( targetProp )
     {
         return this.compareProperties( targetProp, compareTypesIdentical ) !== Ternary.False;
-    }
+    ,
 
     compareProperties( targetProp, compareTypes )
     {
@@ -1536,7 +1563,7 @@ class TypeRelations
             return Ternary.False;
 
         return this.getTypeOfSymbol().compareTypes( targetProp.getTypeOfSymbol() );
-    }
+    },
 
     isMatchingSignature( target, partialMatch )
     {
@@ -1560,7 +1587,7 @@ class TypeRelations
             return true;
 
         return false;
-    }
+    },
 
     /**
      * See signatureRelatedTo, compareSignaturesIdentical
@@ -1585,7 +1612,7 @@ class TypeRelations
         // Spec 1.0 Section 3.8.3 & 3.8.4:
         // M and N (the signatures) are instantiated using type Any as the type argument for all type parameters declared by M and N
         return this.getErasedSignature().part_fucking_two( target, partialMatch, ignoreThisTypes, ignoreReturnTypes, compareTypes );
-    }
+    },
 
     part_fucking_two( target, partialMatch, ignoreThisTypes, ignoreReturnTypes, compareTypes )
     {
@@ -1640,14 +1667,14 @@ class TypeRelations
                       : this.getReturnTypeOfSignature().compareTypes( target.getReturnTypeOfSignature() );
         }
         return result;
-    }
+    },
 
     compareTypePredicatesIdentical( target, compareTypes )
     {
         return target === undefined || !this.typePredicateKindsMatch( target ) ? Ternary.False : compareTypes.call( this.type, target.type );
-    }
+    },
 
-    static literalTypesWithSameBaseType( types )
+    literalTypesWithSameBaseType( types )
     {
         let commonBaseType;
 
@@ -1663,19 +1690,19 @@ class TypeRelations
         }
 
         return true;
-    }
+    },
 
     // When the candidate types are all literal types with the same base type, return a union
     // of those literal types. Otherwise, return the leftmost type for which no type to the
     // right is a supertype.
-    static getSupertypeOrUnion( types )
+    getSupertypeOrUnion( types )
     {
         return TypeRelations.literalTypesWithSameBaseType( types ) ?
                TypeRelations.getUnionType( types ) :
                types.reduce( ( s, t ) => s.isTypeSubtypeOf( t ) ? t : s );
-    }
+    },
 
-    static getCommonSupertype( types )
+    getCommonSupertype( types )
     {
         if ( !strictNullChecks )
             return TypeRelations.getSupertypeOrUnion( types );
@@ -1686,7 +1713,6 @@ class TypeRelations
                getNullableType( TypeRelations.getSupertypeOrUnion( primaryTypes ), TypeRelations.getFalsyFlagsOfTypes( types ) & TypeFlags.Nullable ) :
                getUnionType( types, UnionReduction.Subtype );
     }
-
 }
 
 
@@ -1844,5 +1870,4 @@ function getNonNullableType( type )
 {
     return strictNullChecks ? getTypeWithFacts( type, TypeFacts.NEUndefinedOrNull ) : type;
 }
-
 

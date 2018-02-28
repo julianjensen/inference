@@ -18,7 +18,7 @@ import {
     create_constructor,
     parser,
     context
-}                   from "./declaration";
+}                   from "../earlier/declaration";
 
 const NodeFlags   = {
     None:               0,

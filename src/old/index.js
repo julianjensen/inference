@@ -9,9 +9,9 @@
 
 "use strict";
 
-import { TypeFlags } from "../types";
-import { globals }    from "./globals";
-import { ClassType, FunctionType, ArrayType, ObjectType } from './symbol-table';
+import { TypeFlags }                                      from "../types";
+import { globals }                                        from "../earlier/globals";
+import { ClassType, FunctionType, ArrayType, ObjectType } from '../earlier/symbol-table';
 
 const { baseTypes } = globals;
 

@@ -6,8 +6,8 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { string }            from "convenience";
-import { baseTypes }         from "./globals";
+import { string }    from "convenience";
+import { baseTypes } from "./globals";
 
 /**
  * O = {

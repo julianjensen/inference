@@ -8,7 +8,7 @@
 "use strict";
 
 import { indent } from "../ts/ts-helpers";
-import { output }   from "../utils";
+import { output } from "../utils";
 
 const { isArray: array } = Array;
 

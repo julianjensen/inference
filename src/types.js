@@ -4,7 +4,10 @@
  * @since 1.0.0
  * @date 20-Jan-2018
  *********************************************************************************************************************/
+
+
 "use strict";
+// noinspection JSBitwiseOperatorUsage
 
 /**
  * For any given symbol we have:
@@ -153,72 +156,97 @@
  *
  * @enum {number}
  */
-export const TypeFlags = {
-    Any:                           1 << 0,
-    String:                        1 << 1,
-    Number:                        1 << 2,
-    Boolean:                       1 << 3,
-    Enum:                          1 << 4,
-    StringLiteral:                 1 << 5,
-    NumberLiteral:                 1 << 6,
-    BooleanLiteral:                1 << 7,
-    EnumLiteral:                   1 << 8,   // Always combined with StringLiteral, NumberLiteral, or Union
-    ESSymbol:                      1 << 9,   // Type of symbol primitive introduced in ES6
-    UniqueESSymbol:                1 << 10,  // unique symbol
-    Void:                          1 << 11,
-    Undefined:                     1 << 12,
-    Null:                          1 << 13,
-    Never:                         1 << 14,  // Never type
-    TypeParameter:                 1 << 15,  // Type parameter
-    Object:                        1 << 16,  // Object type
-    Union:                         1 << 17,  // Union (T | U)
-    Intersection:                  1 << 18,  // Intersection (T & U)
-    Index:                         1 << 19,  // keyof T
-    IndexedAccess:                 1 << 20,  // T[K]
-    Conditional:                   1 << 21,  // T extends U ? X : Y
-    Substitution:                  1 << 22,  // Type parameter substitution
-    FreshLiteral:                  1 << 23,  // Fresh literal or unique type
-    ContainsWideningType:          1 << 24,  // Type is or contains undefined or null widening type
-    ContainsObjectLiteral:         1 << 25,  // Type is or contains object literal type
-    ContainsAnyFunctionType:       1 << 26,  // Type is or contains the anyFunctionType
-    NonPrimitive:                  1 << 27,  // intrinsic object type
-    GenericMappedType:             1 << 29,  // Flag used by maybeTypeOfKind
-    Nullable:                      TypeFlags.Undefined | TypeFlags.Null,
-    Literal:                       TypeFlags.StringLiteral | TypeFlags.NumberLiteral | TypeFlags.BooleanLiteral,
-    Unit:                          TypeFlags.Literal | TypeFlags.UniqueESSymbol | TypeFlags.Nullable,
-    StringOrNumberLiteral:         TypeFlags.StringLiteral | TypeFlags.NumberLiteral,
-    StringOrNumberLiteralOrUnique: TypeFlags.StringOrNumberLiteral | TypeFlags.UniqueESSymbol,
-    DefinitelyFalsy:               TypeFlags.StringLiteral | TypeFlags.NumberLiteral | TypeFlags.BooleanLiteral | TypeFlags.Void | TypeFlags.Undefined | TypeFlags.Null,
-    PossiblyFalsy:                 TypeFlags.DefinitelyFalsy | TypeFlags.String | TypeFlags.Number | TypeFlags.Boolean,
-    Intrinsic:                     TypeFlags.Any | TypeFlags.String | TypeFlags.Number | TypeFlags.Boolean | TypeFlags.BooleanLiteral | TypeFlags.ESSymbol |
-                                   TypeFlags.Void | TypeFlags.Undefined | TypeFlags.Null | TypeFlags.Never | TypeFlags.NonPrimitive,
-    Primitive:                     TypeFlags.String | TypeFlags.Number | TypeFlags.Boolean | TypeFlags.Enum | TypeFlags.EnumLiteral | TypeFlags.ESSymbol | TypeFlags.Void |
-                                   TypeFlags.Undefined | TypeFlags.Null | TypeFlags.Literal | TypeFlags.UniqueESSymbol,
-    StringLike:                    TypeFlags.String | TypeFlags.StringLiteral | TypeFlags.Index,
-    NumberLike:                    TypeFlags.Number | TypeFlags.NumberLiteral | TypeFlags.Enum,
-    BooleanLike:                   TypeFlags.Boolean | TypeFlags.BooleanLiteral,
-    EnumLike:                      TypeFlags.Enum | TypeFlags.EnumLiteral,
-    ESSymbolLike:                  TypeFlags.ESSymbol | TypeFlags.UniqueESSymbol,
-    UnionOrIntersection:           TypeFlags.Union | TypeFlags.Intersection,
-    StructuredType:                TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection,
-    TypeVariable:                  TypeFlags.TypeParameter | TypeFlags.IndexedAccess,
-    InstantiableNonPrimitive:      TypeFlags.TypeVariable | TypeFlags.Conditional | TypeFlags.Substitution,
-    InstantiablePrimitive:         TypeFlags.Index,
-    Instantiable:                  TypeFlags.InstantiableNonPrimitive | TypeFlags.InstantiablePrimitive,
-    StructuredOrInstantiable:      TypeFlags.StructuredType | TypeFlags.Instantiable,
 
-    // 'Narrowable' types are types where narrowing actually narrows.
-    // This *should* be every type other than null, undefined, void, and never
-    Narrowable:       TypeFlags.Any | TypeFlags.StructuredOrInstantiable | TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.BooleanLike |
-                      TypeFlags.ESSymbol | TypeFlags.UniqueESSymbol | TypeFlags.NonPrimitive,
-    NotUnionOrUnit:   TypeFlags.Any | TypeFlags.ESSymbol | TypeFlags.Object | TypeFlags.NonPrimitive,
-    RequiresWidening: TypeFlags.ContainsWideningType | TypeFlags.ContainsObjectLiteral,
-    PropagatingFlags: TypeFlags.ContainsWideningType | TypeFlags.ContainsObjectLiteral | TypeFlags.ContainsAnyFunctionType
+import { make_enum_from_object, make_extra } from "./enum";
+
+/**
+ * @enum
+ * @name TypeFlags
+ */
+const TypeFlags0 = make_enum_from_object( {
+    Any:                     1 << 0,
+    String:                  1 << 1,
+    Number:                  1 << 2,
+    Boolean:                 1 << 3,
+    Enum:                    1 << 4,
+    StringLiteral:           1 << 5,
+    NumberLiteral:           1 << 6,
+    BooleanLiteral:          1 << 7,
+    EnumLiteral:             1 << 8,   // Always combined with StringLiteral, NumberLiteral, or Union
+    ESSymbol:                1 << 9,   // Type of symbol primitive introduced in ES6
+    UniqueESSymbol:          1 << 10,  // unique symbol
+    Void:                    1 << 11,
+    Undefined:               1 << 12,
+    Null:                    1 << 13,
+    Never:                   1 << 14,  // Never type
+    TypeParameter:           1 << 15,  // Type parameter
+    Object:                  1 << 16,  // Object type
+    Union:                   1 << 17,  // Union (T | U)
+    Intersection:            1 << 18,  // Intersection (T & U)
+    Index:                   1 << 19,  // keyof T
+    IndexedAccess:           1 << 20,  // T[K]
+    Conditional:             1 << 21,  // T extends U ? X : Y
+    Substitution:            1 << 22,  // Type parameter substitution
+    FreshLiteral:            1 << 23,  // Fresh literal or unique type
+    ContainsWideningType:    1 << 24,  // Type is or contains undefined or null widening type
+    ContainsObjectLiteral:   1 << 25,  // Type is or contains object literal type
+    ContainsAnyFunctionType: 1 << 26,  // Type is or contains the anyFunctionType
+    NonPrimitive:            1 << 27,  // intrinsic object type
+    GenericMappedType:       1 << 29   // Flag used by maybeTypeOfKind
+
+} );
+/**
+ * @enum
+ * @name TypeFlags
+ */
+const TypeFlags1 = {
+    Nullable:                      { get: () => TypeFlags0.Undefined | TypeFlags0.Null },
+    Literal:                       { get: () => TypeFlags0.StringLiteral | TypeFlags0.NumberLiteral | TypeFlags0.BooleanLiteral },
+    Unit:                          { get: () => TypeFlags0.Literal | TypeFlags0.UniqueESSymbol | TypeFlags0.Nullable },
+    StringOrNumberLiteral:         { get: () => TypeFlags0.StringLiteral | TypeFlags0.NumberLiteral },
+    StringOrNumberLiteralOrUnique: { get: () => TypeFlags0.StringOrNumberLiteral | TypeFlags0.UniqueESSymbol },
+    DefinitelyFalsy:               { get: () => TypeFlags0.StringLiteral | TypeFlags0.NumberLiteral | TypeFlags0.BooleanLiteral | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null },
+    PossiblyFalsy:                 { get: () => TypeFlags0.DefinitelyFalsy | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean },
+    Intrinsic:                     {
+        get: () => TypeFlags0.Any | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.BooleanLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Never |
+                   TypeFlags0.NonPrimitive
+    },
+    Primitive:                     {
+        get: () => TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.Enum | TypeFlags0.EnumLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Literal |
+                   TypeFlags0.UniqueESSymbol
+    },
+    StringLike:                    { get: () => TypeFlags0.String | TypeFlags0.StringLiteral | TypeFlags0.Index },
+    NumberLike:                    { get: () => TypeFlags0.Number | TypeFlags0.NumberLiteral | TypeFlags0.Enum },
+    BooleanLike:                   { get: () => TypeFlags0.Boolean | TypeFlags0.BooleanLiteral },
+    EnumLike:                      { get: () => TypeFlags0.Enum | TypeFlags0.EnumLiteral },
+    ESSymbolLike:                  { get: () => TypeFlags0.ESSymbol | TypeFlags0.UniqueESSymbol },
+    UnionOrIntersection:           { get: () => TypeFlags0.Union | TypeFlags0.Intersection },
+    StructuredType:                { get: () => TypeFlags0.Object | TypeFlags0.Union | TypeFlags0.Intersection },
+    TypeVariable:                  { get: () => TypeFlags0.TypeParameter | TypeFlags0.IndexedAccess },
+    InstantiableNonPrimitive:      { get: () => TypeFlags0.TypeVariable | TypeFlags0.Conditional | TypeFlags0.Substitution },
+    InstantiablePrimitive:         { get: () => TypeFlags0.Index },
+    Instantiable:                  { get: () => TypeFlags0.InstantiableNonPrimitive | TypeFlags0.InstantiablePrimitive },
+    StructuredOrInstantiable:      { get: () => TypeFlags0.StructuredType | TypeFlags0.Instantiable },
+    Narrowable:                    {
+        get: () => TypeFlags0.Any | TypeFlags0.StructuredOrInstantiable | TypeFlags0.StringLike | TypeFlags0.NumberLike | TypeFlags0.BooleanLike | TypeFlags0.ESSymbol | TypeFlags0.UniqueESSymbol | TypeFlags0.NonPrimitive
+    },
+    NotUnionOrUnit:                { get: () => TypeFlags0.Any | TypeFlags0.ESSymbol | TypeFlags0.Object | TypeFlags0.NonPrimitive },
+    RequiresWidening:              { get: () => TypeFlags0.ContainsWideningType | TypeFlags0.ContainsObjectLiteral },
+    PropagatingFlags:              { get: () => TypeFlags0.ContainsWideningType | TypeFlags0.ContainsObjectLiteral | TypeFlags0.ContainsAnyFunctionType }
 };
 
-make_enum_from_object( TypeFlags );
+/**
+ * @enum
+ * @name TypeFlags
+ */
+export const TypeFlags = make_extra( TypeFlags0, TypeFlags1 );
 
-export const SymbolFlags = {
+
+/**
+ * @enum
+ * @name SymbolFlags
+ */
+const SymbolFlags0 = make_enum_from_object( {
     None:                   0,
     FunctionScopedVariable: 1 << 0,   // Variable (var) or parameter
     BlockScopedVariable:    1 << 1,   // A block-scoped variable (let or const)
@@ -246,71 +274,88 @@ export const SymbolFlags = {
     ExportStar:             1 << 23,  // Export * declaration
     Optional:               1 << 24,  // Optional property
     Transient:              1 << 25,  // Transient symbol (created during type check)
-    JSContainer:            1 << 26,  // Contains Javascript special declarations
+    JSContainer:            1 << 26  // Contains Javascript special declarations
+} );
+/**
+ * @enum
+ * @name SymbolFlags
+ */
+const SymbolFlags1 = {
+    All: {
+        get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function |
+                   SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.ConstEnum | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.TypeLiteral |
+                   SymbolFlags0.ObjectLiteral | SymbolFlags0.Method | SymbolFlags0.Constructor | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor | SymbolFlags0.Signature |
+                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias | SymbolFlags0.ExportValue | SymbolFlags0.Alias | SymbolFlags0.Prototype | SymbolFlags0.ExportStar |
+                   SymbolFlags0.Optional | SymbolFlags0.Transient
+    },
 
-    All: SymbolFlags.FunctionScopedVariable | SymbolFlags.BlockScopedVariable | SymbolFlags.Property | SymbolFlags.EnumMember | SymbolFlags.Function |
-         SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.ConstEnum | SymbolFlags.RegularEnum | SymbolFlags.ValueModule | SymbolFlags.NamespaceModule | SymbolFlags.TypeLiteral
-         | SymbolFlags.ObjectLiteral | SymbolFlags.Method | SymbolFlags.Constructor | SymbolFlags.GetAccessor | SymbolFlags.SetAccessor | SymbolFlags.Signature |
-         SymbolFlags.TypeParameter | SymbolFlags.TypeAlias | SymbolFlags.ExportValue | SymbolFlags.Alias | SymbolFlags.Prototype | SymbolFlags.ExportStar |
-         SymbolFlags.Optional | SymbolFlags.Transient,
-
-    Enum:      SymbolFlags.RegularEnum | SymbolFlags.ConstEnum,
-    Variable:  SymbolFlags.FunctionScopedVariable | SymbolFlags.BlockScopedVariable,
-    Value:     SymbolFlags.Variable | SymbolFlags.Property | SymbolFlags.EnumMember | SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule |
-               SymbolFlags.Method | SymbolFlags.GetAccessor | SymbolFlags.SetAccessor,
-    Type:      SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.Enum | SymbolFlags.EnumMember | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral |
-               SymbolFlags.TypeParameter | SymbolFlags.TypeAlias,
-    Namespace: SymbolFlags.ValueModule | SymbolFlags.NamespaceModule | SymbolFlags.Enum,
-    Module:    SymbolFlags.ValueModule | SymbolFlags.NamespaceModule,
-    Accessor:  SymbolFlags.GetAccessor | SymbolFlags.SetAccessor,
+    Enum:      { get: () => SymbolFlags0.RegularEnum | SymbolFlags0.ConstEnum },
+    Variable:  { get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable },
+    Value:     {
+        get: () => SymbolFlags0.Variable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule |
+                   SymbolFlags0.Method | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor
+    },
+    Type:      {
+        get: () => SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.EnumMember | SymbolFlags0.TypeLiteral | SymbolFlags0.ObjectLiteral |
+                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias
+    },
+    Namespace: { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.Enum },
+    Module:    { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule },
+    Accessor:  { get: () => SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor },
 
     // Variables can be redeclared, but can not redeclare a block-scoped declaration with the
     // same name, or any other value that is not a variable, e.g. ValueModule or Class
-    FunctionScopedVariableExcludes: SymbolFlags.Value & ~SymbolFlags.FunctionScopedVariable,
+    FunctionScopedVariableExcludes: { get: () => SymbolFlags0.Value & ~SymbolFlags0.FunctionScopedVariable },
 
     // Block-scoped declarations are not allowed to be re-declared
     // they can not merge with anything in the value space
-    BlockScopedVariableExcludes: SymbolFlags.Value,
+    BlockScopedVariableExcludes: { get: () => SymbolFlags0.Value },
 
-    // ParameterExcludes: SymbolFlags.Value,
-    // PropertyExcludes: SymbolFlags.None,
-    EnumMemberExcludes:    SymbolFlags.Value | SymbolFlags.Type,
-    FunctionExcludes:      SymbolFlags.Value & ~( SymbolFlags.Function | SymbolFlags.ValueModule ),
-    ClassExcludes:         ( SymbolFlags.Value | SymbolFlags.Type ) & ~( SymbolFlags.ValueModule | SymbolFlags.Interface ), // class-interface mergability done in checker.ts
-    InterfaceExcludes:     SymbolFlags.Type & ~( SymbolFlags.Interface | SymbolFlags.Class ),
-    RegularEnumExcludes:   ( SymbolFlags.Value | SymbolFlags.Type ) & ~( SymbolFlags.RegularEnum | SymbolFlags.ValueModule ), // regular enums merge only with regular enums and modules
-    ConstEnumExcludes:     ( SymbolFlags.Value | SymbolFlags.Type ) & ~SymbolFlags.ConstEnum, // const enums merge only with const enums
-    ValueModuleExcludes:   SymbolFlags.Value & ~( SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.RegularEnum | SymbolFlags.ValueModule ),
-    // NamespaceModuleExcludes: 0,
-    MethodExcludes:        SymbolFlags.Value & ~SymbolFlags.Method,
-    GetAccessorExcludes:   SymbolFlags.Value & ~SymbolFlags.SetAccessor,
-    SetAccessorExcludes:   SymbolFlags.Value & ~SymbolFlags.GetAccessor,
-    TypeParameterExcludes: SymbolFlags.Type & ~SymbolFlags.TypeParameter,
-    // TypeAliasExcludes: SymbolFlags.Type,
-    // AliasExcludes: SymbolFlags.Alias,
+    ParameterExcludes:       { get: () => SymbolFlags0.Value },
+    PropertyExcludes:        { get: () => SymbolFlags0.None },
+    EnumMemberExcludes:      { get: () => SymbolFlags0.Value | SymbolFlags0.Type },
+    FunctionExcludes:        { get: () => SymbolFlags0.Value & ~( SymbolFlags0.Function | SymbolFlags0.ValueModule ) },
+    ClassExcludes:           { get: () => ( SymbolFlags0.Value | SymbolFlags0.Type ) & ~( SymbolFlags0.ValueModule | SymbolFlags0.Interface ) }, // class-interface mergability done in checker.ts
+    InterfaceExcludes:       { get: () => SymbolFlags0.Type & ~( SymbolFlags0.Interface | SymbolFlags0.Class ) },
+    RegularEnumExcludes:     { get: () => ( SymbolFlags0.Value | SymbolFlags0.Type ) & ~( SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule ) }, // regular enums merge only with regular enums and modules
+    ConstEnumExcludes:       { get: () => ( SymbolFlags0.Value | SymbolFlags0.Type ) & ~SymbolFlags0.ConstEnum }, // const enums merge only with const enums
+    ValueModuleExcludes:     { get: () => SymbolFlags0.Value & ~( SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule ) },
+    NamespaceModuleExcludes: { get: () => 0 },
+    MethodExcludes:          { get: () => SymbolFlags0.Value & ~SymbolFlags0.Method },
+    GetAccessorExcludes:     { get: () => SymbolFlags0.Value & ~SymbolFlags0.SetAccessor },
+    SetAccessorExcludes:     { get: () => SymbolFlags0.Value & ~SymbolFlags0.GetAccessor },
+    TypeParameterExcludes:   { get: () => SymbolFlags0.Type & ~SymbolFlags0.TypeParameter },
+    TypeAliasExcludes:       { get: () => SymbolFlags0.Type },
+    AliasExcludes:           { get: () => SymbolFlags0.Alias },
 
-    ModuleMember: SymbolFlags.Variable | SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.Enum | SymbolFlags.Module |
-                  SymbolFlags.TypeAlias | SymbolFlags.Alias,
+    ModuleMember: {
+        get: () => SymbolFlags0.Variable | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.Module |
+                   SymbolFlags0.TypeAlias | SymbolFlags0.Alias
+    },
 
-    ExportHasLocal: SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule,
+    ExportHasLocal: { get: () => SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule },
 
-    HasExports: SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.Module,
-    HasMembers: SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral,
+    HasExports: { get: () => SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.Module },
+    HasMembers: { get: () => SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.TypeLiteral | SymbolFlags0.ObjectLiteral },
 
-    BlockScoped: SymbolFlags.BlockScopedVariable | SymbolFlags.Class | SymbolFlags.Enum,
+    BlockScoped: { get: () => SymbolFlags0.BlockScopedVariable | SymbolFlags0.Class | SymbolFlags0.Enum },
 
-    PropertyOrAccessor: SymbolFlags.Property | SymbolFlags.Accessor,
+    PropertyOrAccessor: { get: () => SymbolFlags0.Property | SymbolFlags0.Accessor },
 
-    ClassMember: SymbolFlags.Method | SymbolFlags.Accessor | SymbolFlags.Property,
+    ClassMember: { get: () => SymbolFlags0.Method | SymbolFlags0.Accessor | SymbolFlags0.Property },
 
     // The set of things we consider semantically classifiable.  Used to speed up the LS during
     // classification.
-    Classifiable: SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.TypeAlias | SymbolFlags.Interface | SymbolFlags.TypeParameter | SymbolFlags.Module | SymbolFlags.Alias,
+    Classifiable: { get: () => SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.TypeAlias | SymbolFlags0.Interface | SymbolFlags0.TypeParameter | SymbolFlags0.Module | SymbolFlags0.Alias },
 
-    LateBindingContainer: SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral
+    LateBindingContainer: { get: () => SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.TypeLiteral | SymbolFlags0.ObjectLiteral }
 };
 
-make_enum_from_object( SymbolFlags );
+/**
+ * @enum
+ * @name SymbolFlags
+ */
+export const SymbolFlags = make_extra( SymbolFlags0, SymbolFlags1 );
 
 
 // export let TypeFlags = {
@@ -352,79 +397,35 @@ make_enum_from_object( SymbolFlags );
 //
 // };
 
-
-
 /**
- * @param {object<string,number>} names
- * @param {object<string|number,string|number>} [__enum]
- * @return {object<string|number,string|number>}
- * @private
+ * @enum
+ * @name InferencePriority
  */
-function make_enum_from_object( names, __enum = names )
-{
-    Object.entries( names ).forEach( ( [ name, val ] ) => typeof val !== 'function' ? ( __enum[ __enum[ name ] = val ] = name ) : __enum[ name ] = val );
-}
-
-// /**
-//  * @param {Array<string>} names
-//  * @return {{}}
-//  */
-// function make_bitfield_enum( names )
-// {
-//     const __enum = {};
-//
-//     __enum[ __enum[ 0 ] = 'NONE' ] = 0;
-//
-//     for ( const [ i, enumName ] of names.entries() )
-//     {
-//         __enum[ __enum[ 1 << i ] = enumName ] = 1 << i;
-//     }
-//
-//     return __enum;
-// }
-
-/**
- * Turns an `enum` into an array of strings.
- *
- * @param {enum} enumType
- * @param {number} val
- * @return {Array<string>}
- * @private
- */
-function enum_to_string( enumType, val )
-{
-    let vals = [];
-
-    for ( let i = 1; i < 1 << 30; i = i << 1 )
+export const InferencePriority = make_enum_from_object(
+    /**
+     * @enum
+     * @name InferencePriority
+     */
     {
-        if ( !( val & ~( i - 1 ) ) ) break;
-        if ( val & i ) vals.push( enumType[ val & i ] );
-    }
-
-    return vals;
-}
+        NakedTypeVariable: 1 << 0,  // Naked type variable in union or intersection type
+        MappedType:        1 << 1,  // Reverse inference for mapped type
+        ReturnType:        1 << 2   // Inference made from return type of generic function
+    } );
 
 /**
- * @type {enum}
+ * @enum
+ * @name InferenceFlags
  */
-export const InferencePriority = {
-    NakedTypeVariable: 1 << 0,  // Naked type variable in union or intersection type
-    MappedType:        1 << 1,  // Reverse inference for mapped type
-    ReturnType:        1 << 2   // Inference made from return type of generic function
-};
-
-make_enum_from_object( InferencePriority, InferencePriority );
-
-/**
- * @type {enum}
- */
-export const InferenceFlags = {
-    InferUnionTypes: 1 << 0,    // Infer union types for disjoint candidates (otherwise unknownType)
-    NoDefault:       1 << 1,    // Infer unknownType for no inferences (otherwise anyType or emptyObjectType)
-    AnyDefault:      1 << 2     // Infer anyType for no inferences (otherwise emptyObjectType)
-};
-
-make_enum_from_object( InferenceFlags, InferenceFlags );
+export const InferenceFlags = make_enum_from_object(
+    /**
+     * @enum
+     * @name InferenceFlags
+     */
+    {
+        InferUnionTypes: 1 << 0,    // Infer union types for disjoint candidates (otherwise unknownType)
+        NoDefault:       1 << 1,    // Infer unknownType for no inferences (otherwise anyType or emptyObjectType)
+        AnyDefault:      1 << 2     // Infer anyType for no inferences (otherwise emptyObjectType)
+    } );
 
 /**
  * Ternary values are defined such that
@@ -435,80 +436,92 @@ make_enum_from_object( InferenceFlags, InferenceFlags );
  * x | y is Maybe if either x or y is Maybe, but neither x or y is True.
  * x | y is True if either x or y is True.
  *
- * @type {enum}
+ * @enum
+ * @name Ternary
  */
-export const Ternary = {
-    False: 0,
-    Maybe: 1,
-    True:  -1
-};
-
-make_enum_from_object( Ternary, Ternary );
+export const Ternary = make_enum_from_object(
+    /**
+     * @enum
+     * @name Ternary
+     */
+    {
+        False: 0,
+        Maybe: 1,
+        True:  -1
+    } );
 
 /**
  * @enum
- * @type {{Class: number, Interface: number, Reference: number, Tuple: number, Anonymous: number, Mapped: number, Instantiated: number, ObjectLiteral: number, EvolvingArray: number, ObjectLiteralPatternWithComputedProperties: number, ContainsSpread: number, ReverseMapped: number, JsxAttributes: number, MarkerType: number, ClassOrInterface: number}}
+ * @name ObjectFlags
  */
-export const ObjectFlags = {
-    Class: 1 << 0,  // Class
-        Interface: 1 << 1,  // Interface
-        Reference: 1 << 2,  // Generic type reference
-        Tuple: 1 << 3,  // Synthesized generic tuple type
-        Anonymous: 1 << 4,  // Anonymous
-        Mapped: 1 << 5,  // Mapped
-        Instantiated: 1 << 6,  // Instantiated anonymous or mapped type
-        ObjectLiteral: 1 << 7,  // Originates in an object literal
-        EvolvingArray: 1 << 8,  // Evolving array type
+export const ObjectFlags = make_enum_from_object(
+    /**
+     * @enum
+     * @name ObjectFlags
+     */
+    {
+        Class:                                      1 << 0,  // Class
+        Interface:                                  1 << 1,  // Interface
+        Reference:                                  1 << 2,  // Generic type reference
+        Tuple:                                      1 << 3,  // Synthesized generic tuple type
+        Anonymous:                                  1 << 4,  // Anonymous
+        Mapped:                                     1 << 5,  // Mapped
+        Instantiated:                               1 << 6,  // Instantiated anonymous or mapped type
+        ObjectLiteral:                              1 << 7,  // Originates in an object literal
+        EvolvingArray:                              1 << 8,  // Evolving array type
         ObjectLiteralPatternWithComputedProperties: 1 << 9,  // Object literal pattern with computed properties
-        ContainsSpread: 1 << 10, // Object literal contains spread operation
-        ReverseMapped: 1 << 11, // Object contains a property from a reverse-mapped type
-        JsxAttributes: 1 << 12, // Jsx attributes type
-        MarkerType: 1 << 13, // Marker type used for variance probing
-        ClassOrInterface: Class | Interface
-};
-
-make_enum_from_object( ObjectFlags, ObjectFlags );
+        ContainsSpread:                             1 << 10, // Object literal contains spread operation
+        ReverseMapped:                              1 << 11, // Object contains a property from a reverse-mapped type
+        JsxAttributes:                              1 << 12, // Jsx attributes type
+        MarkerType:                                 1 << 13, // Marker type used for variance probing
+        ClassOrInterface:                           ObjectFlags.Class | ObjectFlags.Interface
+    } );
 
 /**
  * @enum
- * @type {{String: number, Number: number, "1": string, "2": string}}
+ * @name ModifierFlags
  */
-export const IndexKind = {
-    String: 1,
-        Number: 2,
-    1: 'String',
-    2: 'Number'
+const ModifierFlags0 = make_enum_from_object(
+    /**
+     * @enum
+     * @name ModifierFlags
+     */
+    {
+        None:             0,
+        Export:           1 << 0,  // Declarations
+        Ambient:          1 << 1,  // Declarations
+        Public:           1 << 2,  // Property/Method
+        Private:          1 << 3,  // Property/Method
+        Protected:        1 << 4,  // Property/Method
+        Static:           1 << 5,  // Property/Method
+        Readonly:         1 << 6,  // Property/Method
+        Abstract:         1 << 7,  // Class/Method/ConstructSignature
+        Async:            1 << 8,  // Property/Method/Function
+        Default:          1 << 9,  // Function/Class (export default declaration)
+        Const:            1 << 11, // Variable declaration
+        HasComputedFlags: 1 << 29  // Modifier flags have been computed
+    } );
+
+/**
+ * @enum
+ * @name ModifierFlags
+ */
+const ModifierFlags1 = {
+    AccessibilityModifier:          { get: () => ModifierFlags0.Public | ModifierFlags0.Private | ModifierFlags0.Protected },
+    // Accessibility modifiers and 'readonly' can be attached to a parameter in a constructor to make it a property.
+    ParameterPropertyModifier:      { get: () => ModifierFlags0.AccessibilityModifier | ModifierFlags0.Readonly },
+    NonPublicAccessibilityModifier: { get: () => ModifierFlags0.Private | ModifierFlags0.Protected },
+
+    TypeScriptModifier: { get: () => ModifierFlags0.Ambient | ModifierFlags0.Public | ModifierFlags0.Private | ModifierFlags0.Protected | ModifierFlags0.Readonly | ModifierFlags0.Abstract | ModifierFlags0.Const },
+    ExportDefault:      { get: () => ModifierFlags0.Export | ModifierFlags0.Default }
+
 };
 
 /**
  * @enum
- * @type {{None: number, Export: number, Ambient: number, Public: number, Private: number, Protected: number, Static: number, Readonly: number, Abstract: number, Async: number, Default: number, Const: number, HasComputedFlags: number, AccessibilityModifier: number, ParameterPropertyModifier: number, NonPublicAccessibilityModifier: number, TypeScriptModifier: number, ExportDefault: number}}
+ * @name ModifierFlags
  */
-export const ModifierFlags = {
-    None: 0,
-        Export: 1 << 0,  // Declarations
-        Ambient: 1 << 1,  // Declarations
-        Public: 1 << 2,  // Property/Method
-        Private: 1 << 3,  // Property/Method
-        Protected: 1 << 4,  // Property/Method
-        Static: 1 << 5,  // Property/Method
-        Readonly: 1 << 6,  // Property/Method
-        Abstract: 1 << 7,  // Class/Method/ConstructSignature
-        Async: 1 << 8,  // Property/Method/Function
-        Default: 1 << 9,  // Function/Class (export default declaration)
-        Const: 1 << 11, // Variable declaration
-        HasComputedFlags: 1 << 29, // Modifier flags have been computed
-
-        AccessibilityModifier: ModifierFlags.Public | ModifierFlags.Private | ModifierFlags.Protected,
-        // Accessibility modifiers and 'readonly' can be attached to a parameter in a constructor to make it a property.
-        ParameterPropertyModifier: ModifierFlags.AccessibilityModifier | ModifierFlags.Readonly,
-        NonPublicAccessibilityModifier: ModifierFlags.Private | ModifierFlags.Protected,
-
-        TypeScriptModifier: ModifierFlags.Ambient | ModifierFlags.Public | ModifierFlags.Private | ModifierFlags.Protected | ModifierFlags.Readonly | ModifierFlags.Abstract | ModifierFlags.Const,
-        ExportDefault: ModifierFlags.Export | ModifierFlags.Default,
-};
-
-make_enum_from_object( ModifierFlags, ModifierFlags );
+export const ModifierFlags = make_extra( ModifierFlags0, ModifierFlags1 );
 
 /**
  * @typedef {object} InferenceContext
@@ -540,26 +553,6 @@ make_enum_from_object( ModifierFlags, ModifierFlags );
 /**
  * @typedef {Array<string|Array<string>|RecursiveNames>} RecursiveNames
  */
-
-/**
- * @type {enum}
- */
-export const ObjectFlags = {
-    Class:                                      1 << 0,  // Class
-    Interface:                                  1 << 1,  // Interface
-    Reference:                                  1 << 2,  // Generic type reference
-    Tuple:                                      1 << 3,  // Synthesized generic tuple type
-    Anonymous:                                  1 << 4,  // Anonymous
-    Mapped:                                     1 << 5,  // Mapped
-    Instantiated:                               1 << 6,  // Instantiated anonymous or mapped type
-    ObjectLiteral:                              1 << 7,  // Originates in an object literal
-    EvolvingArray:                              1 << 8,  // Evolving array type
-    ObjectLiteralPatternWithComputedProperties: 1 << 9,  // Object literal pattern with computed properties
-    ContainsSpread:                             1 << 10, // Object literal contains spread operation
-    ReverseMapped:                              1 << 11    // Object contains a property from a reverse-mapped type
-};
-
-make_enum_from_object( ObjectFlags, ObjectFlags );
 
 
 /**
@@ -610,7 +603,7 @@ export const Variance = {
     Independent:   4    // Unwitnessed type parameter
 };
 
-make_enum_from_object( Variance, Variance );
+make_enum_from_object( Variance );
 
 /**
  * Generic class and interface types
@@ -746,13 +739,17 @@ make_enum_from_object( Variance, Variance );
 
 /**
  * @enum
+ * @name IndexKind
  */
-export const IndexKind = {
-    String: 1,
-    Number: 2
-};
-
-make_enum_from_object( IndexKind, IndexKind );
+export const IndexKind = make_enum_from_object(
+    /**
+     * @enum
+     * @name IndexKind
+     */
+    {
+        String: 1,
+        Number: 2
+    } );
 
 /**
  * @typedef {object} IndexInfo
@@ -760,3 +757,292 @@ make_enum_from_object( IndexKind, IndexKind );
  * @property {boolean} isReadonly
  * @property {?Declaration|Identifier} [declaration]     - type was SignatureDeclaration
  */
+
+/**
+ * @enum
+ * @name CharacterCodes
+ */
+export const CharacterCodes = make_enum_from_object(
+    /**
+     * @enum
+     * @name CharacterCodes
+     */
+    {
+        nullCharacter:     0,
+        maxAsciiCharacter: 0x7F,
+
+        lineFeed:           0x0A,              // \n
+        carriageReturn:     0x0D,        // \r
+        lineSeparator:      0x2028,
+        paragraphSeparator: 0x2029,
+        nextLine:           0x0085,
+
+        // Unicode 3.0 space characters
+        space:              0x0020,   // " "
+        nonBreakingSpace:   0x00A0,   //
+        enQuad:             0x2000,
+        emQuad:             0x2001,
+        enSpace:            0x2002,
+        emSpace:            0x2003,
+        threePerEmSpace:    0x2004,
+        fourPerEmSpace:     0x2005,
+        sixPerEmSpace:      0x2006,
+        figureSpace:        0x2007,
+        punctuationSpace:   0x2008,
+        thinSpace:          0x2009,
+        hairSpace:          0x200A,
+        zeroWidthSpace:     0x200B,
+        narrowNoBreakSpace: 0x202F,
+        ideographicSpace:   0x3000,
+        mathematicalSpace:  0x205F,
+        ogham:              0x1680,
+
+        _: 0x5F,
+        $: 0x24,
+
+        _0: 0x30,
+        _1: 0x31,
+        _2: 0x32,
+        _3: 0x33,
+        _4: 0x34,
+        _5: 0x35,
+        _6: 0x36,
+        _7: 0x37,
+        _8: 0x38,
+        _9: 0x39,
+
+        a: 0x61,
+        b: 0x62,
+        c: 0x63,
+        d: 0x64,
+        e: 0x65,
+        f: 0x66,
+        g: 0x67,
+        h: 0x68,
+        i: 0x69,
+        j: 0x6A,
+        k: 0x6B,
+        l: 0x6C,
+        m: 0x6D,
+        n: 0x6E,
+        o: 0x6F,
+        p: 0x70,
+        q: 0x71,
+        r: 0x72,
+        s: 0x73,
+        t: 0x74,
+        u: 0x75,
+        v: 0x76,
+        w: 0x77,
+        x: 0x78,
+        y: 0x79,
+        z: 0x7A,
+
+        A: 0x41,
+        B: 0x42,
+        C: 0x43,
+        D: 0x44,
+        E: 0x45,
+        F: 0x46,
+        G: 0x47,
+        H: 0x48,
+        I: 0x49,
+        J: 0x4A,
+        K: 0x4B,
+        L: 0x4C,
+        M: 0x4D,
+        N: 0x4E,
+        O: 0x4F,
+        P: 0x50,
+        Q: 0x51,
+        R: 0x52,
+        S: 0x53,
+        T: 0x54,
+        U: 0x55,
+        V: 0x56,
+        W: 0x57,
+        X: 0x58,
+        Y: 0x59,
+        Z: 0x5a,
+
+        ampersand:    0x26,             // &
+        asterisk:     0x2A,              // *
+        at:           0x40,                    // @
+        backslash:    0x5C,             // \
+        backtick:     0x60,              // `
+        bar:          0x7C,                   // |
+        caret:        0x5E,                 // ^
+        closeBrace:   0x7D,            // }
+        closeBracket: 0x5D,          // ]
+        closeParen:   0x29,            // )
+        colon:        0x3A,                 // :
+        comma:        0x2C,                 // ,
+        dot:          0x2E,                   // .
+        doubleQuote:  0x22,           // "
+        equals:       0x3D,                // =
+        exclamation:  0x21,           // !
+        greaterThan:  0x3E,           // >
+        hash:         0x23,                  // #
+        lessThan:     0x3C,              // <
+        minus:        0x2D,                 // -
+        openBrace:    0x7B,             // {
+        openBracket:  0x5B,           // [
+        openParen:    0x28,             // (
+        percent:      0x25,               // %
+        plus:         0x2B,                  // +
+        question:     0x3F,              // ?
+        semicolon:    0x3B,             // ;
+        singleQuote:  0x27,           // '
+        slash:        0x2F,                 // /
+        tilde:        0x7E,                 // ~
+
+        backspace:     0x08,             // \b
+        formFeed:      0x0C,              // \f
+        byteOrderMark: 0xFEFF,
+        tab:           0x09,                   // \t
+        verticalTab:   0x0B           // \v
+    } );
+
+
+/**
+ * @enum
+ * @name InternalSymbolName
+ */
+export const InternalSymbolName = make_enum_from_object(
+    /**
+     * @enum
+     * @name InternalSymbolName
+     */
+    {
+        Call:          "__call", // Call signatures
+        Constructor:   "__constructor", // Constructor implementations
+        New:           "__new", // Constructor signatures
+        Index:         "__index", // Index signatures
+        ExportStar:    "__export", // Module export * declarations
+        Global:        "__global", // Global self-reference
+        Missing:       "__missing", // Indicates missing symbol
+        Type:          "__type", // Anonymous type literal symbol
+        Object:        "__object", // Anonymous object literal declaration
+        JSXAttributes: "__jsxAttributes", // Anonymous JSX attributes object literal declaration
+        Class:         "__class", // Unnamed class expression
+        Function:      "__function", // Unnamed function expression
+        Computed:      "__computed", // Computed property name declaration with dynamic name
+        Resolving:     "__resolving__", // Indicator symbol used to mark partially resolved type aliases
+        ExportEquals:  "export: ", // Export assignment symbol
+        Default:       "default" // Default export symbol (technically not wholly internal, but included here for usability)
+    } );
+
+/**
+ * @enum
+ * @name NodeFlags
+ */
+const NodeFlags0 = make_enum_from_object(
+    /**
+     * @enum
+     * @name NodeFlags
+     */
+    {
+        None:                          0,
+        Let:                           1 << 0,  // Variable declaration
+        Const:                         1 << 1,  // Variable declaration
+        NestedNamespace:               1 << 2,  // Namespace declaration
+        Synthesized:                   1 << 3,  // Node was synthesized during transformation
+        Namespace:                     1 << 4,  // Namespace declaration
+        ExportContext:                 1 << 5,  // Export context (initialized by binding)
+        ContainsThis:                  1 << 6,  // Interface contains references to "this"
+        HasImplicitReturn:             1 << 7,  // If function implicitly returns on one of codepaths (initialized by binding)
+        HasExplicitReturn:             1 << 8,  // If function has explicit reachable return on one of codepaths (initialized by binding)
+        GlobalAugmentation:            1 << 9,  // Set if module declaration is an augmentation for the global scope
+        HasAsyncFunctions:             1 << 10, // If the file has async functions (initialized by binding)
+        DisallowInContext:             1 << 11, // If node was parsed in a context where 'in-expressions' are not allowed
+        YieldContext:                  1 << 12, // If node was parsed in the 'yield' context created when parsing a generator
+        DecoratorContext:              1 << 13, // If node was parsed as part of a decorator
+        AwaitContext:                  1 << 14, // If node was parsed in the 'await' context created when parsing an async function
+        ThisNodeHasError:              1 << 15, // If the parser encountered an error when parsing the code that created this node
+        JavaScriptFile:                1 << 16, // If node was parsed in a JavaScript
+        ThisNodeOrAnySubNodesHasError: 1 << 17, // If this node or any of its children had an error
+        HasAggregatedChildData:        1 << 18, // If we've computed data from children and cached it in this node
+
+        // This flag will be set when the parser encounters a dynamic import expression so that module resolution
+        // will not have to walk the tree if the flag is not set. However, this flag is just a approximation because
+        // once it is set, the flag never gets cleared (hence why it's named "PossiblyContainsDynamicImport").
+        // During editing, if dynamic import is removed, incremental parsing will *NOT* update this flag. This means that the tree will always be traversed
+        // during module resolution. However, the removal operation should not occur often and in the case of the
+        // removal, it is likely that users will add the import anyway.
+        // The advantage of this approach is its simplicity. For the case of batch compilation,
+        // we guarantee that users won't have to pay the price of walking the tree if a dynamic import isn't used.
+        /* @internal */
+        PossiblyContainsDynamicImport: 1 << 19,
+        JSDoc:                         1 << 20, // If node was parsed inside jsdoc
+        /* @internal */
+        Ambient:                       1 << 21, // If node was inside an ambient context -- a declaration file, or inside something with the `declare` modifier.
+        /* @internal */
+        InWithStatement:               1 << 22 // If any ancestor of node was the `statement` of a WithStatement (not the `expression`)
+    } );
+
+/**
+ * @enum
+ * @name NodeFlags
+ */
+const NodeFlags1 = {
+    BlockScoped:              { get: () => NodeFlags0.Let | NodeFlags0.Const },
+    ReachabilityCheckFlags:   { get: () => NodeFlags0.HasImplicitReturn | NodeFlags0.HasExplicitReturn },
+    ReachabilityAndEmitFlags: { get: () => NodeFlags0.ReachabilityCheckFlags | NodeFlags0.HasAsyncFunctions },
+    ContextFlags:             { get: () => NodeFlags0.DisallowInContext | NodeFlags0.YieldContext | NodeFlags0.DecoratorContext | NodeFlags0.AwaitContext | NodeFlags0.JavaScriptFile | NodeFlags0.InWithStatement | NodeFlags0.Ambient },
+    TypeExcludesFlags:        { get: () => NodeFlags0.YieldContext | NodeFlags0.AwaitContext }
+};
+
+/**
+ * @enum
+ * @name NodeFlags
+ */
+export const NodeFlags = make_extra( NodeFlags0, NodeFlags1 );
+
+export const SignatureKind = make_enum_from_object( {
+    Call: 0,
+    Construct: 1
+} );
+
+export const UnionReduction = make_enum_from_object( {
+    None: 0,
+    Literal: 1,
+    Subtype: 2
+} );
+
+/**
+ * @enum
+ * @name CheckFlags
+ */
+const CheckFlags0 = make_enum_from_object(
+    /**
+     * @enum
+     * @name CheckFlags
+     */
+    {
+    Instantiated:      1 << 0,         // Instantiated symbol
+    SyntheticProperty: 1 << 1,         // Property in union or intersection type
+    SyntheticMethod:   1 << 2,         // Method in union or intersection type
+    Readonly:          1 << 3,         // Readonly transient symbol
+    Partial:           1 << 4,         // Synthetic property present in some but not all constituents
+    HasNonUniformType: 1 << 5,         // Synthetic property with non-uniform type in constituents
+    ContainsPublic:    1 << 6,         // Synthetic property with public constituent(s)
+    ContainsProtected: 1 << 7,         // Synthetic property with protected constituent(s)
+    ContainsPrivate:   1 << 8,         // Synthetic property with private constituent(s)
+    ContainsStatic:    1 << 9,         // Synthetic property with static constituent(s)
+    Late:              1 << 10,        // Late-bound symbol for a computed property with a dynamic name
+        ReverseMapped: 1 << 11,        // property of reverse-inferred homomorphic mapped type.
+} ),
+      /**
+       * @enum
+       * @name CheckFlags
+       */
+    CheckFlags1 = {
+        Synthetic: { get: () => CheckFlags0.SyntheticProperty | CheckFlags0.SyntheticMethod }
+};
+
+/**
+ * @enum
+ * @name CheckFlags
+ */
+export const CheckFlags = make_extra( CheckFlags0, CheckFlags1 );
+
