@@ -10,7 +10,7 @@
 
 "use strict";
 
-import { array, object, number, string } from 'convenience';
+import { array, object, number, string } from '../../../convenience/index';
 import { globals, isString, node_is }    from "../utils";
 import { Syntax }                        from 'espree';
 import { TypeFlags }                     from "../types";
@@ -41,7 +41,7 @@ export class Symbol
         this.symbols = new Map();
         this.parent = parent;
         this.node = null;
-        this._name = name;
+        this.escapedName = this._name = name;
         /** @type {Declaration|Identifier} */
         this.decls = [];
         /** @type {Array<Identifier>} */

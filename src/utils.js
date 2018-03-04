@@ -4,15 +4,18 @@
  * @since 1.0.0
  * @date 19-Jan-2018
  *********************************************************************************************************************/
+
 "use strict";
 
-import { inspect }                                                                from 'util';
-import { EventEmitter }                                                           from "events";
-import chalk                                                                      from 'chalk';
-import { SyntaxKind }                                                             from "./ts/ts-helpers";
-import { InternalSymbolName, ModifierFlags, ObjectFlags, SymbolFlags, TypeFlags } from "./types";
+import assert                                                                                     from 'assert';
+import util                                                                                                       from 'util';
+import { EventEmitter }                                                                                                  from "events";
+import chalk                                                                                                             from 'chalk';
+import { SyntaxKind }                                                                                                    from "./ts/ts-helpers";
+import { CharacterCodes, CheckFlags, InternalSymbolName, ModifierFlags, NodeFlags, ObjectFlags, SymbolFlags, TypeFlags } from "./types";
 
 const
+    { inspect } = util,
     { red, green, yellow, cyan, white, gray } = chalk,
     /**
      * @param {object} o
@@ -21,9 +24,12 @@ const
      */
     has                                       = ( o, n ) => Reflect.has( o, n );
 
+util.inspect.defaultOptions = { colors: true, showHidden: false, depth: 2 };
+
 // eslint-disable-next-line new-parens
 export const events = new class extends EventEmitter {};
 
+const { isArray: array } = Array;
 
 
 /**
@@ -383,6 +389,7 @@ function getDeclarationName( node )
         return node.isExportEquals ? InternalSymbolName.ExportEquals : InternalSymbolName.Default;
 
     const name = getNameOfDeclaration( node );
+
     if ( name )
     {
         if ( isAmbientModule( node ) )
@@ -996,6 +1003,10 @@ export function getParameterSymbolFromJSDoc( node )
     return parameter && parameter.symbol;
 }
 
+/**
+ * @param {ts.Node} node
+ * @return {undefined}
+ */
 export function getHostSignatureFromJSDoc( node )
 {
     const
@@ -1006,23 +1017,34 @@ export function getHostSignatureFromJSDoc( node )
                getNestedModuleDeclaration( host ) ||
                host;
 
-    return decl && isFunctionLike( decl ) ? decl : undefined;
+    return decl && decl.isFunctionLike() ? decl : undefined;
 }
 
+/**
+ * @param {ts.Node} node
+ */
 export function getJSDocHost( node )
 {
     assert( node.parent.kind === SyntaxKind.JSDocComment );
     return node.parent.parent;
-    !;
 }
 
+/**
+ * @param {ts.Node} node
+ * @returns {ts.Node}
+ */
 export function getTypeParameterFromJsDoc( node )
 {
-    const name               = node.name.escapedText;
-    const { typeParameters } = node.parent.parent.parent;
+    const
+        name               = node.name.escapedText,
+        { typeParameters } = node.parent.parent.parent;
+
     return typeParameters.find( p => p.name.escapedText === name );
 }
 
+/**
+ * @class
+ */
 export class TypeSet extends Array
 {
     constructor( ...args )
@@ -1046,20 +1068,35 @@ export class TypeSet extends Array
 
 }
 
+/**
+ * @param {string|number} a
+ * @param {string|number} b
+ * @return {number}
+ */
 export function comparer( a, b )
 {
     return a === b ? 0 : a === undefined ? -1 : b === undefined ? 1 : a < b ? -1 : 1;
 }
 
+/**
+ * @param {Type[]} types
+ * @param {Type} type
+ * @return {boolean}
+ */
 export function containsType( types, type )
 {
     return binarySearch( types, type, t => t.id, comparer ) >= 0;
 }
 
+/**
+ * @param {Type[]} types
+ * @param {Type} type
+ * @return {boolean}
+ */
 export function containsIdenticalType( types, type )
 {
     for ( const t of types )
-        if ( isTypeIdenticalTo( t, type ) )
+        if ( t.isTypeIdenticalTo( type ) )
             return true;
 
     return false;
@@ -1107,4 +1144,171 @@ export function binarySearch( array, value, keySelector = x => x.id, keyComparer
 
     return ~low;
 }
+
+/**
+ * Iterates through 'array' by index and performs the callback on each element of array until the callback
+ * returns a truthy value, then returns that value.
+ * If no such value is found, the callback is applied to each element of array and undefined is returned.
+ */
+export function forEach( array, callback )
+{
+    if ( Array.isArray( array ) )
+    {
+        for (let i = 0; i < array.length; i++)
+        {
+            const result = callback(array[i], i);
+            if ( result ) return result;
+        }
+    }
+
+    return undefined;
+}
+
+export function getTextOfIdentifierOrLiteral(node)
+{
+    return node.kind === SyntaxKind.Identifier ? idText(node) : node.text;
+}
+
+/**
+ * Remove extra underscore from escaped identifier text content.
+ *
+ * @param {string} identifier The escaped identifier text.
+ * @returns {string} The unescaped identifier text.
+ */
+export function unescapeLeadingUnderscores(identifier)
+{
+    const id = identifier;
+
+    return id.length >= 3 && id.charCodeAt(0) === CharacterCodes._ && id.charCodeAt(1) === CharacterCodes._ && id.charCodeAt(2) === CharacterCodes._ ? id.substr(1) : id;
+}
+
+/**
+ * @param {Identifier} identifier
+ * @return {string}
+ */
+export function idText( identifier )
+{
+    return unescapeLeadingUnderscores( identifier.escapedText );
+}
+
+/**
+ * @param {Symbol} symbol
+ * @return {string}
+ */
+export function symbolName( symbol )
+{
+    return unescapeLeadingUnderscores(symbol.escapedName);
+}
+
+/**
+ * Remove extra underscore from escaped identifier text content.
+ * @deprecated Use `id.text` for the unescaped text.
+ * @param {string} id The escaped identifier text.
+ * @returns The unescaped identifier text.
+ */
+export function unescapeIdentifier(id)
+{
+    return id;
+}
+
+/**
+ * @param {class} klass
+ * @param {object} intr
+ */
+export function implement( klass, intr )
+{
+    let names = Object.getOwnPropertyNames( intr ).concat( Object.getOwnPropertySymbols( intr ) ),
+        descs = {};
+
+    names.forEach( name => ( descs[ name ] = Object.getOwnPropertyDescriptor( intr, name ) ).enumerable = false );
+
+    Object.defineProperties( klass.prototype, descs );
+}
+
+let revisit;
+
+export function hide_parent( obj )
+{
+    revisit = new Set();
+    return walk_object( obj );
+    // revisit = new Set();
+    // return _hide_parent( obj );
+}
+
+function walk_object( obj )
+{
+    if ( obj instanceof Map || obj instanceof Set )
+    {
+        if ( revisit.has( obj ) ) return obj;
+        revisit.add( obj );
+
+        for ( const o of obj.values() )
+            walk_object( o );
+    }
+    else if ( Array.isArray( obj ) )
+    {
+        if ( revisit.has( obj ) ) return obj;
+        revisit.add( obj );
+
+        if ( has( obj, 'pos' ) ) delete obj.pos;
+        if ( has( obj, 'end' ) ) delete obj.end;
+
+        for ( const o of obj )
+            walk_object( o );
+    }
+    else if ( object( obj ) )
+    {
+        if ( revisit.has( obj ) ) return obj;
+        revisit.add( obj );
+
+        if ( obj && /[A-Z][a-z]+Object/.test( obj.constructor.name ) )
+            obj.__ = obj.constructor.name;
+
+        for ( const [ name, value ] of Object.entries( obj ) )
+        {
+            if ( name === 'parent' || name === 'checker' ) // || name === 'pos' || name === 'end' )
+                delete obj[ name ];
+            else if ( name === 'kind' && typeof obj.kind === 'number' )
+                obj.kind = SyntaxKind[ obj.kind ];
+            else if ( name === 'modifierFlagsCache' && typeof obj.modifierFlagsCache === 'number' )
+                obj.modifierFlagsCache = `${ModifierFlags( obj.modifierFlagsCache )}`;
+            else if ( name === 'checkFlags' && typeof obj.checkFlags === 'number' )
+                obj.checkFlags = `${CheckFlags( obj.checkFlags )}`;
+            else if ( name === 'flags' && typeof obj.flags === 'number' )
+            {
+                if ( obj.constructor.name === 'Type' || obj.constructor.name === 'TypeObject' )
+                    obj.flags = `${TypeFlags( value )}`;
+                else if ( obj.constructor.name === 'Symbol' || obj.constructor.name === 'SymbolObject' )
+                    obj.flags = `${SymbolFlags( value )}`;
+                else if ( obj.constructor.name === 'Node' || obj.constructor.name === 'NodeObject' )
+                    obj.flags = `${NodeFlags( value )}`;
+                else
+                    obj.flags = value;
+            }
+            else if ( object( value ) )
+            {
+                if ( has( value, 'kind' ) && value.kind === SyntaxKind.Identifier )
+                    obj[ name ] = value.escapedText || value.name || `[ "${Object.keys( value ).join( '", "' )}" ]`;
+                else
+                    walk_object( value );
+            }
+            else if ( value === undefined )
+                delete obj[ name ];
+            else
+                walk_object( value );
+
+        }
+    }
+
+    return obj;
+}
+
+export const
+    strictNullChecks = false,
+    enumRelation = new Map(),
+    subtypeRelation = new Map(),
+    assignableRelation = new Map(),
+    definitelyAssignableRelation = new Map(),
+    comparableRelation = new Map(),
+    identityRelation = new Map();
 

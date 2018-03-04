@@ -11,7 +11,7 @@ import { traverse, attachComments, VisitorKeys } from 'estraverse';
 import { TypeFlags }                             from "./types";
 import { globals, store_ast }                    from "./utils";
 import { enter, exit }                           from "./doctags";
-import { Symbol }                                from "./symbols/symbols";
+import { Symbol }                                from "./old/symbols";
 
 /**
  * @param {string} source       - The source module

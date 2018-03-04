@@ -14,19 +14,17 @@ import {
     Variance,
     IndexKind,
     ObjectFlags,
-    ModifierFlags,
-    CharacterCodes
-}                     from "../types";
-import { SyntaxKind } from "../ts/ts-helpers";
+    ModifierFlags
 
-const
-    strictNullChecks = false,
-    enumRelation = new Map(),
-    subtypeRelation = new Map(),
-    assignableRelation = new Map(),
-    definitelyAssignableRelation = new Map(),
-    comparableRelation = new Map(),
-    identityRelation = new Map();
+    strictNullChecks,
+    enumRelation,
+    subtypeRelation,
+    assignableRelation,
+    definitelyAssignableRelation,
+    comparableRelation,
+    identityRelation
+
+}                     from "../types";
 
 let maybeKeys; // string[];
 let sourceStack; // Type[];
@@ -36,56 +34,6 @@ let depth                     = 0;
 let expandingFlags            = ExpandingFlags.None;
 let overflow                  = false;
 let isIntersectionConstituent = false;
-let nextSymbolId = 1;
-
-
-/**
- * @interface SymbolRelations
- * @this Type
- */
-const SymbolRelations = {
-
-    /**
-     * @param {Symbol} targetSymbol
-     * @return {boolean}
-     */
-    isEnumTypeRelatedTo( targetSymbol )
-    {
-        if ( this === targetSymbol ) return true;
-
-        const
-            id       = this.id + "," + targetSymbol.id,
-            relation = enumRelation.get( id );
-
-        if ( relation !== undefined ) return relation;
-
-        if ( this.escapedName !== targetSymbol.escapedName || !( this.flags & SymbolFlags.RegularEnum ) || !( targetSymbol.flags & SymbolFlags.RegularEnum ) )
-        {
-            enumRelation.set( id, false );
-            return false;
-        }
-
-        const targetEnumType = targetSymbol.getTypeOfSymbol();
-
-        for ( const property of this.getTypeOfSymbol().getPropertiesOfType() )
-        {
-            if ( property.flags & SymbolFlags.EnumMember )
-            {
-                const targetProperty = targetEnumType.getPropertyOfType( property.escapedName );
-
-                if ( !targetProperty || !( targetProperty.flags & SymbolFlags.EnumMember ) )
-                {
-                    enumRelation.set( id, false );
-                    return false;
-                }
-            }
-        }
-        enumRelation.set( id, true );
-        return true;
-    }
-
-}
-
 
 /**
  * @interface TypeRelations

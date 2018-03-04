@@ -209,11 +209,11 @@ const TypeFlags1 = {
     PossiblyFalsy:                 { get: () => TypeFlags0.DefinitelyFalsy | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean },
     Intrinsic:                     {
         get: () => TypeFlags0.Any | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.BooleanLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Never |
-                   TypeFlags0.NonPrimitive
+            TypeFlags0.NonPrimitive
     },
     Primitive:                     {
         get: () => TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.Enum | TypeFlags0.EnumLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Literal |
-                   TypeFlags0.UniqueESSymbol
+            TypeFlags0.UniqueESSymbol
     },
     StringLike:                    { get: () => TypeFlags0.String | TypeFlags0.StringLiteral | TypeFlags0.Index },
     NumberLike:                    { get: () => TypeFlags0.Number | TypeFlags0.NumberLiteral | TypeFlags0.Enum },
@@ -283,21 +283,21 @@ const SymbolFlags0 = make_enum_from_object( {
 const SymbolFlags1 = {
     All: {
         get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function |
-                   SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.ConstEnum | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.TypeLiteral |
-                   SymbolFlags0.ObjectLiteral | SymbolFlags0.Method | SymbolFlags0.Constructor | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor | SymbolFlags0.Signature |
-                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias | SymbolFlags0.ExportValue | SymbolFlags0.Alias | SymbolFlags0.Prototype | SymbolFlags0.ExportStar |
-                   SymbolFlags0.Optional | SymbolFlags0.Transient
+            SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.ConstEnum | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.TypeLiteral |
+            SymbolFlags0.ObjectLiteral | SymbolFlags0.Method | SymbolFlags0.Constructor | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor | SymbolFlags0.Signature |
+            SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias | SymbolFlags0.ExportValue | SymbolFlags0.Alias | SymbolFlags0.Prototype | SymbolFlags0.ExportStar |
+            SymbolFlags0.Optional | SymbolFlags0.Transient
     },
 
     Enum:      { get: () => SymbolFlags0.RegularEnum | SymbolFlags0.ConstEnum },
     Variable:  { get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable },
     Value:     {
         get: () => SymbolFlags0.Variable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule |
-                   SymbolFlags0.Method | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor
+            SymbolFlags0.Method | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor
     },
     Type:      {
         get: () => SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.EnumMember | SymbolFlags0.TypeLiteral | SymbolFlags0.ObjectLiteral |
-                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias
+            SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias
     },
     Namespace: { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.Enum },
     Module:    { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule },
@@ -330,7 +330,7 @@ const SymbolFlags1 = {
 
     ModuleMember: {
         get: () => SymbolFlags0.Variable | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.Module |
-                   SymbolFlags0.TypeAlias | SymbolFlags0.Alias
+            SymbolFlags0.TypeAlias | SymbolFlags0.Alias
     },
 
     ExportHasLocal: { get: () => SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule },
@@ -454,7 +454,7 @@ export const Ternary = make_enum_from_object(
  * @enum
  * @name ObjectFlags
  */
-export const ObjectFlags = make_enum_from_object(
+const ObjectFlags0 = make_enum_from_object(
     /**
      * @enum
      * @name ObjectFlags
@@ -473,9 +473,21 @@ export const ObjectFlags = make_enum_from_object(
         ContainsSpread:                             1 << 10, // Object literal contains spread operation
         ReverseMapped:                              1 << 11, // Object contains a property from a reverse-mapped type
         JsxAttributes:                              1 << 12, // Jsx attributes type
-        MarkerType:                                 1 << 13, // Marker type used for variance probing
-        ClassOrInterface:                           ObjectFlags.Class | ObjectFlags.Interface
-    } );
+        MarkerType:                                 1 << 13  // Marker type used for variance probing
+    } ),
+      /**
+       * @enum
+       * @name ObjectFlags
+       */
+    ObjectFlags1 = {
+        ClassOrInterface:                           { get: () => ObjectFlags0.Class | ObjectFlags0.Interface }
+    };
+
+/**
+ * @enum
+ * @name ObjectFlags
+ */
+export const ObjectFlags = make_extra( ObjectFlags0, ObjectFlags1 );
 
 /**
  * @enum
@@ -999,12 +1011,12 @@ const NodeFlags1 = {
 export const NodeFlags = make_extra( NodeFlags0, NodeFlags1 );
 
 export const SignatureKind = make_enum_from_object( {
-    Call: 0,
+    Call:      0,
     Construct: 1
 } );
 
 export const UnionReduction = make_enum_from_object( {
-    None: 0,
+    None:    0,
     Literal: 1,
     Subtype: 2
 } );
@@ -1019,26 +1031,26 @@ const CheckFlags0 = make_enum_from_object(
      * @name CheckFlags
      */
     {
-    Instantiated:      1 << 0,         // Instantiated symbol
-    SyntheticProperty: 1 << 1,         // Property in union or intersection type
-    SyntheticMethod:   1 << 2,         // Method in union or intersection type
-    Readonly:          1 << 3,         // Readonly transient symbol
-    Partial:           1 << 4,         // Synthetic property present in some but not all constituents
-    HasNonUniformType: 1 << 5,         // Synthetic property with non-uniform type in constituents
-    ContainsPublic:    1 << 6,         // Synthetic property with public constituent(s)
-    ContainsProtected: 1 << 7,         // Synthetic property with protected constituent(s)
-    ContainsPrivate:   1 << 8,         // Synthetic property with private constituent(s)
-    ContainsStatic:    1 << 9,         // Synthetic property with static constituent(s)
-    Late:              1 << 10,        // Late-bound symbol for a computed property with a dynamic name
-        ReverseMapped: 1 << 11,        // property of reverse-inferred homomorphic mapped type.
-} ),
+        Instantiated:      1 << 0,         // Instantiated symbol
+        SyntheticProperty: 1 << 1,         // Property in union or intersection type
+        SyntheticMethod:   1 << 2,         // Method in union or intersection type
+        Readonly:          1 << 3,         // Readonly transient symbol
+        Partial:           1 << 4,         // Synthetic property present in some but not all constituents
+        HasNonUniformType: 1 << 5,         // Synthetic property with non-uniform type in constituents
+        ContainsPublic:    1 << 6,         // Synthetic property with public constituent(s)
+        ContainsProtected: 1 << 7,         // Synthetic property with protected constituent(s)
+        ContainsPrivate:   1 << 8,         // Synthetic property with private constituent(s)
+        ContainsStatic:    1 << 9,         // Synthetic property with static constituent(s)
+        Late:              1 << 10,        // Late-bound symbol for a computed property with a dynamic name
+        ReverseMapped:     1 << 11        // property of reverse-inferred homomorphic mapped type.
+    } ),
       /**
        * @enum
        * @name CheckFlags
        */
-    CheckFlags1 = {
-        Synthetic: { get: () => CheckFlags0.SyntheticProperty | CheckFlags0.SyntheticMethod }
-};
+      CheckFlags1 = {
+          Synthetic: { get: () => CheckFlags0.SyntheticProperty | CheckFlags0.SyntheticMethod }
+      };
 
 /**
  * @enum
@@ -1046,3 +1058,14 @@ const CheckFlags0 = make_enum_from_object(
  */
 export const CheckFlags = make_extra( CheckFlags0, CheckFlags1 );
 
+/**
+ * @enum
+ * @name TypeSystemPropertyName
+ */
+export const TypeSystemPropertyName = make_enum_from_object( {
+    Type:                        "Type",
+    ResolvedBaseConstructorType: "ResolvedBaseConstructorType",
+    DeclaredType:                "DeclaredType",
+    ResolvedReturnType:          "ResolvedReturnType",
+    ResolvedBaseConstraint:      "ResolvedBaseConstraint"
+} );

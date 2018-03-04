@@ -317,3 +317,51 @@ export function getAllJSDocTagsOfKind( node, kind )
 
     return filter( tags, doc => doc.kind === kind );
 }
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocConstructSignature(node)
+{
+    return node.kind === SyntaxKind.JSDocFunctionType &&
+        node.parameters.length > 0 &&
+        node.parameters[0].name &&
+        node.parameters[0].name.escapedText === "new";
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {*|boolean}
+ */
+function getSourceOfAssignment(node)
+{
+    return isExpressionStatement(node) &&
+        node.expression && isBinaryExpression(node.expression) &&
+        node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
+        node.expression.right;
+}
+
+function getSingleInitializerOfVariableStatementOrPropertyDeclaration(node)
+{
+    switch (node.kind)
+    {
+        case SyntaxKind.VariableStatement:
+            const v = getSingleVariableOfVariableStatement(node);
+            return v && v.initializer;
+        case SyntaxKind.PropertyDeclaration:
+            return node.initializer;
+    }
+}
+
+function getSingleVariableOfVariableStatement(node)
+{
+    return isVariableStatement(node) &&
+        node.declarationList.declarations.length > 0 &&
+        node.declarationList.declarations[0];
+}
+
+function getNestedModuleDeclaration(node)
+{
+    return node.kind === SyntaxKind.ModuleDeclaration && node.body && node.body.kind === SyntaxKind.ModuleDeclaration && node.body;
+}

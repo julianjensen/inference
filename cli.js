@@ -73,7 +73,7 @@ async function process_file( fileName )
             // console.log( inspect( ast, { depth: 20, colors: true } ) );
             // settings.walk( ast );
 
-        settings.define_symbols( info );
+        // settings.define_symbols( info );
 
         return null;
     }
