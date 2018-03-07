@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Particle Noise</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            background-color: #000;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/css" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+<script type="text/javascript">
+    const
+        objectProto          = Object.prototype,
+        hasOwnProperty       = objectProto.hasOwnProperty,
+        symToStringTag       = Symbol ? Symbol.toStringTag : undefined,
+        nativeObjectToString = objectProto.toString,
+        NAN                  = 0 / 0,
+        reTrim               = /^\s+|\s+$/g,
+        reIsBinary           = /^0b[01]+$/i,
+        reIsOctal            = /^0o[0-7]+$/i,
+        reIsBadHex           = /^[-+]0x[0-9a-f]+$/i,
+        reIsUint             = /^(?:0|[1-9]\d*)$/,
+        freeParseInt         = parseInt,
+        freeParseFloat       = parseFloat,
+        MAX_SAFE_INTEGER     = 9007199254740991,
+        MAX_INTEGER          = 1.7976931348623157e+308,
+        INFINITY             = 1 / 0,
+
+        nativeRandom         = Math.random,
+        nativeMin            = Math.min,
+        nativeFloor          = Math.floor,
+
+        argsTag              = '[object Arguments]',
+        arrayTag             = '[object Array]',
+        asyncTag             = '[object AsyncFunction]',
+        boolTag              = '[object Boolean]',
+        dateTag              = '[object Date]',
+        domExcTag            = '[object DOMException]',
+        errorTag             = '[object Error]',
+        funcTag              = '[object Function]',
+        genTag               = '[object GeneratorFunction]',
+        mapTag               = '[object Map]',
+        numberTag            = '[object Number]',
+        nullTag              = '[object Null]',
+        objectTag            = '[object Object]',
+        promiseTag           = '[object Promise]',
+        proxyTag             = '[object Proxy]',
+        regexpTag            = '[object RegExp]',
+        setTag               = '[object Set]',
+        stringTag            = '[object String]',
+        symbolTag            = '[object Symbol]',
+        undefinedTag         = '[object Undefined]',
+        weakMapTag           = '[object WeakMap]',
+        weakSetTag           = '[object WeakSet]',
+
+        arrayBufferTag       = '[object ArrayBuffer]',
+        dataViewTag          = '[object DataView]',
+        float32Tag           = '[object Float32Array]',
+        float64Tag           = '[object Float64Array]',
+        int8Tag              = '[object Int8Array]',
+        int16Tag             = '[object Int16Array]',
+        int32Tag             = '[object Int32Array]',
+        uint8Tag             = '[object Uint8Array]',
+        uint8ClampedTag      = '[object Uint8ClampedArray]',
+        uint16Tag            = '[object Uint16Array]',
+        uint32Tag            = '[object Uint32Array]';
+
+    function isLength( value )
+    {
+        return typeof value === 'number' && value > -1 && value % 1 === 0 && value <= MAX_SAFE_INTEGER;
+    }
+
+    function isIndex( value, length )
+    {
+        let type = typeof value;
+
+        length = length === null ? MAX_SAFE_INTEGER : length;
+
+        return !!length && ( type === 'number' || ( type !== 'symbol' && reIsUint.test( value ) ) ) && ( value > -1 && value % 1 === 0 && value < length );
+    }
+
+    function isArrayLike( value )
+    {
+        return value != null && isLength( value.length ) && !isFunction( value );
+    }
+
+    function isIterateeCall( value, index, object )
+    {
+        if ( !isObject( object ) ) return false;
+
+        const type = typeof index;
+
+        if ( type === 'number' ? ( isArrayLike( object ) && isIndex( index, object.length ) ) : ( type === 'string' && index in object ) )
+            return eq( object[ index ], value );
+
+        return false;
+    }
+
+    function objectToString( value )
+    {
+        return nativeObjectToString.call( value );
+    }
+
+    function getRawTag( value )
+    {
+        const
+            isOwn = hasOwnProperty.call( value, symToStringTag ),
+            tag   = value[ symToStringTag ];
+
+        let unmasked;
+
+        try
+        {
+            value[ symToStringTag ] = undefined;
+            unmasked = true;
+        }
+        catch ( e )
+        {}
+
+        let result = nativeObjectToString.call( value );
+
+        if ( unmasked )
+        {
+            if ( isOwn )
+                value[ symToStringTag ] = tag;
+            else
+                delete value[ symToStringTag ];
+        }
+
+        return result;
+    }
+
+    function baseGetTag( value )
+    {
+        if ( value === null )
+            return value === undefined ? undefinedTag : nullTag;
+
+        return ( symToStringTag && symToStringTag in Object( value ) ) ? getRawTag( value ) : objectToString( value );
+    }
+
+    function isObjectLike( value )
+    {
+        return value !== null && typeof value === 'object';
+    }
+
+    function isNumber( value )
+    {
+        return typeof value === 'number' || ( isObjectLike( value ) && baseGetTag( value ) === numberTag );
+    }
+
+    function toNumber( value )
+    {
+        if ( typeof value === 'number' ) return value;
+
+        if ( isSymbol( value ) ) return NAN;
+
+        if ( isObject( value ) )
+        {
+            const other = typeof value.valueOf === 'function' ? value.valueOf() : value;
+
+            value = isObject( other ) ? ( other + '' ) : other;
+        }
+        if ( typeof value !== 'string' ) return value === 0 ? value : +value;
+
+        value = value.replace( reTrim, '' );
+
+        let isBinary = reIsBinary.test( value );
+
+        return ( isBinary || reIsOctal.test( value ) ) ? freeParseInt( value.slice( 2 ), isBinary ? 2 : 8 ) : ( reIsBadHex.test( value ) ? NAN : +value );
+    }
+
+    function toFinite( value )
+    {
+        if ( !value ) return value === 0 ? value : 0;
+
+        value = toNumber( value );
+
+        if ( value === INFINITY || value === -INFINITY )
+        {
+            const sign = ( value < 0 ? -1 : 1 );
+
+            return sign * MAX_INTEGER;
+        }
+
+        return value === value ? value : 0;
+    }
+
+    function baseRandom( lower, upper )
+    {
+        return lower + nativeFloor( nativeRandom() * ( upper - lower + 1 ) );
+    }
+
+    function random( lower, upper, floating )
+    {
+        if ( floating && typeof floating !== 'boolean' && isIterateeCall( lower, upper, floating ) )
+            upper = floating = undefined;
+
+        if ( floating === undefined )
+        {
+            if ( typeof upper === 'boolean' )
+            {
+                floating = upper;
+                upper = undefined;
+            }
+            else if ( typeof lower === 'boolean' )
+            {
+                floating = lower;
+                lower = undefined;
+            }
+        }
+
+        if ( lower === undefined && upper === undefined )
+        {
+            lower = 0;
+            upper = 1;
+        }
+        else
+        {
+            lower = toFinite( lower );
+
+            if ( upper === undefined )
+            {
+                upper = lower;
+                lower = 0;
+            }
+            else
+                upper = toFinite( upper );
+        }
+
+        if ( lower > upper )
+        {
+            const temp = lower;
+            lower = upper;
+            upper = temp;
+        }
+
+        if ( floating || lower % 1 || upper % 1 )
+        {
+            const rand = nativeRandom();
+            return nativeMin( lower + ( rand * ( upper - lower + freeParseFloat( '1e-' + ( ( rand + '' ).length - 1 ) ) ) ), upper );
+        }
+
+        return baseRandom( lower, upper );
+    }
+
+    class Vector
+    {
+        constructor( x, y )
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        static fromPolar( r, t )
+        {
+            return new Vector( r * Math.cos( t ), r * Math.sin( t ) );
+        }
+
+        add( v )
+        {
+            this.x += v.x;
+            this.y += v.y;
+            return this;
+        }
+
+        mul( s )
+        {
+            this.x *= s;
+            this.y *= s;
+            return this;
+        }
+
+        dist( v )
+        {
+            let dx,
+                dy;
+
+            return Math.sqrt( ( dx = this.x - v.x ) * dx, ( dy = this.y - v.y ) * dy );
+        }
+
+        get mag()
+        {
+            return Math.sqrt( this.x * this.x, this.y * this.y );
+        }
+
+        set mag( v )
+        {
+            let n = this.norm();
+            this.x = n.x * v;
+            this.y = n.y * v;
+        }
+
+        norm()
+        {
+            let mag = this.mag;
+            return new Vector( this.x / mag, this.y / mag );
+        }
+    }
+
+    class Noise
+    {
+        constructor( w, h, oct )
+        {
+            this.width = w;
+            this.height = h;
+            this.octaves = oct;
+            this.canvas = Noise.compositeNoise( w, h, oct );
+            let ctx = this.canvas.getContext( "2d" );
+            this.data = ctx.getImageData( 0, 0, w, h ).data;
+        }
+
+        // create w by h noise
+        static noise( w, h )
+        {
+            let cv  = document.createElement( "canvas" ),
+                ctx = cv.getContext( "2d" );
+
+            cv.width = w;
+            cv.height = h;
+
+            let img  = ctx.getImageData( 0, 0, w, h ),
+                data = img.data;
+
+            for ( let i = 0,
+                      l = data.length; i < l; i += 4 )
+            {
+                data[ i     ] = random( 0, 255 );
+                data[ i + 1 ] = random( 0, 255 );
+                data[ i + 2 ] = random( 0, 255 );
+                data[ i + 3 ] = 255;
+            }
+
+            ctx.putImageData( img, 0, 0 );
+            return cv;
+        }
+
+        // create composite noise with multiple octaves
+        static compositeNoise( w, h, oct )
+        {
+            let cv  = document.createElement( "canvas" ),
+                ctx = cv.getContext( "2d" );
+
+            cv.width = w;
+            cv.height = h;
+
+            ctx.fillStyle = "#000";
+            ctx.fillRect( 0, 0, w, h );
+
+            ctx.globalCompositeOperation = "lighter";
+            ctx.globalAlpha = 1 / oct;
+
+            for ( let i = 0; i < oct; i++ )
+            {
+                let noise = Noise.noise( w >> i, h >> i );
+                ctx.drawImage( noise, 0, 0, w, h );
+            }
+
+            return cv;
+        }
+
+        // returns noise from -1.0 to 1.0
+        getNoise( x, y, ch )
+        {
+            // bitwise ~~ to floor
+            let i = ( ~~x + ~~y * this.width ) * 4;
+            return this.data[ i + ch ] / 127 - 1;
+        }
+    }
+
+    class Particle
+    {
+        constructor( x, y, vx = 0, vy = 0 )
+        {
+            this.pos = new Vector( x, y );
+            this.vel = new Vector( vx, vy );
+            this.acc = new Vector( 0, 0 );
+            // this.tick = 0
+            // this.life = random(100, 300)
+        }
+
+        update( noise )
+        {
+            // this.tick++
+            // if (this.tick > this.life)
+            //   return
+
+            this.pos.add( this.vel );
+
+            let { x, y } = this.pos;
+            let dx = noise.getNoise( x, y, 0 ),
+                dy = noise.getNoise( x, y, 1 );
+
+            // this.vel.add(this.acc)
+            this.vel.add( new Vector( dx, dy ) );
+            // this.acc.add(new Vector(dx / 10, dy / 10))
+            // this.acc.mul(0.95)
+            this.vel.mul( 0.95 );
+        }
+
+        draw( ctx )
+        {
+            // if (this.tick > this.life) return
+            ctx.fillRect( this.pos.x, this.pos.y, 2, 2 );
+        }
+    }
+
+    let w   = innerWidth * devicePixelRatio,
+        h   = innerHeight * devicePixelRatio,
+        noise,
+        particles,
+        rid,
+        cv  = document.createElement( "canvas" ),
+        ctx = cv.getContext( "2d" );
+
+    cv.width = w;
+    cv.height = h;
+
+    document.body.appendChild( cv );
+    cv.addEventListener( "mousedown", generate );
+    cv.addEventListener( "touchstart", generate );
+
+    init();
+
+    function init()
+    {
+        noise = new Noise( w, h, 8 );
+        // document.body.appendChild(noise.canvas)
+        particles = [];
+
+        for ( let i = 0; i < 10000; i++ )
+        {
+            let r1 = w / 4, //random(w / 4 - 100, w / 4, true),
+                a1 = random( 0, 2 * Math.PI, true ),
+                r2 = random( 0, 1, true ),
+                a2 = random( 0, 2 * Math.PI, true );
+
+            let pos = Vector.fromPolar( r1, a1 ),
+                vel = Vector.fromPolar( r2, a2 );
+
+            pos.add( new Vector( w / 2, h / 2 ) );
+            //     let x = random(0, w, true),
+            //         y = random(0, h, true),
+            //         vx = random(-1, 1, true),
+            //         vy = random(-1, 1, true)
+
+            //     let pos = new Vector(x, y),
+            //         vel = new Vector(vx, vy)
+
+            particles.push( new Particle( pos.x, pos.y, vel.x, vel.y ) );
+        }
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect( 0, 0, w, h );
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+
+        animate();
+    }
+
+    // click once to pause, twice to regen
+    function generate()
+    {
+        if ( rid )
+        {
+            window.cancelAnimationFrame( rid );
+            rid = 0;
+        }
+        else
+        {
+            init();
+        }
+    }
+
+    function render()
+    {
+        for ( let p of particles )
+        {
+            p.update( noise );
+            p.draw( ctx );
+        }
+    }
+
+    function animate()
+    {
+        // for (let i = 0; i < 10; i++)
+        render();
+
+        rid = window.requestAnimationFrame( animate );
+    }
+
+</script>
+</body>
+</html>

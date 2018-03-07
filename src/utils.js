@@ -7,15 +7,17 @@
 
 "use strict";
 
-import assert                                                                                     from 'assert';
-import util                                                                                                       from 'util';
-import { EventEmitter }                                                                                                  from "events";
-import chalk                                                                                                             from 'chalk';
-import { SyntaxKind }                                                                                                    from "./ts/ts-helpers";
-import { CharacterCodes, CheckFlags, InternalSymbolName, ModifierFlags, NodeFlags, ObjectFlags, SymbolFlags, TypeFlags } from "./types";
+import assert                                                                                                                              from 'assert';
+import util                                                                                                                                from 'util';
+import { EventEmitter }                                                                                                                    from "events";
+import chalk                                                                                                                               from 'chalk';
+import { SyntaxKind }                                                                                                                      from "./ts/ts-helpers";
+import { CharacterCodes, CheckFlags, InternalSymbolName, ModifierFlags, NodeFlags, SpecialPropertyAssignmentKind, SymbolFlags, TypeFlags } from "./types";
+import { getNameOfDeclaration }                                                                                                            from "./jsdoc-things";
+import { getModifierFlags, hasModifier }                                                                                                   from "./symbols/modifiers";
 
 const
-    { inspect } = util,
+    { inspect }                               = util,
     { red, green, yellow, cyan, white, gray } = chalk,
     /**
      * @param {object} o
@@ -24,7 +26,11 @@ const
      */
     has                                       = ( o, n ) => Reflect.has( o, n );
 
-util.inspect.defaultOptions = { colors: true, showHidden: false, depth: 2 };
+util.inspect.defaultOptions = {
+    colors:     true,
+    showHidden: false,
+    depth:      2
+};
 
 // eslint-disable-next-line new-parens
 export const events = new class extends EventEmitter {};
@@ -456,55 +462,6 @@ function getDeclarationName( node )
     }
 }
 
-/**
- * @param {Declaration|Expression} declaration
- * @return {?DeclarationName}
- */
-export function getNameOfDeclaration( declaration )
-{
-    if ( !declaration ) return void 0;
-
-    switch ( declaration.kind )
-    {
-        case SyntaxKind.Identifier:
-            return declaration;
-
-        case SyntaxKind.JSDocPropertyTag:
-        case SyntaxKind.JSDocParameterTag:
-        {
-            const { name } = declaration;
-
-            if ( name.kind === SyntaxKind.QualifiedName )
-                return name.right;
-            break;
-        }
-
-        // case SyntaxKind.BinaryExpression:
-        // {
-        //     const expr = declaration;
-        //
-        //     switch ( getSpecialPropertyAssignmentKind( expr ) )
-        //     {
-        //         case SpecialPropertyAssignmentKind.ExportsProperty:
-        //         case SpecialPropertyAssignmentKind.ThisProperty:
-        //         case SpecialPropertyAssignmentKind.Property:
-        //         case SpecialPropertyAssignmentKind.PrototypeProperty:
-        //             return ( expr.left as PropertyAccessExpression ).name;
-        //         default:
-        //             return undefined;
-        //     }
-        // }
-
-        case SyntaxKind.JSDocTypedefTag:
-            return getNameOfJSDocTypedef( declaration );
-
-        case SyntaxKind.ExportAssignment:
-            return declaration.kind === SyntaxKind.Identifier ? expression : undefined;
-    }
-
-    return ( declaration ).name;
-}
-
 export function isDeclaration( node )
 {
     if ( node.kind === SyntaxKind.TypeParameter )
@@ -691,6 +648,53 @@ export function isInExpressionContext( node )
     }
 }
 
+/**
+ * True if has initializer node attached to it.
+ *
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function hasInitializer( node )
+{
+    return !!node.initializer;
+}
+
+/**
+ * True if has jsdoc nodes attached to it.
+ *
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function hasJSDocNodes( node )
+{
+    return !!node.jsDoc && node.jsDoc.length > 0;
+}
+
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isVariableLike( node )
+{
+    if ( node )
+    {
+        switch ( node.kind )
+        {
+            case SyntaxKind.BindingElement:
+            case SyntaxKind.EnumMember:
+            case SyntaxKind.Parameter:
+            case SyntaxKind.PropertyAssignment:
+            case SyntaxKind.PropertyDeclaration:
+            case SyntaxKind.PropertySignature:
+            case SyntaxKind.ShorthandPropertyAssignment:
+            case SyntaxKind.VariableDeclaration:
+                return true;
+        }
+    }
+    return false;
+}
+
 export function skipPartiallyEmittedExpressions( node )
 {
     while ( node.kind === SyntaxKind.PartiallyEmittedExpression )
@@ -821,226 +825,67 @@ export function isGlobalScopeAugmentation( module )
     return !!( module.flags & NodeFlags.GlobalAugmentation );
 }
 
-
-// JSDoc
-
-export function isJSDocTypeExpression( node )
+export function isEntityNameExpression( node )
 {
-    return node.kind === SyntaxKind.JSDocTypeExpression;
-}
-
-export function isJSDocAllType( node )
-{
-    return node.kind === SyntaxKind.JSDocAllType;
-}
-
-export function isJSDocUnknownType( node )
-{
-    return node.kind === SyntaxKind.JSDocUnknownType;
-}
-
-export function isJSDocNullableType( node )
-{
-    return node.kind === SyntaxKind.JSDocNullableType;
-}
-
-export function isJSDocNonNullableType( node )
-{
-    return node.kind === SyntaxKind.JSDocNonNullableType;
-}
-
-export function isJSDocOptionalType( node )
-{
-    return node.kind === SyntaxKind.JSDocOptionalType;
-}
-
-export function isJSDocFunctionType( node )
-{
-    return node.kind === SyntaxKind.JSDocFunctionType;
-}
-
-export function isJSDocVariadicType( node )
-{
-    return node.kind === SyntaxKind.JSDocVariadicType;
-}
-
-export function isJSDoc( node )
-{
-    return node.kind === SyntaxKind.JSDocComment;
-}
-
-export function isJSDocAugmentsTag( node )
-{
-    return node.kind === SyntaxKind.JSDocAugmentsTag;
-}
-
-export function isJSDocParameterTag( node )
-{
-    return node.kind === SyntaxKind.JSDocParameterTag;
-}
-
-export function isJSDocReturnTag( node )
-{
-    return node.kind === SyntaxKind.JSDocReturnTag;
-}
-
-export function isJSDocTypeTag( node )
-{
-    return node.kind === SyntaxKind.JSDocTypeTag;
-}
-
-export function isJSDocTemplateTag( node )
-{
-    return node.kind === SyntaxKind.JSDocTemplateTag;
-}
-
-export function isJSDocTypedefTag( node )
-{
-    return node.kind === SyntaxKind.JSDocTypedefTag;
-}
-
-export function isJSDocPropertyTag( node )
-{
-    return node.kind === SyntaxKind.JSDocPropertyTag;
-}
-
-export function isJSDocPropertyLikeTag( node )
-{
-    return node.kind === SyntaxKind.JSDocPropertyTag || node.kind === SyntaxKind.JSDocParameterTag;
-}
-
-export function isJSDocTypeLiteral( node )
-{
-    return node.kind === SyntaxKind.JSDocTypeLiteral;
+    return node.kind === SyntaxKind.Identifier ||
+           node.kind === SyntaxKind.PropertyAccessExpression && isEntityNameExpression( node.expression );
 }
 
 /**
- * Maps an array. If the mapped value is an array, it is spread into the result.
- *
- * @param array The array to map.
- * @param mapfn The callback used to map the result into one or more values.
+ * Indicates whether a type can be used as a late-bound name.
  */
-export function flatMap( array, mapfn )
+function isTypeUsableAsLateBoundName( type )
 {
-    let result;
+    return !!( type.flags & TypeFlags.StringOrNumberLiteralOrUnique );
+}
 
-    if ( array )
+function checkComputedPropertyName( node )
+{
+    const links = getNodeLinks( node.expression );
+
+    if ( !links.resolvedType )
     {
-        result = [];
-        for ( let i = 0; i < array.length; i++ )
-            result = result.concat( mapfn( array[ i ], i ) | [] );
+        links.resolvedType = checkExpression( node.expression );
+        // This will allow types number, string, symbol or any. It will also allow enums, the unknown
+        // type, and any union of these types (like string | number).
+        if ( links.resolvedType.flags & TypeFlags.Nullable ||
+             !isTypeAssignableToKind( links.resolvedType, TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.ESSymbolLike ) &&
+             !isTypeAssignableTo( links.resolvedType, get_ext_ref( 'UnionType' ).getUnionType( get_ext_ref( 'stringType', 'numberType', 'esSymbolType' ) ) ) )
+        {
+            error( node, "A computed property name must be of type string number symbol or any" );
+        }
+        else
+            checkThatExpressionIsProperSymbolReference( node.expression, links.resolvedType );
     }
 
-    return result;
+    return links.resolvedType;
 }
 
-export function getJSDocCommentsAndTags( node )
+
+/**
+ * Indicates whether a declaration name is definitely late-bindable.
+ * A declaration name is only late-bindable if:
+ * - It is a `ComputedPropertyName`.
+ * - Its expression is an `Identifier` or either a `PropertyAccessExpression` an
+ * `ElementAccessExpression` consisting only of these same three types of nodes.
+ * - The type of its expression is a string or numeric literal type, or is a `unique symbol` type.
+ */
+export function isLateBindableName( node )
 {
-    let result;
-
-    getJSDocCommentsAndTagsWorker( node );
-
-    return result || [];
-
-    function getJSDocCommentsAndTagsWorker( node )
-    {
-        const parent = node.parent;
-
-        if ( parent && ( parent.kind === SyntaxKind.PropertyAssignment || getNestedModuleDeclaration( parent ) ) )
-            getJSDocCommentsAndTagsWorker( parent );
-
-
-        // Try to recognize this pattern when node is initializer of variable declaration and JSDoc comments are on containing variable statement.
-        // /**
-        //   * @param {number} name
-        //   * @returns {number}
-        //   */
-        // var x = function(name) { return name.length; }
-        if ( parent && parent.parent &&
-             ( getSingleVariableOfVariableStatement( parent.parent, node ) || getSourceOfAssignment( parent.parent ) ) )
-            getJSDocCommentsAndTagsWorker( parent.parent );
-
-        if ( parent && parent.parent && parent.parent.parent && getSingleInitializerOfVariableStatement( parent.parent.parent, node ) )
-            getJSDocCommentsAndTagsWorker( parent.parent.parent );
-
-        if ( isBinaryExpression( node ) && getSpecialPropertyAssignmentKind( node ) !== SpecialPropertyAssignmentKind.None ||
-             node.kind === SyntaxKind.PropertyAccessExpression && node.parent && node.parent.kind === SyntaxKind.ExpressionStatement )
-            getJSDocCommentsAndTagsWorker( parent );
-
-        // Pull parameter comments from declaring function as well
-        if ( node.kind === SyntaxKind.Parameter )
-            result = addRange( result, getJSDocParameterTags( node ) );
-
-        if ( isVariableLike( node ) && hasInitializer( node ) && hasJSDocNodes( node.initializer ) )
-        {
-            result = addRange( result, node.initializer.jsDoc );
-        }
-
-        if ( hasJSDocNodes( node ) )
-        {
-            result = addRange( result, node.jsDoc );
-        }
-    }
-}
-
-/** Does the opposite of `getJSDocParameterTags`: given a JSDoc parameter, finds the parameter corresponding to it. */
-export function getParameterSymbolFromJSDoc( node )
-{
-    if ( node.symbol )
-        return node.symbol;
-
-    if ( !isIdentifier( node.name ) )
-        return undefined;
-
-    const name = node.name.escapedText;
-
-    const decl = getHostSignatureFromJSDoc( node );
-
-    if ( !decl )
-        return undefined;
-
-    const parameter = decl.parameters.find( p => p.name.kind === SyntaxKind.Identifier && p.name.escapedText === name );
-    return parameter && parameter.symbol;
+    return node.kind === SyntaxKind.ComputedPropertyName && isEntityNameExpression( node.expression ) && checkComputedPropertyName( node ).isTypeUsableAsLateBoundName();
 }
 
 /**
- * @param {ts.Node} node
- * @return {undefined}
+ * Indicates whether a declaration has a late-bindable dynamic name.
  */
-export function getHostSignatureFromJSDoc( node )
+export function hasLateBindableName( node )
 {
-    const
-        host = getJSDocHost( node ),
-        decl = getSourceOfAssignment( host ) ||
-               getSingleInitializerOfVariableStatement( host ) ||
-               getSingleVariableOfVariableStatement( host ) ||
-               getNestedModuleDeclaration( host ) ||
-               host;
+    const name = getNameOfDeclaration( node );
 
-    return decl && decl.isFunctionLike() ? decl : undefined;
+    return name && isLateBindableName( name );
 }
 
-/**
- * @param {ts.Node} node
- */
-export function getJSDocHost( node )
-{
-    assert( node.parent.kind === SyntaxKind.JSDocComment );
-    return node.parent.parent;
-}
 
-/**
- * @param {ts.Node} node
- * @returns {ts.Node}
- */
-export function getTypeParameterFromJsDoc( node )
-{
-    const
-        name               = node.name.escapedText,
-        { typeParameters } = node.parent.parent.parent;
-
-    return typeParameters.find( p => p.name.escapedText === name );
-}
 
 /**
  * @class
@@ -1051,19 +896,19 @@ export class TypeSet extends Array
     {
         super( ...args );
 
-        this.containsAny = false;
-        this.containsUndefined = false;
-        this.containsNull = false;
-        this.containsNever = false;
-        this.containsNonWideningType = false;
-        this.containsString = false;
-        this.containsNumber = false;
-        this.containsESSymbol = false;
+        this.containsAny                     = false;
+        this.containsUndefined               = false;
+        this.containsNull                    = false;
+        this.containsNever                   = false;
+        this.containsNonWideningType         = false;
+        this.containsString                  = false;
+        this.containsNumber                  = false;
+        this.containsESSymbol                = false;
         this.containsLiteralOrUniqueESSymbol = false;
-        this.containsObjectType = false;
-        this.containsEmptyObject = false;
-        this.unionIndex = -1;
-        this.number = false;
+        this.containsObjectType              = false;
+        this.containsEmptyObject             = false;
+        this.unionIndex                      = -1;
+        this.number                          = false;
     }
 
 }
@@ -1131,12 +976,12 @@ export function binarySearch( array, value, keySelector = x => x.id, keyComparer
 
         switch ( keyComparer( midKey, key ) )
         {
-            case Comparison.LessThan:
+            case -1:
                 low = middle + 1;
                 break;
-            case Comparison.EqualTo:
+            case 0:
                 return middle;
-            case Comparison.GreaterThan:
+            case 1:
                 high = middle - 1;
                 break;
         }
@@ -1154,9 +999,9 @@ export function forEach( array, callback )
 {
     if ( Array.isArray( array ) )
     {
-        for (let i = 0; i < array.length; i++)
+        for ( let i = 0; i < array.length; i++ )
         {
-            const result = callback(array[i], i);
+            const result = callback( array[ i ], i );
             if ( result ) return result;
         }
     }
@@ -1164,9 +1009,9 @@ export function forEach( array, callback )
     return undefined;
 }
 
-export function getTextOfIdentifierOrLiteral(node)
+export function getTextOfIdentifierOrLiteral( node )
 {
-    return node.kind === SyntaxKind.Identifier ? idText(node) : node.text;
+    return node.kind === SyntaxKind.Identifier ? idText( node ) : node.text;
 }
 
 /**
@@ -1175,11 +1020,11 @@ export function getTextOfIdentifierOrLiteral(node)
  * @param {string} identifier The escaped identifier text.
  * @returns {string} The unescaped identifier text.
  */
-export function unescapeLeadingUnderscores(identifier)
+export function unescapeLeadingUnderscores( identifier )
 {
     const id = identifier;
 
-    return id.length >= 3 && id.charCodeAt(0) === CharacterCodes._ && id.charCodeAt(1) === CharacterCodes._ && id.charCodeAt(2) === CharacterCodes._ ? id.substr(1) : id;
+    return id.length >= 3 && id.charCodeAt( 0 ) === CharacterCodes._ && id.charCodeAt( 1 ) === CharacterCodes._ && id.charCodeAt( 2 ) === CharacterCodes._ ? id.substr( 1 ) : id;
 }
 
 /**
@@ -1197,7 +1042,7 @@ export function idText( identifier )
  */
 export function symbolName( symbol )
 {
-    return unescapeLeadingUnderscores(symbol.escapedName);
+    return unescapeLeadingUnderscores( symbol.escapedName );
 }
 
 /**
@@ -1206,7 +1051,7 @@ export function symbolName( symbol )
  * @param {string} id The escaped identifier text.
  * @returns The unescaped identifier text.
  */
-export function unescapeIdentifier(id)
+export function unescapeIdentifier( id )
 {
     return id;
 }
@@ -1304,11 +1149,346 @@ function walk_object( obj )
 }
 
 export const
-    strictNullChecks = false,
-    enumRelation = new Map(),
-    subtypeRelation = new Map(),
-    assignableRelation = new Map(),
+    strictNullChecks             = false,
+    enumRelation                 = new Map(),
+    subtypeRelation              = new Map(),
+    assignableRelation           = new Map(),
     definitelyAssignableRelation = new Map(),
-    comparableRelation = new Map(),
-    identityRelation = new Map();
+    comparableRelation           = new Map(),
+    identityRelation             = new Map();
 
+
+
+const
+    extRefs = new Map();
+
+/**
+ * @param {string} name
+ * @param {Type} type
+ */
+export function set_ext_ref( name, type )
+{
+    extRefs.set( name, type );
+}
+
+/**
+ * @param {string[]} name
+ * @return {Type|Type[]}
+ */
+export function get_ext_ref( ...name )
+{
+    if ( name.length === 1 )
+        return extRefs.get( name );
+
+    return name.map( n => get_ext_ref( n ) );
+}
+
+
+/**
+ * A reserved member name starts with two underscores, but the third character cannot be an underscore
+ * or the `@` symbol. A third underscore indicates an escaped form of an identifer that started
+ * with at least two underscores. The @ character indicates that the name is denoted by a well known ES
+ * Symbol instance.
+ *
+ * @param {string} name
+ * @return {boolean}
+ */
+export function isReservedMemberName( name )
+{
+    return name.charCodeAt( 0 ) === CharacterCodes._ &&
+           name.charCodeAt( 1 ) === CharacterCodes._ &&
+           name.charCodeAt( 2 ) !== CharacterCodes._ &&
+           name.charCodeAt( 2 ) !== CharacterCodes.at;
+}
+
+
+/**
+ * @param {ts.Node} node
+ * @return {*|boolean}
+ */
+export function getSourceOfAssignment( node )
+{
+    return isExpressionStatement( node ) &&
+           node.expression && isBinaryExpression( node.expression ) &&
+           node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
+           node.expression.right;
+}
+
+export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( node )
+{
+    switch ( node.kind )
+    {
+        case SyntaxKind.VariableStatement:
+            const v = getSingleVariableOfVariableStatement( node );
+            return v && v.initializer;
+        case SyntaxKind.PropertyDeclaration:
+            return node.initializer;
+    }
+}
+
+export function getSingleVariableOfVariableStatement( node )
+{
+    return node.kind === SyntaxKind.VariableStatement &&
+           node.declarationList.declarations.length > 0 &&
+           node.declarationList.declarations[ 0 ];
+}
+
+export function getSingleInitializerOfVariableStatement( node, child )
+{
+    return node.kind === SyntaxKind.VariableStatement &&
+           node.declarationList.declarations.length > 0 &&
+           ( !child || node.declarationList.declarations[ 0 ].initializer === child ) &&
+           node.declarationList.declarations[ 0 ].initializer;
+}
+
+
+
+export function getNestedModuleDeclaration( node )
+{
+    return node.kind === SyntaxKind.ModuleDeclaration && node.body && node.body.kind === SyntaxKind.ModuleDeclaration && node.body;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isInJavaScriptFile( node )
+{
+    return node && !!( node.flags & NodeFlags.JavaScriptFile );
+}
+
+/**
+ * Given a BinaryExpression, returns SpecialPropertyAssignmentKind for the various kinds of property
+ * assignments we treat as special in the binder
+ *
+ * @param {ts.BinaryExpression} expr
+ * @return {SpecialPropertyAssignmentKind}
+ */
+export function getSpecialPropertyAssignmentKind( expr )
+{
+    if ( !isInJavaScriptFile( expr ) )
+        return SpecialPropertyAssignmentKind.None;
+
+    if ( expr.operatorToken.kind !== SyntaxKind.EqualsToken || expr.left.kind !== SyntaxKind.PropertyAccessExpression )
+        return SpecialPropertyAssignmentKind.None;
+
+    const lhs = expr.left;
+    if ( lhs.expression.kind === SyntaxKind.Identifier )
+    {
+        const lhsId = lhs.expression;
+        if ( lhsId.escapedText === "exports" )
+        // exports.name = expr
+            return SpecialPropertyAssignmentKind.ExportsProperty;
+        else if ( lhsId.escapedText === "module" && lhs.name.escapedText === "exports" )
+        // module.exports = expr
+            return SpecialPropertyAssignmentKind.ModuleExports;
+        else
+        // F.x = expr
+            return SpecialPropertyAssignmentKind.Property;
+    }
+    else if ( lhs.expression.kind === SyntaxKind.ThisKeyword )
+        return SpecialPropertyAssignmentKind.ThisProperty;
+    else if ( lhs.expression.kind === SyntaxKind.PropertyAccessExpression )
+    {
+        // chained dot, e.g. x.y.z = expr; this var is the 'x.y' part
+        const innerPropertyAccess = lhs.expression;
+        if ( innerPropertyAccess.expression.kind === SyntaxKind.Identifier )
+        {
+            // module.exports.name = expr
+            const innerPropertyAccessIdentifier = innerPropertyAccess.expression;
+            if ( innerPropertyAccessIdentifier.escapedText === "module" && innerPropertyAccess.name.escapedText === "exports" )
+
+                return SpecialPropertyAssignmentKind.ExportsProperty;
+
+            if ( innerPropertyAccess.name.escapedText === "prototype" )
+                return SpecialPropertyAssignmentKind.PrototypeProperty;
+
+        }
+    }
+
+
+    return SpecialPropertyAssignmentKind.None;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isObjectLiteralOrClassExpressionMethod( node )
+{
+    return node.kind === SyntaxKind.MethodDeclaration && ( node.parent.kind === SyntaxKind.ObjectLiteralExpression || node.parent.kind === SyntaxKind.ClassExpression );
+}
+
+/**
+ *
+ * @param {ts.Node} node
+ * @return {Node|boolean}
+ */
+export function isFunctionLike( node )
+{
+    return node && isFunctionLikeKind( node.kind );
+}
+
+/**
+ * @param {ts.Node} node
+ */
+export function isFunctionLikeDeclaration( node )
+{
+    return node && isFunctionLikeDeclarationKind( node.kind );
+}
+
+/**
+ * @param {SyntaxKind} kind
+ * @return {boolean}
+ */
+function isFunctionLikeDeclarationKind( kind )
+{
+    switch ( kind )
+    {
+        case SyntaxKind.FunctionDeclaration:
+        case SyntaxKind.MethodDeclaration:
+        case SyntaxKind.Constructor:
+        case SyntaxKind.GetAccessor:
+        case SyntaxKind.SetAccessor:
+        case SyntaxKind.FunctionExpression:
+        case SyntaxKind.ArrowFunction:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/**
+ * @param {SyntaxKind} kind
+ * @return {boolean}
+ */
+export function isFunctionLikeKind( kind )
+{
+    switch ( kind )
+    {
+        case SyntaxKind.MethodSignature:
+        case SyntaxKind.CallSignature:
+        case SyntaxKind.ConstructSignature:
+        case SyntaxKind.IndexSignature:
+        case SyntaxKind.FunctionType:
+        case SyntaxKind.JSDocFunctionType:
+        case SyntaxKind.ConstructorType:
+            return true;
+        default:
+            return isFunctionLikeDeclarationKind( kind );
+    }
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isConst( node )
+{
+    return !!( getCombinedNodeFlags( node ) & NodeFlags.Const )
+           || !!( getCombinedModifierFlags( node ) & ModifierFlags.Const );
+}
+
+/**
+ * @param {Node} node
+ * @return {Node}
+ */
+function walkUpBindingElementsAndPatterns( node )
+{
+    while ( node && ( node.kind === SyntaxKind.BindingElement || isBindingPattern( node ) ) )
+    {
+        node = node.parent;
+    }
+
+    return node;
+}
+
+/**
+ * @param {Node} node
+ * @return {BindingPattern}
+ */
+export function isBindingPattern( node )
+{
+    if ( node )
+    {
+        const kind = node.kind;
+        return kind === SyntaxKind.ArrayBindingPattern || kind === SyntaxKind.ObjectBindingPattern;
+    }
+
+    return false;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {ModifierFlags}
+ */
+export function getCombinedModifierFlags( node )
+{
+    node = walkUpBindingElementsAndPatterns( node );
+
+    let flags = getModifierFlags( node );
+
+    if ( node.kind === SyntaxKind.VariableDeclaration )
+        node = node.parent;
+
+    if ( node && node.kind === SyntaxKind.VariableDeclarationList )
+    {
+        flags |= getModifierFlags( node );
+        node = node.parent;
+    }
+
+    if ( node && node.kind === SyntaxKind.VariableStatement )
+    {
+        flags |= getModifierFlags( node );
+    }
+
+    return flags;
+}
+
+// Returns the node flags for this node and all relevant parent nodes.  This is done so that
+// nodes like variable declarations and binding elements can returned a view of their flags
+// that includes the modifiers from their container.  i.e. flags like export/declare aren't
+// stored on the variable declaration directly, but on the containing variable statement
+// (if it has one).  Similarly, flags for let/const are store on the variable declaration
+// list.  By calling this function, all those flags are combined so that the client can treat
+// the node as if it actually had those flags.
+export function getCombinedNodeFlags( node: Node ): NodeFlags
+{
+    node = walkUpBindingElementsAndPatterns( node );
+
+    let flags = node.flags;
+    if ( node.kind === SyntaxKind.VariableDeclaration )
+    {
+        node = node.parent;
+    }
+
+    if ( node && node.kind === SyntaxKind.VariableDeclarationList )
+    {
+        flags |= node.flags;
+        node = node.parent;
+    }
+
+    if ( node && node.kind === SyntaxKind.VariableStatement )
+    {
+        flags |= node.flags;
+    }
+
+    return flags;
+}
+
+export const createSymbolTable = () => new Map();
+
+
+export function isAsyncFunction( node )
+{
+    switch ( node.kind )
+    {
+        case SyntaxKind.FunctionDeclaration:
+        case SyntaxKind.FunctionExpression:
+        case SyntaxKind.ArrowFunction:
+        case SyntaxKind.MethodDeclaration:
+            return ( node ).body !== undefined && ( node ).asteriskToken === undefined && hasModifier( node, ModifierFlags.Async );
+    }
+
+    return false;
+}

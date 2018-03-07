@@ -2,14 +2,14 @@
 
 // import { visit } from 'typescript-walk';
 import { object, number, array, has }            from 'convenience';
-import ts                                        from 'typescript';
+import ts, { visitEachChild }                    from 'typescript';
 import {
     indent,
     show_copy_paste,
     syntaxKind,
     nodeName,
     show_fields,
-    collect_fields
+    collect_fields, SyntaxKind
 }                                                from './ts-helpers';
 import { traverse }                              from './ts-ast-walker';
 import { inspect }                               from 'util';
@@ -65,32 +65,65 @@ export const settings = {
         }, compilerHost );
 
         const
-            sourceFile = program.getSourceFile( filename ),
-            typeChecker = program.getTypeChecker();
+            sourceFile                = program.getSourceFile( filename ),
+            typeChecker               = program.getTypeChecker(),
+            noop                      = () => undefined,
+            notImplemented            = () => { throw new Error("Not implemented"); },
+            nullTransformationContext = {
+                enableEmitNotification:    noop,
+                enableSubstitution:        noop,
+                endLexicalEnvironment:     () => undefined,
+                getCompilerOptions:        notImplemented,
+                getEmitHost:               notImplemented,
+                getEmitResolver:           notImplemented,
+                hoistFunctionDeclaration:  noop,
+                hoistVariableDeclaration:  noop,
+                isEmitNotificationEnabled: notImplemented,
+                isSubstitutionEnabled:     notImplemented,
+                onEmitNode:                noop,
+                onSubstituteNode:          notImplemented,
+                readEmitHelpers:           notImplemented,
+                requestEmitHelper:         noop,
+                resumeLexicalEnvironment:  noop,
+                startLexicalEnvironment:   noop,
+                suspendLexicalEnvironment: noop
+            };
 
-        let outStr = inspect( hide_parent( typeChecker.getSymbolAtLocation( sourceFile.statements[ 0 ].name ) ), { showHidden: false, depth: 6, colors: false } ),
-            preamble =
-                `/* eslint-disable max-lines,no-unused-vars,max-len,array-bracket-newline */
-const
-    Circular = '',
-    NodeObject = '',
-    SymbolObject = '',
-    TokenObject = '',
-    Map = '',
-    dump = `,
+        visitEachChild( sourceFile, node => {
+            if ( has( node, 'kind' ) )
+                console.log( `Kind is ${SyntaxKind[ node.kind ]}` );
+            else
+                console.log( 'no kind found' );
+        }, nullTransformationContext );
 
-        clean = outStr
-            .replace( /[A-Z][a-z]+Object {/g, '{' )
-            .replace( /Map {}/g, '{}' )
-            .replace( /Map {([^}])/g, '{$1' )
-            .replace( / =>/g, ':' )
-            .replace( /\[(NodeObject|SymbolObject|TokenObject|Circular)]/g, '$1' )
-            .replace( /\[Map]/g, '{}' )
-            .replace( /\[Array]/g, '[]' );
-
-        clean = clean.trim() + ';\n';
-
-        console.log( preamble + clean );
+//         let outStr   = inspect( hide_parent( typeChecker.getSymbolAtLocation( sourceFile.statements[ 0 ].name ) ),
+//             {
+//                 showHidden: false,
+//                 depth:      6,
+//                 colors:     false
+//             } ),
+//             preamble =
+//                 `/* eslint-disable max-lines,no-unused-vars,max-len,array-bracket-newline */
+// const
+//     Circular = '',
+//     NodeObject = '',
+//     SymbolObject = '',
+//     TokenObject = '',
+//     Map = '',
+//     dump = `,
+//
+//             clean    = outStr
+//                 .replace( /[A-Z][a-z]+Object {/g, '{' )
+//                 .replace( /Map {}/g, '{}' )
+//                 .replace( /Map {([^}])/g, '{$1' )
+//                 .replace( / =>/g, ':' )
+//                 .replace( /\[(NodeObject|SymbolObject|TokenObject|Circular)]/g, '$1' )
+//                 .replace( /\[Map]/g, '{}' )
+//                 .replace( /\[Array]/g, '[]' );
+//
+//         clean = clean.trim() + ';\n';
+//
+//         console.log( preamble + clean );
 
         getComments = ( node, isTrailing ) => {
             if ( node.parent )
@@ -196,13 +229,13 @@ const
         const r = create_reporters( filename, code );
 
         return {
-            ast: sourceFile,
+            ast:      sourceFile,
             fileName: filename,
-            source: code,
-            error: r.error,
-            fatal: r.fatal,
-            warn: r.warn,
-            log: r.log
+            source:   code,
+            error:    r.error,
+            fatal:    r.fatal,
+            warn:     r.warn,
+            log:      r.log
         };
     },
 
@@ -210,8 +243,8 @@ const
     {
         output.fatal = info.fatal;
         output.error = info.error;
-        output.warn = info.warn;
-        output.log = info.log;
+        output.warn  = info.warn;
+        output.log   = info.log;
 
         // traverse( info.ast, visitor, null, true );
     },

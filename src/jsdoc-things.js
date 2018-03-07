@@ -7,9 +7,22 @@
 
 "use strict";
 
-import assert                                                                               from "assert";
-import { flatMap, isDeclaration, isExpression, isIdentifier, isJSDoc, isJSDocParameterTag } from "./utils";
-import { SyntaxKind }                                                                       from "./ts/ts-helpers";
+import * as assert from "assert";
+import {
+    getNestedModuleDeclaration, getSingleInitializerOfVariableStatement,
+    getSingleVariableOfVariableStatement,
+    getSourceOfAssignment,
+    getSpecialPropertyAssignmentKind,
+    hasInitializer,
+    hasJSDocNodes,
+    isDeclaration,
+    isExpression,
+    isIdentifier,
+    isVariableLike
+}                                        from "./utils";
+import { SyntaxKind }                    from "./ts/ts-helpers";
+import { addRange, flatMap }             from "./symbols/array-ish";
+import { SpecialPropertyAssignmentKind } from "./types";
 
 /**
  * A JSDocTypedef tag has an _optional_ name field - if a name is not directly present, we should
@@ -73,9 +86,9 @@ function nameForNamelessJSDocTypedef( declaration )
  * @param declaration
  * @return {*|Identifier}
  */
-export function getNameOfJSDocTypedef(declaration )
+export function getNameOfJSDocTypedef( declaration )
 {
-    return declaration.name || nameForNamelessJSDocTypedef(declaration);
+    return declaration.name || nameForNamelessJSDocTypedef( declaration );
 }
 
 /**
@@ -89,8 +102,8 @@ function getDeclarationIdentifier( node )
 }
 
 /**
- * @param declaration
- * @return {*}
+ * @param {ts.Declaration} declaration
+ * @return {?DeclarationName}
  */
 export function getNameOfDeclaration( declaration )
 {
@@ -274,6 +287,121 @@ export function getJSDocReturnType( node )
     return returnTag && returnTag.typeExpression && returnTag.typeExpression.type;
 }
 
+/**
+ * @param {ts.Node} node
+ * @return {*|Array}
+ */
+export function getJSDocCommentsAndTags( node )
+{
+    let result;
+
+    getJSDocCommentsAndTagsWorker( node );
+
+    return result || [];
+
+    /**
+     * @param {ts.Node} node
+     */
+    function getJSDocCommentsAndTagsWorker( node )
+    {
+        const parent = node.parent;
+
+        if ( parent && ( parent.kind === SyntaxKind.PropertyAssignment || getNestedModuleDeclaration( parent ) ) )
+            getJSDocCommentsAndTagsWorker( parent );
+
+
+        // Try to recognize this pattern when node is initializer of variable declaration and JSDoc comments are on containing variable statement.
+        // /**
+        //   * @param {number} name
+        //   * @returns {number}
+        //   */
+        // var x = function(name) { return name.length; }
+        if ( parent && parent.parent &&
+             ( getSingleVariableOfVariableStatement( parent.parent, node ) || getSourceOfAssignment( parent.parent ) ) )
+            getJSDocCommentsAndTagsWorker( parent.parent );
+
+        if ( parent && parent.parent && parent.parent.parent && getSingleInitializerOfVariableStatement( parent.parent.parent, node ) )
+            getJSDocCommentsAndTagsWorker( parent.parent.parent );
+
+        if ( node.kind === SyntaxKind.BinaryExpression && getSpecialPropertyAssignmentKind( node ) !== SpecialPropertyAssignmentKind.None ||
+             node.kind === SyntaxKind.PropertyAccessExpression && node.parent && node.parent.kind === SyntaxKind.ExpressionStatement )
+            getJSDocCommentsAndTagsWorker( parent );
+
+        // Pull parameter comments from declaring function as well
+        if ( node.kind === SyntaxKind.Parameter )
+            result = addRange( result, getJSDocParameterTags( node ) );
+
+        if ( isVariableLike( node ) && hasInitializer( node ) && hasJSDocNodes( node.initializer ) )
+            result = addRange( result, node.initializer.jsDoc );
+
+        if ( hasJSDocNodes( node ) )
+            result = addRange( result, node.jsDoc );
+    }
+}
+
+/**
+ * Does the opposite of `getJSDocParameterTags`: given a JSDoc parameter, finds the parameter corresponding to it.
+ *
+ * @param {ts.Node} node
+ */
+export function getParameterSymbolFromJSDoc( node )
+{
+    if ( node.symbol )
+        return node.symbol;
+
+    if ( !isIdentifier( node.name ) )
+        return undefined;
+
+    const name = node.name.escapedText;
+
+    const decl = getHostSignatureFromJSDoc( node );
+
+    if ( !decl )
+        return undefined;
+
+    const parameter = decl.parameters.find( p => p.name.kind === SyntaxKind.Identifier && p.name.escapedText === name );
+    return parameter && parameter.symbol;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {undefined}
+ */
+export function getHostSignatureFromJSDoc( node )
+{
+    const
+        host = getJSDocHost( node ),
+        decl = getSourceOfAssignment( host ) ||
+               getSingleInitializerOfVariableStatement( host ) ||
+               getSingleVariableOfVariableStatement( host ) ||
+               getNestedModuleDeclaration( host ) ||
+               host;
+
+    return decl && decl.isFunctionLike() ? decl : undefined;
+}
+
+/**
+ * @param {ts.Node} node
+ */
+export function getJSDocHost( node )
+{
+    assert( node.parent.kind === SyntaxKind.JSDocComment );
+    return node.parent.parent;
+}
+
+/**
+ * @param {ts.Node} node
+ * @returns {ts.Node}
+ */
+export function getTypeParameterFromJsDoc( node )
+{
+    const
+        name               = node.name.escapedText,
+        { typeParameters } = node.parent.parent.parent;
+
+    return typeParameters.find( p => p.name.escapedText === name );
+}
+
 /** Get all JSDoc tags related to a node, including those on parent nodes.
  *
  * @param {Node} node
@@ -299,9 +427,7 @@ export function getJSDocTags( node )
  */
 function getFirstJSDocTag( node, kind )
 {
-    const tags = getJSDocTags( node );
-
-    return find( tags, doc => doc.kind === kind );
+    return getJSDocTags( node ).find( doc => doc.kind === kind );
 }
 
 /** Gets all JSDoc tags of a specified kind, or undefined if not present.
@@ -313,55 +439,181 @@ function getFirstJSDocTag( node, kind )
  */
 export function getAllJSDocTagsOfKind( node, kind )
 {
-    const tags = getJSDocTags( node );
-
-    return filter( tags, doc => doc.kind === kind );
+    return getJSDocTags( node ).filter( doc => doc.kind === kind );
 }
 
 /**
  * @param {ts.Node} node
  * @return {boolean}
  */
-export function isJSDocConstructSignature(node)
+export function isJSDocConstructSignature( node )
 {
     return node.kind === SyntaxKind.JSDocFunctionType &&
-        node.parameters.length > 0 &&
-        node.parameters[0].name &&
-        node.parameters[0].name.escapedText === "new";
+           node.parameters.length > 0 &&
+           node.parameters[ 0 ].name &&
+           node.parameters[ 0 ].name.escapedText === "new";
+}
+
+// JSDoc
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocTypeExpression( node )
+{
+    return node.kind === SyntaxKind.JSDocTypeExpression;
 }
 
 /**
  * @param {ts.Node} node
- * @return {*|boolean}
+ * @return {boolean}
  */
-function getSourceOfAssignment(node)
+export function isJSDocAllType( node )
 {
-    return isExpressionStatement(node) &&
-        node.expression && isBinaryExpression(node.expression) &&
-        node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
-        node.expression.right;
+    return node.kind === SyntaxKind.JSDocAllType;
 }
 
-function getSingleInitializerOfVariableStatementOrPropertyDeclaration(node)
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocUnknownType( node )
 {
-    switch (node.kind)
-    {
-        case SyntaxKind.VariableStatement:
-            const v = getSingleVariableOfVariableStatement(node);
-            return v && v.initializer;
-        case SyntaxKind.PropertyDeclaration:
-            return node.initializer;
-    }
+    return node.kind === SyntaxKind.JSDocUnknownType;
 }
 
-function getSingleVariableOfVariableStatement(node)
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocNullableType( node )
 {
-    return isVariableStatement(node) &&
-        node.declarationList.declarations.length > 0 &&
-        node.declarationList.declarations[0];
+    return node.kind === SyntaxKind.JSDocNullableType;
 }
 
-function getNestedModuleDeclaration(node)
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocNonNullableType( node )
 {
-    return node.kind === SyntaxKind.ModuleDeclaration && node.body && node.body.kind === SyntaxKind.ModuleDeclaration && node.body;
+    return node.kind === SyntaxKind.JSDocNonNullableType;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocOptionalType( node )
+{
+    return node.kind === SyntaxKind.JSDocOptionalType;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocFunctionType( node )
+{
+    return node.kind === SyntaxKind.JSDocFunctionType;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocVariadicType( node )
+{
+    return node.kind === SyntaxKind.JSDocVariadicType;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDoc( node )
+{
+    return node.kind === SyntaxKind.JSDocComment;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocAugmentsTag( node )
+{
+    return node.kind === SyntaxKind.JSDocAugmentsTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocParameterTag( node )
+{
+    return node.kind === SyntaxKind.JSDocParameterTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocReturnTag( node )
+{
+    return node.kind === SyntaxKind.JSDocReturnTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocTypeTag( node )
+{
+    return node.kind === SyntaxKind.JSDocTypeTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocTemplateTag( node )
+{
+    return node.kind === SyntaxKind.JSDocTemplateTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocTypedefTag( node )
+{
+    return node.kind === SyntaxKind.JSDocTypedefTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocPropertyTag( node )
+{
+    return node.kind === SyntaxKind.JSDocPropertyTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocPropertyLikeTag( node )
+{
+    return node.kind === SyntaxKind.JSDocPropertyTag || node.kind === SyntaxKind.JSDocParameterTag;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function isJSDocTypeLiteral( node )
+{
+    return node.kind === SyntaxKind.JSDocTypeLiteral;
 }

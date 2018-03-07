@@ -209,11 +209,11 @@ const TypeFlags1 = {
     PossiblyFalsy:                 { get: () => TypeFlags0.DefinitelyFalsy | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean },
     Intrinsic:                     {
         get: () => TypeFlags0.Any | TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.BooleanLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Never |
-            TypeFlags0.NonPrimitive
+                   TypeFlags0.NonPrimitive
     },
     Primitive:                     {
         get: () => TypeFlags0.String | TypeFlags0.Number | TypeFlags0.Boolean | TypeFlags0.Enum | TypeFlags0.EnumLiteral | TypeFlags0.ESSymbol | TypeFlags0.Void | TypeFlags0.Undefined | TypeFlags0.Null | TypeFlags0.Literal |
-            TypeFlags0.UniqueESSymbol
+                   TypeFlags0.UniqueESSymbol
     },
     StringLike:                    { get: () => TypeFlags0.String | TypeFlags0.StringLiteral | TypeFlags0.Index },
     NumberLike:                    { get: () => TypeFlags0.Number | TypeFlags0.NumberLiteral | TypeFlags0.Enum },
@@ -283,21 +283,21 @@ const SymbolFlags0 = make_enum_from_object( {
 const SymbolFlags1 = {
     All: {
         get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function |
-            SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.ConstEnum | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.TypeLiteral |
-            SymbolFlags0.ObjectLiteral | SymbolFlags0.Method | SymbolFlags0.Constructor | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor | SymbolFlags0.Signature |
-            SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias | SymbolFlags0.ExportValue | SymbolFlags0.Alias | SymbolFlags0.Prototype | SymbolFlags0.ExportStar |
-            SymbolFlags0.Optional | SymbolFlags0.Transient
+                   SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.ConstEnum | SymbolFlags0.RegularEnum | SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.TypeLiteral |
+                   SymbolFlags0.ObjectLiteral | SymbolFlags0.Method | SymbolFlags0.Constructor | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor | SymbolFlags0.Signature |
+                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias | SymbolFlags0.ExportValue | SymbolFlags0.Alias | SymbolFlags0.Prototype | SymbolFlags0.ExportStar |
+                   SymbolFlags0.Optional | SymbolFlags0.Transient
     },
 
     Enum:      { get: () => SymbolFlags0.RegularEnum | SymbolFlags0.ConstEnum },
     Variable:  { get: () => SymbolFlags0.FunctionScopedVariable | SymbolFlags0.BlockScopedVariable },
     Value:     {
         get: () => SymbolFlags0.Variable | SymbolFlags0.Property | SymbolFlags0.EnumMember | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule |
-            SymbolFlags0.Method | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor
+                   SymbolFlags0.Method | SymbolFlags0.GetAccessor | SymbolFlags0.SetAccessor
     },
     Type:      {
         get: () => SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.EnumMember | SymbolFlags0.TypeLiteral | SymbolFlags0.ObjectLiteral |
-            SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias
+                   SymbolFlags0.TypeParameter | SymbolFlags0.TypeAlias
     },
     Namespace: { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule | SymbolFlags0.Enum },
     Module:    { get: () => SymbolFlags0.ValueModule | SymbolFlags0.NamespaceModule },
@@ -330,7 +330,7 @@ const SymbolFlags1 = {
 
     ModuleMember: {
         get: () => SymbolFlags0.Variable | SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Interface | SymbolFlags0.Enum | SymbolFlags0.Module |
-            SymbolFlags0.TypeAlias | SymbolFlags0.Alias
+                   SymbolFlags0.TypeAlias | SymbolFlags0.Alias
     },
 
     ExportHasLocal: { get: () => SymbolFlags0.Function | SymbolFlags0.Class | SymbolFlags0.Enum | SymbolFlags0.ValueModule },
@@ -479,9 +479,9 @@ const ObjectFlags0 = make_enum_from_object(
        * @enum
        * @name ObjectFlags
        */
-    ObjectFlags1 = {
-        ClassOrInterface:                           { get: () => ObjectFlags0.Class | ObjectFlags0.Interface }
-    };
+      ObjectFlags1 = {
+          ClassOrInterface: { get: () => ObjectFlags0.Class | ObjectFlags0.Interface }
+      };
 
 /**
  * @enum
@@ -1069,3 +1069,195 @@ export const TypeSystemPropertyName = make_enum_from_object( {
     ResolvedReturnType:          "ResolvedReturnType",
     ResolvedBaseConstraint:      "ResolvedBaseConstraint"
 } );
+
+
+/**
+ * @enum
+ * @name TypeFacts
+ */
+const TypeFacts0 = make_enum_from_object( {
+    None:               0,
+    TypeofEQString:     1 << 0,      // typeof x === "string"
+    TypeofEQNumber:     1 << 1,      // typeof x === "number"
+    TypeofEQBoolean:    1 << 2,     // typeof x === "boolean"
+    TypeofEQSymbol:     1 << 3,      // typeof x === "symbol"
+    TypeofEQObject:     1 << 4,      // typeof x === "object"
+    TypeofEQFunction:   1 << 5,    // typeof x === "function"
+    TypeofEQHostObject: 1 << 6,  // typeof x === "xxx"
+    TypeofNEString:     1 << 7,      // typeof x !== "string"
+    TypeofNENumber:     1 << 8,      // typeof x !== "number"
+    TypeofNEBoolean:    1 << 9,     // typeof x !== "boolean"
+    TypeofNESymbol:     1 << 10,     // typeof x !== "symbol"
+    TypeofNEObject:     1 << 11,     // typeof x !== "object"
+    TypeofNEFunction:   1 << 12,   // typeof x !== "function"
+    TypeofNEHostObject: 1 << 13, // typeof x !== "xxx"
+    EQUndefined:        1 << 14,        // x === undefined
+    EQNull:             1 << 15,             // x === null
+    EQUndefinedOrNull:  1 << 16,  // x === undefined / x === null
+    NEUndefined:        1 << 17,        // x !== undefined
+    NENull:             1 << 18,             // x !== null
+    NEUndefinedOrNull:  1 << 19,  // x != undefined / x != null
+    Truthy:             1 << 20,             // x
+    Falsy:              1 << 21,              // !x
+    Discriminatable:    1 << 22,    // May have discriminant property
+    All:                ( 1 << 23 ) - 1
+} ),
+
+      /**
+       * The following members encode facts about particular kinds of types for use in the getTypeFacts function.
+       * The presence of a particular fact means that the given test is true for some (and possibly all) values
+       * of that kind of type.
+       *
+       * @enum
+       * @name TypeFacts
+       */
+      TypeFacts1 = {
+          BaseStringStrictFacts:     {
+              get: () => TypeFacts0.TypeofEQString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol | TypeFacts0.TypeofNEObject | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull
+          },
+          BaseStringFacts:           { get: () => TypeFacts0.BaseStringStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          StringStrictFacts:         { get: () => TypeFacts0.BaseStringStrictFacts | TypeFacts0.Truthy | TypeFacts0.Falsy },
+          StringFacts:               { get: () => TypeFacts0.BaseStringFacts | TypeFacts0.Truthy },
+          EmptyStringStrictFacts:    { get: () => TypeFacts0.BaseStringStrictFacts | TypeFacts0.Falsy },
+          EmptyStringFacts:          { get: () => TypeFacts0.BaseStringFacts },
+          NonEmptyStringStrictFacts: { get: () => TypeFacts0.BaseStringStrictFacts | TypeFacts0.Truthy },
+          NonEmptyStringFacts:       { get: () => TypeFacts0.BaseStringFacts | TypeFacts0.Truthy },
+          BaseNumberStrictFacts:     {
+              get: () => TypeFacts0.TypeofEQNumber | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol | TypeFacts0.TypeofNEObject | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull
+          },
+          BaseNumberFacts:           { get: () => TypeFacts0.BaseNumberStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          NumberStrictFacts:         { get: () => TypeFacts0.BaseNumberStrictFacts | TypeFacts0.Truthy | TypeFacts0.Falsy },
+          NumberFacts:               { get: () => TypeFacts0.BaseNumberFacts | TypeFacts0.Truthy },
+          ZeroStrictFacts:           { get: () => TypeFacts0.BaseNumberStrictFacts | TypeFacts0.Falsy },
+          ZeroFacts:                 { get: () => TypeFacts0.BaseNumberFacts },
+          NonZeroStrictFacts:        { get: () => TypeFacts0.BaseNumberStrictFacts | TypeFacts0.Truthy },
+          NonZeroFacts:              { get: () => TypeFacts0.BaseNumberFacts | TypeFacts0.Truthy },
+          BaseBooleanStrictFacts:    {
+              get: () => TypeFacts0.TypeofEQBoolean | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNESymbol | TypeFacts0.TypeofNEObject | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull
+          },
+          BaseBooleanFacts:          { get: () => TypeFacts0.BaseBooleanStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          BooleanStrictFacts:        { get: () => TypeFacts0.BaseBooleanStrictFacts | TypeFacts0.Truthy | TypeFacts0.Falsy },
+          BooleanFacts:              { get: () => TypeFacts0.BaseBooleanFacts | TypeFacts0.Truthy },
+          FalseStrictFacts:          { get: () => TypeFacts0.BaseBooleanStrictFacts | TypeFacts0.Falsy },
+          FalseFacts:                { get: () => TypeFacts0.BaseBooleanFacts },
+          TrueStrictFacts:           { get: () => TypeFacts0.BaseBooleanStrictFacts | TypeFacts0.Truthy },
+          TrueFacts:                 { get: () => TypeFacts0.BaseBooleanFacts | TypeFacts0.Truthy },
+          SymbolStrictFacts:         {
+              get: () => TypeFacts0.TypeofEQSymbol | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNEObject | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull | TypeFacts0.Truthy
+          },
+          SymbolFacts:               { get: () => TypeFacts0.SymbolStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          ObjectStrictFacts:         {
+              get: () => TypeFacts0.TypeofEQObject | TypeFacts0.TypeofEQHostObject | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol |
+                         TypeFacts0.TypeofNEFunction | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull | TypeFacts0.Truthy | TypeFacts0.Discriminatable
+          },
+          ObjectFacts:               { get: () => TypeFacts0.ObjectStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          FunctionStrictFacts:       {
+              get: () => TypeFacts0.TypeofEQFunction | TypeFacts0.TypeofEQHostObject | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol |
+                         TypeFacts0.TypeofNEObject | TypeFacts0.NEUndefined | TypeFacts0.NENull | TypeFacts0.NEUndefinedOrNull | TypeFacts0.Truthy | TypeFacts0.Discriminatable
+          },
+          FunctionFacts:             { get: () => TypeFacts0.FunctionStrictFacts | TypeFacts0.EQUndefined | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.Falsy },
+          UndefinedFacts:            {
+              get: () => TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol | TypeFacts0.TypeofNEObject | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.EQUndefined | TypeFacts0.EQUndefinedOrNull | TypeFacts0.NENull | TypeFacts0.Falsy
+          },
+          NullFacts:                 {
+              get: () => TypeFacts0.TypeofEQObject | TypeFacts0.TypeofNEString | TypeFacts0.TypeofNENumber | TypeFacts0.TypeofNEBoolean | TypeFacts0.TypeofNESymbol | TypeFacts0.TypeofNEFunction |
+                         TypeFacts0.TypeofNEHostObject | TypeFacts0.EQNull | TypeFacts0.EQUndefinedOrNull | TypeFacts0.NEUndefined | TypeFacts0.Falsy
+          }
+      };
+
+/**
+ * @enum
+ * @name TypeFacts
+ */
+export const TypeFacts = make_extra( TypeFacts0, TypeFacts1 );
+
+export const
+    createMapFromTemplate = obj => {
+        const tmp = new Map();
+
+        Object.keys( obj ).forEach( key => tmp.set( key, obj[ key ] ) );
+
+        return tmp;
+    };
+
+export const typeofEQFacts = createMapFromTemplate( {
+    string:    TypeFacts.TypeofEQString,
+    number:    TypeFacts.TypeofEQNumber,
+    boolean:   TypeFacts.TypeofEQBoolean,
+    symbol:    TypeFacts.TypeofEQSymbol,
+    undefined: TypeFacts.EQUndefined,
+    object:    TypeFacts.TypeofEQObject,
+    function:  TypeFacts.TypeofEQFunction
+} );
+
+export const typeofNEFacts = createMapFromTemplate( {
+    string:    TypeFacts.TypeofNEString,
+    number:    TypeFacts.TypeofNENumber,
+    boolean:   TypeFacts.TypeofNEBoolean,
+    symbol:    TypeFacts.TypeofNESymbol,
+    undefined: TypeFacts.NEUndefined,
+    object:    TypeFacts.TypeofNEObject,
+    function:  TypeFacts.TypeofNEFunction
+} );
+
+/**
+ * @enum
+ * @name SpecialPropertyAssignmentKind
+ */
+export const SpecialPropertyAssignmentKind = make_enum_from_object(
+    /**
+     * @enum
+     * @name SpecialPropertyAssignmentKind
+     */
+    {
+        None:              0,
+        // exports.name = expr
+        ExportsProperty:   1,
+        // module.exports = expr
+        ModuleExports:     2,
+        // className.prototype.name = expr
+        PrototypeProperty: 3,
+        // this.name = expr
+        ThisProperty:      4,
+        // F.name = expr
+        Property:          5
+    } );
+
+export const ContainerFlags = make_enum_from_object( {
+    // The current node is not a container, and no container manipulation should happen before
+    // recursing into it.
+    None: 0,
+
+    // The current node is a container.  It should be set as the current container (and block-
+    // container) before recursing into it.  The current node does not have locals.  Examples:
+    //
+    //      Classes, ObjectLiterals, TypeLiterals, Interfaces...
+    IsContainer: 1 << 0,
+
+    // The current node is a block-scoped-container.  It should be set as the current block-
+    // container before recursing into it.  Examples:
+    //
+    //      Blocks (when not parented by functions), Catch clauses, For/For-in/For-of statements...
+    IsBlockScopedContainer: 1 << 1,
+
+    // The current node is the container of a control flow path. The current control flow should
+    // be saved and restored, and a new control flow initialized within the container.
+    IsControlFlowContainer: 1 << 2,
+
+    IsFunctionLike:                         1 << 3,
+    IsFunctionExpression:                   1 << 4,
+    HasLocals:                              1 << 5,
+    IsInterface:                            1 << 6,
+    IsObjectLiteralOrClassExpressionMethod: 1 << 7
+} );
+
+export const ElementKind = make_enum_from_object( {
+    Property: 1,
+    Accessor: 2
+} );
+

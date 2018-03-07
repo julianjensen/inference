@@ -1,3 +1,6 @@
+import { arrayFrom, concatenate } from "./array-ish";
+
+Li;
 /** ******************************************************************************************************************
  * @file Pure type handler.
  *
@@ -119,13 +122,12 @@
  */
 
 import {
-    binarySearch,
-    containsIdenticalType,
+    binarySearch, containsIdenticalType,
     containsType,
     forEach,
     getNameOfDeclaration,
     idText, implement,
-    output
+    output, set_ext_ref
 } from "../utils";
 
 import {
@@ -136,7 +138,7 @@ import {
     UnionReduction,
     CheckFlags,
     TypeSystemPropertyName,
-    IndexKind
+    IndexKind, createMapFromTemplate, typeofEQFacts
 } from "../types";
 
 import { SyntaxKind } from "../ts/ts-helpers";
@@ -165,6 +167,8 @@ const undefinedProperties = new Map();
 const unknownSymbol = new Symbol( SymbolFlags.Property, "unknown" );
 
 const resolvingSymbol = new Symbol( 0, InternalSymbolName.Resolving );
+set_ext_ref( 'resolvingSymbol', resolvingSymbol );
+
 
 const anyType               = new IntrinsicType( TypeFlags.Any, "any" );
 const autoType              = new IntrinsicType( TypeFlags.Any, "any" );
@@ -189,9 +193,87 @@ const silentNeverType   = new IntrinsicType( TypeFlags.Never, "never" );
 const implicitNeverType = new IntrinsicType( TypeFlags.Never, "never" );
 const nonPrimitiveType  = new IntrinsicType( TypeFlags.NonPrimitive, "object" );
 
+[
+    {
+        name: 'anyType',
+        type: anyType
+    },
+    {
+        name: 'autoType',
+        type: autoType
+    },
+    {
+        name: 'unknownType',
+        type: unknownType
+    },
+    {
+        name: 'undefinedType',
+        type: undefinedType
+    },
+    {
+        name: 'undefinedWideningType',
+        type: undefinedWideningType
+    },
+    {
+        name: 'nullType',
+        type: nullType
+    },
+    {
+        name: 'nullWideningType',
+        type: nullWideningType
+    },
+    {
+        name: 'stringType',
+        type: stringType
+    },
+    {
+        name: 'numberType',
+        type: numberType
+    },
+    {
+        name: 'trueType',
+        type: trueType
+    },
+    {
+        name: 'falseType',
+        type: falseType
+    },
+    {
+        name: 'booleanType',
+        type: booleanType
+    },
+    {
+        name: 'esSymbolType',
+        type: esSymbolType
+    },
+    {
+        name: 'voidType',
+        type: voidType
+    },
+    {
+        name: 'neverType',
+        type: neverType
+    },
+    {
+        name: 'silentNeverType',
+        type: silentNeverType
+    },
+    {
+        name: 'implicitNeverType',
+        type: implicitNeverType
+    },
+    {
+        name: 'nonPrimitiveType',
+        type: nonPrimitiveType
+    }
+]
+    .forEach( ( { name, type } ) => set_ext_ref( name, type ) );
+
 const
     emptySymbols = new Map(),
     emptyArray   = [];
+
+set_ext_ref( 'emptySymbols', emptySymbols );
 
 const emptyObjectType = new AnonymousType( undefined, emptySymbols, emptyArray, emptyArray, undefined, undefined );
 
@@ -222,6 +304,17 @@ const anySignature         = createSignature( undefined, undefined, undefined, e
 const unknownSignature     = createSignature( undefined, undefined, undefined, emptyArray, unknownType, /*resolvedTypePredicate*/ undefined, 0, /*hasRestParameter*/ false, /*hasLiteralTypes*/ false );
 const resolvingSignature   = createSignature( undefined, undefined, undefined, emptyArray, anyType, /*resolvedTypePredicate*/ undefined, 0, /*hasRestParameter*/ false, /*hasLiteralTypes*/ false );
 const silentNeverSignature = createSignature( undefined, undefined, undefined, emptyArray, silentNeverType, /*resolvedTypePredicate*/ undefined, 0, /*hasRestParameter*/ false, /*hasLiteralTypes*/ false );
+
+const typeofTypesByName = createMapFromTemplate( {
+    string:    stringType,
+    number:    numberType,
+    boolean:   booleanType,
+    symbol:    esSymbolType,
+    undefined: undefinedType
+} );
+
+const typeofType = createTypeofType();
+
 
 const enumNumberIndexInfo      = {
     type:        stringType,
@@ -362,7 +455,7 @@ function getTypeListId( types )
 
 /**
  * @interface Constraints
- * @this Type
+ * @this Type|UnionOrIntersection|IndexedAccessType
  */
 const Constraints = {
 
@@ -604,6 +697,11 @@ export class Type
         return this._id;
     }
 
+    isTypeUsableAsLateBoundName()
+    {
+        return !!( this.flags & TypeFlags.StringOrNumberLiteralOrUnique );
+    }
+
     /**
      * @param {BaseType} constraint
      * @return {Type}
@@ -774,20 +872,8 @@ export class Type
         return this.flags & TypeFlags.Object ? this.objectFlags : 0;
     }
 
-    getTypeWithThisArgument( thisArgument )
+    getTypeWithThisArgument()
     {
-        if ( this.getObjectFlags() & ObjectFlags.Reference )
-        {
-            const
-                target        = this.target,
-                typeArguments = this.typeArguments;
-
-            if ( length( target.typeParameters ) === length( typeArguments ) )
-                return createTypeReference( target, concatenate( typeArguments, [ thisArgument || target.thisType ] ) );
-        }
-        else if ( this.flags & TypeFlags.Intersection )
-            return getIntersectionType( this.types.map( t => t.getTypeWithThisArgument( thisArgument ) ) );
-
         return this;
     }
 
@@ -801,7 +887,7 @@ export class Type
         const t = this.flags & TypeFlags.TypeVariable ? this.getBaseConstraintOfType() || emptyObjectType : this;
 
         return t.flags & TypeFlags.Intersection
-               ? t.getApparentTypeOfIntersectionType()
+               ? t.getApparentType()
                : t.flags & TypeFlags.StringLike
                  ? globalStringType
                  : t.flags & TypeFlags.NumberLike
@@ -813,17 +899,6 @@ export class Type
                        : t.flags & TypeFlags.NonPrimitive
                          ? emptyObjectType
                          : t;
-    }
-
-    isGenericObjectType()
-    {
-        return this.flags & TypeFlags.TypeVariable
-               ? true
-               : this.getObjectFlags() & ObjectFlags.Mapped
-                 ? this.getConstraintType().isGenericIndexType()
-                 : this.flags & TypeFlags.UnionOrIntersection
-                   ? this.types.forEach( t => t.isGenericObjectType() )
-                   : false;
     }
 
     isGenericIndexType()
@@ -846,7 +921,7 @@ export class Type
             const t = this.resolveStructuredTypeMembers();
 
             return t.properties.length === 0 && t.callSignatures.length === 0 && t.constructSignatures.length === 0 &&
-                t.stringIndexInfo && !t.numberIndexInfo;
+                   t.stringIndexInfo && !t.numberIndexInfo;
         }
 
         return false;
@@ -972,28 +1047,26 @@ export class Type
         return this.flags & TypeFlags.TypeParameter
                ? this.getConstraint()
                : this.flags & TypeFlags.IndexedAccess
-                 ? this.getConstraintOfIndexedAccess()
+                 ? this.getConstraint()
                  : this.getBaseConstraint();
     }
 
-    function;
-
-    getConstraintOfIndexedAccess( type: IndexedAccessType )
+    getConstraint( type )
     {
-        const transformed = getSimplifiedIndexedAccessType( type );
+        const transformed = this.getSimplifiedIndexedAccessType();
         if ( transformed )
-        {
             return transformed;
-        }
-        const baseObjectType = getBaseConstraintOfType( type.objectType );
-        const baseIndexType  = getBaseConstraintOfType( type.indexType );
+
+        const
+            baseObjectType = type.objectType.getBaseConstraintOfType(),
+            baseIndexType  = type.indexType.getBaseConstraintOfType();
+
         if ( baseIndexType === stringType && !getIndexInfoOfType( baseObjectType || type.objectType, IndexKind.String ) )
-        {
-            // getIndexedAccessType returns `any` for X[string] where X doesn't have an index signature.
-            // to avoid this, return `undefined`.
+        // getIndexedAccessType returns `any` for X[string] where X doesn't have an index signature.
+        // to avoid this, return `undefined`.
             return undefined;
-        }
-        return baseObjectType || baseIndexType ? getIndexedAccessType( baseObjectType || type.objectType, baseIndexType || type.indexType ) : undefined;
+
+        return ( baseObjectType || baseIndexType ) ? new IndexedAccessType( baseObjectType || type.objectType, baseIndexType || type.indexType ) : undefined;
     }
 
     /**
@@ -1005,9 +1078,9 @@ export class Type
         for ( const target of targets )
         {
             if ( this !== target && this.isTypeSubtypeOf( target ) &&
-                ( !( this.getTargetType().getObjectFlags() & ObjectFlags.Class ) ||
-                    !( target.getTargetType().getObjectFlags() & ObjectFlags.Class ) ||
-                    this.isTypeDerivedFrom( target ) )
+                 ( !( this.getTargetType().getObjectFlags() & ObjectFlags.Class ) ||
+                   !( target.getTargetType().getObjectFlags() & ObjectFlags.Class ) ||
+                   this.isTypeDerivedFrom( target ) )
             )
                 return true;
         }
@@ -1135,21 +1208,21 @@ export class Type
     getTypeParameter()
     {
         return this.typeParameter ||
-            ( this.typeParameter = this.declaration.typeParameter.getSymbolOfNode().getDeclaredTypeOfTypeParameter() );
+               ( this.typeParameter = this.declaration.typeParameter.getSymbolOfNode().getDeclaredTypeOfTypeParameter() );
     }
 
     getConstraintType()
     {
         return this.constraintType ||
-            ( this.constraintType = instantiateType( this.getTypeParameter().getConstraintOfTypeParameter(), this.mapper || identityMapper ) || unknownType );
+               ( this.constraintType = instantiateType( this.getTypeParameter().getConstraintOfTypeParameter(), this.mapper || identityMapper ) || unknownType );
     }
 
     getTemplateType()
     {
         return this.templateType ||
-            ( this.templateType = this.declaration.type
-                                  ? instantiateType( addOptionality( this.declaration.type.getTypeFromTypeNode(), !!this.declaration.questionToken ), this.mapper || identityMapper )
-                                  : unknownType );
+               ( this.templateType = this.declaration.type
+                                     ? instantiateType( addOptionality( this.declaration.type.getTypeFromTypeNode(), !!this.declaration.questionToken ), this.mapper || identityMapper )
+                                     : unknownType );
     }
 
     getModifiersType()
@@ -1246,11 +1319,11 @@ class LiteralType extends Type
     {
         if ( !( this.flags & TypeFlags.FreshLiteral ) )
         {
-            if (!this.freshType)
+            if ( !this.freshType )
             {
-                const freshType = new LiteralType( this.flags | TypeFlags.FreshLiteral, this.value, this.symbol );
+                const freshType       = new LiteralType( this.flags | TypeFlags.FreshLiteral, this.value, this.symbol );
                 freshType.regularType = this;
-                this.freshType = freshType;
+                this.freshType        = freshType;
             }
 
             return this.freshType;
@@ -1342,6 +1415,16 @@ class ObjectType extends Type
         this.numberIndexInfo     = null;       // Numeric indexing info
     }
 
+    isGenericObjectType()
+    {
+        return false;
+    }
+
+    isGenericIndexType()
+    {
+        return false;
+    }
+
     /**
      * @return {ObjectFlags|number}
      */
@@ -1381,6 +1464,67 @@ class ObjectType extends Type
     {
         const info = this.getIndexInfoOfStructuredType( kind );
         return info && info.type;
+    }
+
+    /**
+     * @param {InterfaceTypeWithDeclaredMembers} source
+     * @param {Array<TypeParameter>} typeParameters
+     * @param {Type[]} typeArguments
+     */
+    resolveObjectTypeMembers( source, typeParameters, typeArguments )
+    {
+        let mapper,
+            members, // SymbolTable;
+            callSignatures, // Signature[];
+            constructSignatures, // Signature[];
+            stringIndexInfo, // IndexInfo;
+            numberIndexInfo; // IndexInfo;
+
+        if ( rangeEquals( typeParameters, typeArguments, 0, typeParameters.length ) )
+        {
+            mapper              = identityMapper;
+            members             = source.symbol ? getMembersOfSymbol( source.symbol ) : createSymbolTable( source.declaredProperties );
+            callSignatures      = source.declaredCallSignatures;
+            constructSignatures = source.declaredConstructSignatures;
+            stringIndexInfo     = source.declaredStringIndexInfo;
+            numberIndexInfo     = source.declaredNumberIndexInfo;
+        }
+        else
+        {
+            mapper              = createTypeMapper( typeParameters, typeArguments );
+            members             = createInstantiatedSymbolTable( source.declaredProperties, mapper, /*mappingThisOnly*/ typeParameters.length === 1 );
+            callSignatures      = instantiateSignatures( source.declaredCallSignatures, mapper );
+            constructSignatures = instantiateSignatures( source.declaredConstructSignatures, mapper );
+            stringIndexInfo     = instantiateIndexInfo( source.declaredStringIndexInfo, mapper );
+            numberIndexInfo     = instantiateIndexInfo( source.declaredNumberIndexInfo, mapper );
+        }
+
+        const baseTypes = getBaseTypes( source );
+
+        if ( baseTypes.length )
+        {
+            if ( source.symbol && members === getMembersOfSymbol( source.symbol ) )
+                members = createSymbolTable( source.declaredProperties );
+
+            this.setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo );
+
+            const thisArgument = lastOrUndefined( typeArguments );
+
+            for ( const baseType of baseTypes )
+            {
+                const instantiatedBaseType = thisArgument ? getTypeWithThisArgument( instantiateType( baseType, mapper ), thisArgument ) : baseType;
+                addInheritedMembers( members, getPropertiesOfType( instantiatedBaseType ) );
+                callSignatures      = concatenate( callSignatures, getSignaturesOfType( instantiatedBaseType, SignatureKind.Call ) );
+                constructSignatures = concatenate( constructSignatures, getSignaturesOfType( instantiatedBaseType, SignatureKind.Construct ) );
+                if ( !stringIndexInfo )
+                    stringIndexInfo = instantiatedBaseType === anyType ?
+                                      createIndexInfo( anyType, /*isReadonly*/ false ) :
+                                      getIndexInfoOfType( instantiatedBaseType, IndexKind.String );
+
+                numberIndexInfo = numberIndexInfo || getIndexInfoOfType( instantiatedBaseType, IndexKind.Number );
+            }
+        }
+        this.setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo );
     }
 }
 
@@ -1499,6 +1643,55 @@ class InterfaceType extends ObjectType
         this.resolvedBaseConstructorType = null;        // Resolved base constructor type of class
         this.resolvedBaseTypes           = null;             // Resolved base types
     }
+
+    /**
+     * @return {InterfaceTypeWithDeclaredMembers}
+     */
+    resolveDeclaredMembers()
+    {
+        const
+            intr = new InterfaceTypeWithDeclaredMembers( this.flags, this.symbol );
+
+        Object.assign( intr, this );
+        Object.setPrototypeOf( intr, this );
+
+        return intr.resolveMembers();
+    }
+}
+
+class InterfaceTypeWithDeclaredMembers extends InterfaceType
+{
+    resolveMembers()
+    {
+        if ( !this.declaredProperties )
+        {
+            const symbol                     = this.symbol;
+            const members                    = symbol.getMembers();
+            this.declaredProperties          = getNamedMembers( members );
+            this.declaredCallSignatures      = members.get( InternalSymbolName.Call ).getSignaturesOfSymbol();
+            this.declaredConstructSignatures = members.get( InternalSymbolName.New ).getSignatures();
+            this.declaredStringIndexInfo     = symbol.getIndexInfo( IndexKind.String );
+            this.declaredNumberIndexInfo     = symbol.getIndexInfo( IndexKind.Number );
+        }
+
+        return this;
+    }
+
+    constructor( objectFlags, symbol )
+    {
+        super( objectFlags, symbol );
+
+        /** @type {?Array<Symbol>} */
+        this.declaredProperties = null;
+        /** @type {?Array<Signature>} */
+        this.declaredCallSignatures = null;
+        /** @type {?Array<Signature>} */
+        this.declaredConstructSignatures = null;
+        /** @type {?IndexInfo} */
+        this.declaredStringIndexInfo = null;
+        /** @type {?IndexInfo} */
+        this.declaredNumberIndexInfo = null;
+    }
 }
 
 /**
@@ -1524,6 +1717,32 @@ class TypeReference extends ObjectType
         super( ObjectFlags.Reference, target.symbol );
         this.target        = target;    // Type reference target
         this.typeArguments = typeArgs;  // Type reference type arguments (undefined if none)
+    }
+
+    resolveMembers()
+    {
+        const
+            source         = this.target.resolveDeclaredMembers(),
+            typeParameters = concatenate( source.typeParameters, [ source.thisType ] );
+
+        const typeArguments = this.typeArguments && this.typeArguments.length === typeParameters.length ?
+                              this.typeArguments : concatenate( this.typeArguments, [ this ] );
+        super.resolveMembers( source, typeParameters, typeArguments );
+    }
+
+    /**
+     * @param thisArgument
+     */
+    getTypeWithThisArgument( thisArgument )
+    {
+        const
+            target        = this.target,
+            typeArguments = this.typeArguments;
+
+        if ( length( target.typeParameters ) === length( typeArguments ) )
+            return createTypeReference( target, concatenate( typeArguments, [ thisArgument || target.thisType ] ) );
+
+        return this;
     }
 }
 
@@ -1572,7 +1791,8 @@ class UnionOrIntersectionType extends Type
     constructor( flags )
     {
         super( flags );
-        this.types                     = null;                    // Constituent types
+        /** @type {?Array<Type>} */
+        this.types = null;                    // Constituent types
         this.propertyCache             = new Map();       // Cache of resolved properties
         this.resolvedProperties        = null;
         this.resolvedIndexType         = null;
@@ -1580,12 +1800,22 @@ class UnionOrIntersectionType extends Type
         this.couldContainTypeVariables = false;
     }
 
-    getConstraint()
+    getBaseConstraint()
     {
         const constraint = this.getResolvedBaseConstraint();
 
         if ( constraint !== noConstraintType && constraint !== circularConstraintType )
             return constraint;
+    }
+
+    isGenericObjectType()
+    {
+        return this.types.forEach( t => t.isGenericObjectType() );
+    }
+
+    isGenericIndexType()
+    {
+        forEach( this.types, t => t.isGenericIndexType() );
     }
 }
 
@@ -1776,13 +2006,14 @@ class UnionType extends UnionOrIntersectionType
             if ( index < 0 )
             {
                 if ( !( flags & TypeFlags.Object && type.objectFlags & ObjectFlags.Anonymous &&
-                    type.symbol && type.symbol.flags & ( SymbolFlags.Function | SymbolFlags.Method ) && containsIdenticalType( typeSet, type ) ) )
+                        type.symbol && type.symbol.flags & ( SymbolFlags.Function | SymbolFlags.Method ) && containsIdenticalType( typeSet, type ) ) )
                     typeSet.splice( ~index, 0, type );
             }
         }
     }
-
 }
+
+set_ext_ref( 'UnionType', UnionType );
 
 /**
  * @class
@@ -1814,7 +2045,7 @@ class IntersectionType extends UnionOrIntersectionType
                 typeSet.unionIndex = typeSet.length;
 
             if ( !( type.flags & TypeFlags.Object && type.objectFlags & ObjectFlags.Anonymous &&
-                type.symbol && type.symbol.flags & ( SymbolFlags.Function | SymbolFlags.Method ) && containsIdenticalType( typeSet, type ) ) )
+                    type.symbol && type.symbol.flags & ( SymbolFlags.Function | SymbolFlags.Method ) && containsIdenticalType( typeSet, type ) ) )
                 typeSet.push( type );
         }
     }
@@ -1919,6 +2150,11 @@ class IntersectionType extends UnionOrIntersectionType
     {
         return this.resolvedApparentType || ( this.resolvedApparentType = this.getTypeWithThisArgument( this ) );
     }
+
+    getTypeWithThisArgument( thisArgument )
+    {
+        return InterfaceType.getIntersectionType( this.types.map( t => t.getTypeWithThisArgument( thisArgument ) ) );
+    }
 }
 
 /**
@@ -1940,6 +2176,74 @@ class AnonymousType extends ObjectType
         this.setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo );
     }
 
+    /**
+     * Converts an AnonymousType to a ResolvedType.
+     */
+    resolveAnonymousTypeMembers()
+    {
+        const symbol = type.symbol;
+        if ( this.target )
+        {
+            const members             = createInstantiatedSymbolTable( this.target.getPropertiesOfObjectType(), this.mapper, /*mappingThisOnly*/ false );
+            const callSignatures      = instantiateSignatures( this.target.getSignaturesOfType( SignatureKind.Call ), this.mapper );
+            const constructSignatures = instantiateSignatures( getSignaturesOfType( SignatureKind.Construct ), this.mapper );
+            const stringIndexInfo     = instantiateIndexInfo( getIndexInfoOfType( this.target, IndexKind.String ), this.mapper );
+            const numberIndexInfo     = instantiateIndexInfo( getIndexInfoOfType( this.target, IndexKind.Number ), this.mapper );
+            this.setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo );
+        }
+        else if ( symbol.flags & SymbolFlags.TypeLiteral )
+        {
+            const members             = symbol.getMembers( symbol );
+            const callSignatures      = symbol.getSignatures( members.get( InternalSymbolName.Call ) );
+            const constructSignatures = symbol.getSignatures( members.get( InternalSymbolName.New ) );
+            const stringIndexInfo     = symbol.getIndexInfo( IndexKind.String );
+            const numberIndexInfo     = symbol.getIndexInfo( IndexKind.Number );
+            this.setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo );
+        }
+        else
+        {
+            // Combinations of function, class, enum and module
+            let members                    = emptySymbols;
+            let stringIndexInfo: IndexInfo = undefined;
+            if ( symbol.exports )
+            {
+                members = getExportsOfSymbol( symbol );
+            }
+            setStructuredTypeMembers( type, members, emptyArray, emptyArray, undefined, undefined );
+            if ( symbol.flags & SymbolFlags.Class )
+            {
+                const classType           = getDeclaredTypeOfClassOrInterface( symbol );
+                const baseConstructorType = getBaseConstructorTypeOfClass( classType );
+                if ( baseConstructorType.flags & ( TypeFlags.Object | TypeFlags.Intersection | TypeFlags.TypeVariable ) )
+                {
+                    members = createSymbolTable( getNamedMembers( members ) );
+                    addInheritedMembers( members, getPropertiesOfType( baseConstructorType ) );
+                }
+                else if ( baseConstructorType === anyType )
+                {
+                    stringIndexInfo = createIndexInfo( anyType, /*isReadonly*/ false );
+                }
+            }
+            const numberIndexInfo = symbol.flags & SymbolFlags.Enum ? enumNumberIndexInfo : undefined;
+            setStructuredTypeMembers( type, members, emptyArray, emptyArray, stringIndexInfo, numberIndexInfo );
+            // We resolve the members before computing the signatures because a signature may use
+            // typeof with a qualified name expression that circularly references the type we are
+            // in the process of resolving (see issue #6072). The temporarily empty signature list
+            // will never be observed because a qualified name can't reference signatures.
+            if ( symbol.flags & ( SymbolFlags.Function | SymbolFlags.Method ) )
+                this.callSignatures = getSignaturesOfSymbol( symbol );
+
+            // And likewise for construct signatures for classes
+            if ( symbol.flags & SymbolFlags.Class )
+            {
+                const classType         = getDeclaredTypeOfClassOrInterface( symbol );
+                let constructSignatures = getSignaturesOfSymbol( symbol.members.get( InternalSymbolName.Constructor ) );
+                if ( !constructSignatures.length )
+                    constructSignatures = getDefaultConstructSignatures( classType );
+                this.constructSignatures = constructSignatures;
+            }
+        }
+    }
 }
 
 /**
@@ -1960,23 +2264,27 @@ class MappedType extends AnonymousType
     getTypeParameter()
     {
         return this.typeParameter ||
-            ( this.typeParameter = this.declaration.typeParameter.getSymbolOfNode().getDeclaredTypeOfTypeParameter() );
+               ( this.typeParameter = this.declaration.typeParameter.getSymbolOfNode().getDeclaredTypeOfTypeParameter() );
     }
 
     getConstraintType()
     {
         return this.constraintType ||
-            ( this.constraintType = instantiateType( this.getTypeParameter().getConstraintOfTypeParameter(), this.mapper || identityMapper ) || unknownType );
+               ( this.constraintType = instantiateType( this.getTypeParameter().getConstraintOfTypeParameter(), this.mapper || identityMapper ) || unknownType );
     }
 
     getTemplateType()
     {
         return this.templateType ||
-            ( this.templateType = this.declaration.type
-                                  ? instantiateType( addOptionality( this.declaration.type.getTypeFromTypeNode(), !!this.declaration.questionToken ), this.mapper || identityMapper )
-                                  : unknownType );
+               ( this.templateType = this.declaration.type
+                                     ? instantiateType( addOptionality( this.declaration.type.getTypeFromTypeNode(), !!this.declaration.questionToken ), this.mapper || identityMapper )
+                                     : unknownType );
     }
 
+    isGenericObjectType()
+    {
+        return this.getConstraintType().isGenericIndexType();
+    }
 }
 
 /**
@@ -2097,7 +2405,7 @@ class TypeVariable extends Type
         this.resolvedIndexType      = null;
     }
 
-    getConstraint()
+    getBaseConstraint()
     {
         const constraint = this.getResolvedBaseConstraint();
 
@@ -2105,6 +2413,16 @@ class TypeVariable extends Type
             return constraint;
 
         return undefined;
+    }
+
+    isGenericObjectType()
+    {
+        return true;
+    }
+
+    isGenericIndexType()
+    {
+        return true;
     }
 }
 
@@ -2261,7 +2579,7 @@ class IndexedAccessType extends TypeVariable
                 return anyType;
 
             const indexInfo = indexType.isTypeAssignableToKind( TypeFlags.NumberLike ) && objectType.getIndexInfoOfType( IndexKind.Number ) ||
-                objectType.getIndexInfoOfType( IndexKind.String ) || undefined;
+                              objectType.getIndexInfoOfType( IndexKind.String ) || undefined;
 
             if ( indexInfo )
                 return indexInfo.type;
@@ -2341,8 +2659,8 @@ class IndexedAccessType extends TypeVariable
         if ( transformed ) return transformed;
 
         const
-            baseObjectType = Constraints.getBaseConstraintOfType( this.objectType ),
-            baseIndexType  = Constraints.getBaseConstraintOfType( this.indexType );
+            baseObjectType = this.getBaseConstraint( this.objectType ),
+            baseIndexType  = this.getBaseConstraint( this.indexType );
 
 
         if ( baseIndexType === stringType && !( baseObjectType || this.objectType ).getIndexInfoOfType( IndexKind.String ) )
@@ -2420,8 +2738,8 @@ function isTypeUsableAsLateBoundName( type )
 function isLateBindableName( node )
 {
     return isComputedPropertyName( node )
-        && isEntityNameExpression( node.expression )
-        && isTypeUsableAsLateBoundName( checkComputedPropertyName( node ) );
+           && isEntityNameExpression( node.expression )
+           && isTypeUsableAsLateBoundName( checkComputedPropertyName( node ) );
 }
 
 /**
@@ -2482,6 +2800,11 @@ class IndexType extends Type
     {
         return stringType;
     }
+
+    isGenericIndexType()
+    {
+        return true;
+    }
 }
 
 /**
@@ -2512,85 +2835,6 @@ class Signature
         this.isolatedSignatureType   = null; // ObjectType; // A manufactured type that just contains the signature for purposes of signature comparison
         this.instantiations          = null; // Map<Signature>;    // Generic signature instantiation cache
     }
-}
-
-/**
- * @class
- */
-class SymbolLinks
-{
-    constructor()
-    {
-        this.immediateTarget                = null;           // Immediate target of an alias. May be another alias. Do not access directly, use `checker.getImmediateAliasedSymbol` instead.
-        this.target                         = null;                    // Resolved (non-alias) target of an alias
-        this.type                           = null;                        // Type of value symbol
-        this.declaredType                   = null;                // Type of class, interface, enum, type alias, or type parameter
-        this.typeParameters                 = null;   // Type parameters of type alias (undefined if non-generic)
-        this.inferredClassType              = null;           // Type of an inferred ES5 class
-        this.instantiations                 = null;         // Instantiations of generic type alias (undefined if non-generic)
-        this.mapper                         = null;                // Type mapper for instantiation alias
-        this.referenced                     = null;               // True if alias symbol has been referenced as a value
-        this.containingType                 = null; // Containing union or intersection type for synthetic property
-        this.leftSpread                     = null;                // Left source for synthetic spread property
-        this.rightSpread                    = null;               // Right source for synthetic spread property
-        this.syntheticOrigin                = null;           // For a property on a mapped or spread type, points back to the original property
-        this.syntheticLiteralTypeOrigin     = null; // For a property on a mapped type, indicates the type whose text to use as the declaration name, instead of the symbol name
-        this.isDiscriminantProperty         = null;   // True if discriminant synthetic property
-        this.resolvedExports                = null;      // Resolved exports of module or combined early- and late-bound static members of a class.
-        this.resolvedMembers                = null;      // Combined early- and late-bound members of a symbol
-        this.exportsChecked                 = null;           // True if exports of external module have been checked
-        this.typeParametersChecked          = null;    // True if type parameters of merged class and interface declarations have been checked.
-        this.isDeclarationWithCollidingName = null;   // True if symbol is block scoped redeclaration
-        this.bindingElement                 = null;    // Binding element associated with property symbol
-        this.exportsSomeValue               = null;         // True if module exports some value (not just types)
-        this.enumKind                       = null;                // Enum declaration classification
-        this.originatingImport              = null; // Import declaration which produced the symbol, present if the symbol is marked as uncallable but had call signatures in `resolveESModuleSymbol`
-        this.lateSymbol                     = null;                // Late-bound symbol for a computed property
-    }
-}
-
-/**
- * @class
- */
-class TransientSymbol extends Symbol, SymbolLinks
-{
-    /**
-     * @param {SymbolFlags} flags
-     * @param {string} name
-     */
-    constructor( flags, name )
-    {
-        super( flags, name );
-        this.checkFlags      = CheckFlags();
-        this.isRestParameter = false;
-    }
-}
-
-/**
- * @class
- */
-class ReverseMappedSymbol extends TransientSymbol
-{
-    constructor()
-    {
-        super();
-        this.propertyType = null;
-        this.mappedType   = null;
-    }
-}
-
-
-/**
- * @param {SymbolFlags} flags
- * @param {string} name
- * @param {?CheckFlags} [checkFlags]
- * @returns {Symbol}
- */
-function createSymbol( flags, name, checkFlags = CheckFlags() )
-{
-    const symbol      = new TransientSymbol( SymbolFlags( flags | SymbolFlags.Transient ), name );
-    symbol.checkFlags = CheckFlags( checkFlags );
-    return symbol;
 }
 
 /**
@@ -2634,5 +2878,53 @@ function createIndexInfo( type, isReadonly, declaration )
         isReadonly,
         declaration
     };
+}
+
+function createTypeofType()
+{
+    return UnionType.getUnionType( arrayFrom( typeofEQFacts.keys(), getLiteralType ) );
+}
+
+/**
+ * We store all literal types in a single map with keys of the form `'#NNN'` and `'@SSS'`,
+ * where NNN is the text representation of a numeric literal and SSS are the characters
+ * of a string literal. For literal enum members we use `'EEE#NNN'` and `'EEE@SSS'`, where
+ * EEE is a unique id for the containing enum type.
+ *
+ * @param {string|number} value
+ * @param {?number} [enumId]
+ * @param {?Symbol} [symbol]
+ * @return {LiteralType}
+ */
+function getLiteralType( value, enumId, symbol )
+{
+    const
+        qualifier = typeof value === "number" ? "#" : "@",
+        key       = enumId ? enumId + qualifier + value : qualifier + value;
+
+    let type = literalTypes.get( key );
+
+    if ( !type )
+    {
+        const flags = ( typeof value === "number" ? TypeFlags.NumberLiteral : TypeFlags.StringLiteral ) | ( enumId ? TypeFlags.EnumLiteral : 0 );
+
+        literalTypes.set( key, type = createLiteralType( flags, value, symbol ) );
+    }
+
+    return type;
+}
+
+/**
+ * @param {LiteralTypeNode} node
+ * @return {*}
+ */
+function getTypeFromLiteralTypeNode( node )
+{
+    const links = getNodeLinks( node );
+
+    if ( !links.resolvedType )
+        links.resolvedType = getRegularTypeOfLiteralType( checkExpression( node.literal ) );
+
+    return links.resolvedType;
 }
 

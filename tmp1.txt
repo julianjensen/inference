@@ -1,0 +1,619 @@
+Object = {
+    [[prototype]]: Function.prototype
+
+    [ ObjectConstructor members ]
+    prototype: {
+        [ Object members ]
+    }
+
+Function = {
+    [[prototype]]: Object.prototype
+
+    [ FunctionConstructor members ]
+
+    length: number
+    name: string
+
+    prototype: {
+        [[prototype]]: Object.prototype
+        [ Function members ]
+    }
+}
+
+Array = {
+    [[prototype]]: Function.prototype
+
+    [ ArrayConstructor members ]
+
+    prototype: {
+        [[prototype]]: Object.prototype
+        [ Array members ]
+    }
+}
+
+declare class
+    [[prototype]]: Function.prototype
+
+    [static members]
+
+    length: number;
+    name: string;
+    prototype: {
+        [[prototype]]: Object.prototype
+        [ prototype members ]
+        constructor: function
+    }
+
+
+instance function
+    [[prototype]]: function.prototype
+    [ instance members ]
+
+
+instance object
+    [[prototype]]: Object.prototype
+
+
+primitive
+
+
+BaseObject( members, proto )
+    members = members || []
+    proto = proto || TopBaseObject
+
+FunctionObject( type, params )
+    extends BaseObject( [], new BaseObject( [] ) )
+
+    returnType = type
+    parameters = params
+
+
+new Object( members, proto extends BaseObject )
+    BaseObject( [] )
+    [[prototype]] = proto
+
+    return new BaseObject( members, proto || TopBaseObject )
+
+Declared Object
+
+
+    ^(.*)Constructor$   => $1.staticMembers
+    ^(.*)$              => $1.prototypeMembers
+
+
+construct   =>
+    new Object( prototypeMembers )
+
+Startup
+-------
+
+
+
+
+Create top object for all:
+    "Object" = new BaseObject( [], null )
+
+Read next TS thing and match
+
+    ^(.*)(Constructor)$   => Name = $1, isStatic = $2 === Constructor
+
+    Symbol = get Name || new BaseObject
+
+    | isStatic
+        Symbol.members = TS
+    | *
+        Symbol.proto = new BaseObject( TS, TS.prototype || TopBaseObject )
+
+
+    $1.staticMembers
+    ^(.*)$              => $1.prototypeMembers
+
+
+
+
+
+/** *************************************************************************************
+ * Name: "-"
+ * Constructor name: "Object" (function(1))
+ * Members: 21
+ * Target: {}
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ No static properties.
+
+ prototype
+ ---------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "func_name" (function(0))
+ * Constructor name: "Function" (function(1))
+ * Members: 73
+ * Target: function func_name() {}
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ func_static: function(0)
+ length: number
+ name: string
+ prototype: object
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "-"
+ * Constructor name: "func_name" (function(0))
+ * Members: 26
+ * Target: new func_name()
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ func_instance: function(0)
+
+ prototype
+ ---------
+ name: "func_name" (function(0))
+ members: 2
+
+ constructor: function(0)
+ func_proto: function(0)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "-"
+ * Constructor name: "Array" (function(1))
+ * Members: 14
+ * Target: []
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ length: number
+
+ prototype
+ ---------
+ name: "Array" (function(1))
+ members: 32
+
+ concat: function(1)
+ constructor: function(1)
+ copyWithin: function(2)
+ entries: function(0)
+ every: function(1)
+ fill: function(1)
+ filter: function(1)
+ find: function(1)
+ findIndex: function(1)
+ forEach: function(1)
+ includes: function(1)
+ indexOf: function(1)
+ join: function(1)
+ keys: function(0)
+ lastIndexOf: function(1)
+ length: number
+ map: function(1)
+ pop: function(0)
+ push: function(1)
+ reduce: function(1)
+ reduceRight: function(1)
+ reverse: function(0)
+ shift: function(0)
+ slice: function(2)
+ some: function(1)
+ sort: function(1)
+ splice: function(2)
+ toLocaleString: function(0)
+ toString: function(0)
+ unshift: function(1)
+ Symbol.iterator: function(0)
+ Symbol.unscopables: object
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "afn" (function(0))
+ * Constructor name: "Function" (function(1))
+ * Members: 28
+ * Target: () => {}
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ length: number
+ name: string
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "Abc" (function(0))
+ * Constructor name: "Function" (function(1))
+ * Members: 47
+ * Target: class Abc {}
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ length: number
+ name: string
+ prototype: object
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "acls" (function(0))
+ * Constructor name: "Function" (function(1))
+ * Members: 47
+ * Target: class {}
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ length: number
+ name: string
+ prototype: object
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "Object" (function(1))
+ * Constructor name: "Function" (function(1))
+ * Members: 580
+ * Target: Object
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ assign: function(2)
+ create: function(2)
+ defineProperties: function(2)
+ defineProperty: function(3)
+ entries: function(1)
+ freeze: function(1)
+ getOwnPropertyDescriptor: function(2)
+ getOwnPropertyDescriptors: function(1)
+ getOwnPropertyNames: function(1)
+ getOwnPropertySymbols: function(1)
+ getPrototypeOf: function(1)
+ is: function(2)
+ isExtensible: function(1)
+ isFrozen: function(1)
+ isSealed: function(1)
+ keys: function(1)
+ length: number
+ name: string
+ preventExtensions: function(1)
+ prototype: object
+ seal: function(1)
+ setPrototypeOf: function(2)
+ values: function(1)
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "Function" (function(1))
+ * Constructor name: "Function" (function(1))
+ * Members: 52
+ * Target: Function
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ length: number
+ name: string
+ prototype: function(0)
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
+
+/** *************************************************************************************
+ * Name: "Array" (function(1))
+ * Constructor name: "Function" (function(1))
+ * Members: 134
+ * Target: Array
+ ****************************************************************************************/
+
+ Static symbols
+ ==============
+ from: function(1)
+ isArray: function(1)
+ length: number
+ name: string
+ of: function(0)
+ prototype: object
+ Symbol.species: function(1)
+
+ prototype
+ ---------
+ name: "Function" (function(1))
+ members: 10
+
+ apply: function(2)
+ arguments: get -> function, set -> function
+ bind: function(1)
+ call: function(1)
+ caller: get -> function, set -> function
+ constructor: function(1)
+ length: number
+ name: string
+ toString: function(0)
+ Symbol.hasInstance: function(1)
+
+ prototype (1)
+ -------------
+ name: "Object" (function(1))
+ members: 12
+
+ __defineGetter__: function(2)
+ __defineSetter__: function(2)
+ __lookupGetter__: function(1)
+ __lookupSetter__: function(1)
+ __proto__: get -> function, set -> function
+ constructor: function(1)
+ hasOwnProperty: function(1)
+ isPrototypeOf: function(1)
+ propertyIsEnumerable: function(1)
+ toLocaleString: function(0)
+ toString: function(0)
+ valueOf: function(0)
+
+
