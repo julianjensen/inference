@@ -7,24 +7,52 @@
 
 "use strict";
 
-import assert                                                                                                                              from 'assert';
+export const createSymbolTable = () => new Map();
+
+import * as assert                                                                                                                         from 'assert';
 import util                                                                                                                                from 'util';
 import { EventEmitter }                                                                                                                    from "events";
-import chalk                                                                                                                               from 'chalk';
 import { SyntaxKind }                                                                                                                      from "./ts/ts-helpers";
 import { CharacterCodes, CheckFlags, InternalSymbolName, ModifierFlags, NodeFlags, SpecialPropertyAssignmentKind, SymbolFlags, TypeFlags } from "./types";
-import { getNameOfDeclaration }                                                                                                            from "./jsdoc-things";
+import { getNameOfDeclaration }                                                                                                            from "./symbols/nodes";
 import { getModifierFlags, hasModifier }                                                                                                   from "./symbols/modifiers";
+import {
+    isAssignmentExpression,
+    isBinaryExpression,
+    isExpression,
+    isIdentifierName,
+    isVariableDeclaration
+}                                                                                                                                          from "typescript";
+
+let currentFile = {
+    fatal: ( ...args ) => console.error( ...args ),
+    error: ( ...args ) => console.error( ...args ),
+    warn:  ( ...args ) => console.warn( ...args ),
+    log:   ( ...args ) => console.log( ...args )
+};
+
+
+
 
 const
-    { inspect }                               = util,
-    { red, green, yellow, cyan, white, gray } = chalk,
+    top   = node => {
+        if ( currentFile ) return currentFile;
+        while ( node && node.pareent ) node = node.parent;
+        return node;
+    },
+    fatal = ( node, msg ) => top( node ).fatal( msg, node ),
+    error = ( node, msg ) => top( node ).error( msg, node ),
+    warn  = ( node, msg ) => top( node ).warn( msg, node ),
+    log   = ( node, msg ) => top( node ).log( msg, node );
+
+const
+    { inspect } = util,
     /**
      * @param {object} o
      * @param {string} n
      * @return {boolean}
      */
-    has                                       = ( o, n ) => Reflect.has( o, n );
+    has         = ( o, n ) => Reflect.has( o, n );
 
 util.inspect.defaultOptions = {
     colors:     true,
@@ -186,201 +214,7 @@ export function flatDump( obj )
         } );
 }
 
-export const output = {};
 
-/**
- * @param {string} fileName
- * @param {string} source
- * @return {{fatal: fatal, error: error}}
- */
-export function create_reporters( fileName, source )
-{
-    const
-        loc_info = create_loc_info( source );
-
-    /**
-     * @param {Node} node
-     * @return {[ number, number ]}
-     */
-    function get_start_end( node )
-    {
-        if ( has( node, 'start' ) )
-            return [ node.start, node.end ];
-        else if ( has( node, 'range' ) )
-            return node.range;
-        else
-            return [ node.pos, node.end ];
-    }
-
-    /**
-     * @param {string} msg
-     * @param {Node} [node]
-     * @param {object} [opts]
-     */
-    function fatal( msg, node, opts )
-    {
-        opts = Object.assign( opts || {}, {
-            noThrow: false,
-            color:   red,
-            show:    true
-        } );
-
-        error( msg, node, opts );
-    }
-
-    /**
-     * @param {string} msg
-     * @param {Node} [node]
-     * @param {object} [opts]
-     */
-    function warn( msg, node, opts )
-    {
-        opts = Object.assign( opts || {}, {
-            noThrow: true,
-            color:   yellow,
-            show:    true
-        } );
-
-        error( msg, node, opts );
-    }
-
-
-    /**
-     * @param {string} msg
-     * @param {Node} [node]
-     * @param {object} [opts]
-     */
-    function log( msg, node, opts )
-    {
-        opts = Object.assign( opts || {}, {
-            noThrow: false,
-            color:   cyan,
-            show:    true
-        } );
-
-        error( msg, node, opts );
-    }
-
-    /**
-     * @param {string} msg
-     * @param {Node} [node]
-     * @param {object} [opts]
-     */
-    function error( msg, node, opts = {} )
-    {
-        let { noThrow = true, show = true, color = red } = opts,
-            [ start, end ]                               = get_start_end( node ),
-            loc                                          = loc_info( start, end ),
-            fileLoc                                      = loc && `In "${fileName}", line ${loc.start.line + 1}: `,
-            txt                                          = ( loc ? fileLoc : '' ) + msg;
-
-        if ( show && node )
-            txt += '\n\n' + show_source( node, 0 );
-
-        if ( noThrow )
-        {
-            console.error( color( txt ) );
-            return;
-        }
-
-        throw new Error( txt );
-    }
-
-    /**
-     * @param node
-     * @return {string}
-     */
-    function show_source( node )
-    {
-        let [ start, end ] = get_start_end( node ),
-            loc            = loc_info( start, end ),
-            sline          = loc.start.sourceLine,
-            indicator      = ' '.repeat( loc.start.offset ) + '^';
-
-        return sline + '\n' + indicator;
-    }
-
-    /**
-     * @param offset
-     * @param lineOffsets
-     * @return {number}
-     */
-    function binary_search( offset, lineOffsets )
-    {
-        let b      = 0,
-            e      = lineOffsets.length - 1,
-            middle = ( e - b ) >> 1;
-
-        if ( offset >= lineOffsets[ lineOffsets.length - 1 ] ) return 0;
-
-        while ( true )
-        {
-            if ( offset < lineOffsets[ middle ] )
-                e = middle;
-            else if ( offset >= lineOffsets[ middle + 1 ] )
-                b = middle;
-            else
-                break;
-
-            middle = b + ( ( e - b ) >> 1 );
-        }
-
-        return middle;
-    }
-
-    /**
-     * @return {function(*=, *=)}
-     */
-    function create_loc_info()
-    {
-        let i           = 0,
-            lng         = source.length,
-            lineOffsets = [ 0 ],
-            chop        = s => s.replace( /^(.*)[\r\n]*$/, '$1' );
-
-        while ( i < lng )
-        {
-            if ( source[ i ] === '\n' )
-                lineOffsets.push( i + 1 );
-
-            ++i;
-        }
-
-        lineOffsets.push( lng );
-
-        return ( start, end ) => {
-            let lineNumber    = binary_search( start, lineOffsets ),
-                startOffset   = start - lineOffsets[ lineNumber ],
-                lineNumberEnd = end < lineOffsets[ lineNumber + 1 ] ? lineNumber : binary_search( end, lineOffsets ),
-                endOffset     = end - lineOffsets[ lineNumberEnd ];
-
-            return {
-                start:       {
-                    line:       lineNumber,
-                    offset:     startOffset,
-                    sourceLine: chop( source.substring( lineOffsets[ lineNumber ], lineOffsets[ lineNumber + 1 ] ) ),
-                    lineOffset: lineOffsets[ lineNumber ]
-                },
-                end:         {
-                    line:       lineNumberEnd,
-                    offset:     endOffset,
-                    sourceLine: chop( source.substring( lineOffsets[ lineNumberEnd ], lineOffsets[ lineNumberEnd + 1 ] ) ),
-                    lineOffset: lineOffsets[ lineNumberEnd ]
-                },
-                sourceRange: chop( source.substring( startOffset, endOffset + 1 ).replace( /^(.*)[\r\n]*$/, '$1' ) ),
-                sourceLines: chop( source.substring( lineOffsets[ lineNumber ], lineOffsets[ lineNumberEnd + 1 ] ) )
-            };
-
-        };
-    }
-
-    return {
-        fatal,
-        error,
-        warn,
-        log
-    };
-}
 
 /**
  * Should not be called on a declaration with a computed property name,
@@ -473,36 +307,36 @@ export function isDeclaration( node )
 function isDeclarationKind( kind )
 {
     return kind === SyntaxKind.ArrowFunction
-           || kind === SyntaxKind.BindingElement
-           || kind === SyntaxKind.ClassDeclaration
-           || kind === SyntaxKind.ClassExpression
-           || kind === SyntaxKind.Constructor
-           || kind === SyntaxKind.EnumDeclaration
-           || kind === SyntaxKind.EnumMember
-           || kind === SyntaxKind.ExportSpecifier
-           || kind === SyntaxKind.FunctionDeclaration
-           || kind === SyntaxKind.FunctionExpression
-           || kind === SyntaxKind.GetAccessor
-           || kind === SyntaxKind.ImportClause
-           || kind === SyntaxKind.ImportEqualsDeclaration
-           || kind === SyntaxKind.ImportSpecifier
-           || kind === SyntaxKind.InterfaceDeclaration
-           || kind === SyntaxKind.JsxAttribute
-           || kind === SyntaxKind.MethodDeclaration
-           || kind === SyntaxKind.MethodSignature
-           || kind === SyntaxKind.ModuleDeclaration
-           || kind === SyntaxKind.NamespaceExportDeclaration
-           || kind === SyntaxKind.NamespaceImport
-           || kind === SyntaxKind.Parameter
-           || kind === SyntaxKind.PropertyAssignment
-           || kind === SyntaxKind.PropertyDeclaration
-           || kind === SyntaxKind.PropertySignature
-           || kind === SyntaxKind.SetAccessor
-           || kind === SyntaxKind.ShorthandPropertyAssignment
-           || kind === SyntaxKind.TypeAliasDeclaration
-           || kind === SyntaxKind.TypeParameter
-           || kind === SyntaxKind.VariableDeclaration
-           || kind === SyntaxKind.JSDocTypedefTag;
+        || kind === SyntaxKind.BindingElement
+        || kind === SyntaxKind.ClassDeclaration
+        || kind === SyntaxKind.ClassExpression
+        || kind === SyntaxKind.Constructor
+        || kind === SyntaxKind.EnumDeclaration
+        || kind === SyntaxKind.EnumMember
+        || kind === SyntaxKind.ExportSpecifier
+        || kind === SyntaxKind.FunctionDeclaration
+        || kind === SyntaxKind.FunctionExpression
+        || kind === SyntaxKind.GetAccessor
+        || kind === SyntaxKind.ImportClause
+        || kind === SyntaxKind.ImportEqualsDeclaration
+        || kind === SyntaxKind.ImportSpecifier
+        || kind === SyntaxKind.InterfaceDeclaration
+        || kind === SyntaxKind.JsxAttribute
+        || kind === SyntaxKind.MethodDeclaration
+        || kind === SyntaxKind.MethodSignature
+        || kind === SyntaxKind.ModuleDeclaration
+        || kind === SyntaxKind.NamespaceExportDeclaration
+        || kind === SyntaxKind.NamespaceImport
+        || kind === SyntaxKind.Parameter
+        || kind === SyntaxKind.PropertyAssignment
+        || kind === SyntaxKind.PropertyDeclaration
+        || kind === SyntaxKind.PropertySignature
+        || kind === SyntaxKind.SetAccessor
+        || kind === SyntaxKind.ShorthandPropertyAssignment
+        || kind === SyntaxKind.TypeAliasDeclaration
+        || kind === SyntaxKind.TypeParameter
+        || kind === SyntaxKind.VariableDeclaration
+        || kind === SyntaxKind.JSDocTypedefTag;
 }
 
 export function isIdentifier( node )
@@ -515,8 +349,8 @@ export function isJSXTagName( node )
     const parent = node.parent;
 
     if ( parent.kind === SyntaxKind.JsxOpeningElement ||
-         parent.kind === SyntaxKind.JsxSelfClosingElement ||
-         parent.kind === SyntaxKind.JsxClosingElement )
+        parent.kind === SyntaxKind.JsxSelfClosingElement ||
+        parent.kind === SyntaxKind.JsxClosingElement )
     {
         return parent.tagName === node;
     }
@@ -615,15 +449,15 @@ export function isInExpressionContext( node )
             const forStatement = parent;
 
             return ( forStatement.initializer === node && forStatement.initializer.kind !== SyntaxKind.VariableDeclarationList ) ||
-                   forStatement.condition === node ||
-                   forStatement.incrementor === node;
+                forStatement.condition === node ||
+                forStatement.incrementor === node;
 
         case SyntaxKind.ForInStatement:
         case SyntaxKind.ForOfStatement:
             const forInStatement = parent;
 
             return ( forInStatement.initializer === node && forInStatement.initializer.kind !== SyntaxKind.VariableDeclarationList ) ||
-                   forInStatement.expression === node;
+                forInStatement.expression === node;
 
         case SyntaxKind.TypeAssertionExpression:
         case SyntaxKind.AsExpression:
@@ -703,14 +537,14 @@ export function skipPartiallyEmittedExpressions( node )
     return node;
 }
 
-/**
- * Determines whether a node is an expression based only on its kind.
- * Use `isExpressionNode` if not in transforms.
- */
-export function isExpression( node )
-{
-    return isExpressionKind( skipPartiallyEmittedExpressions( node ).kind );
-}
+// /**
+//  * Determines whether a node is an expression based only on its kind.
+//  * Use `isExpressionNode` if not in transforms.
+//  */
+// export function isExpression( node )
+// {
+//     return isExpressionKind( skipPartiallyEmittedExpressions( node ).kind );
+// }
 
 function isExpressionKind( kind )
 {
@@ -817,7 +651,7 @@ export function isClassLike( node )
 export function isAmbientModule( node )
 {
     return node && node.kind === SyntaxKind.ModuleDeclaration &&
-           ( node.name.kind === SyntaxKind.StringLiteral || isGlobalScopeAugmentation( node ) );
+        ( node.name.kind === SyntaxKind.StringLiteral || isGlobalScopeAugmentation( node ) );
 }
 
 export function isGlobalScopeAugmentation( module )
@@ -828,7 +662,7 @@ export function isGlobalScopeAugmentation( module )
 export function isEntityNameExpression( node )
 {
     return node.kind === SyntaxKind.Identifier ||
-           node.kind === SyntaxKind.PropertyAccessExpression && isEntityNameExpression( node.expression );
+        node.kind === SyntaxKind.PropertyAccessExpression && isEntityNameExpression( node.expression );
 }
 
 /**
@@ -849,8 +683,8 @@ function checkComputedPropertyName( node )
         // This will allow types number, string, symbol or any. It will also allow enums, the unknown
         // type, and any union of these types (like string | number).
         if ( links.resolvedType.flags & TypeFlags.Nullable ||
-             !isTypeAssignableToKind( links.resolvedType, TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.ESSymbolLike ) &&
-             !isTypeAssignableTo( links.resolvedType, get_ext_ref( 'UnionType' ).getUnionType( get_ext_ref( 'stringType', 'numberType', 'esSymbolType' ) ) ) )
+            !isTypeAssignableToKind( links.resolvedType, TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.ESSymbolLike ) &&
+            !isTypeAssignableTo( links.resolvedType, get_ext_ref( 'UnionType' ).getUnionType( get_ext_ref( 'stringType', 'numberType', 'esSymbolType' ) ) ) )
         {
             error( node, "A computed property name must be of type string number symbol or any" );
         }
@@ -885,6 +719,32 @@ export function hasLateBindableName( node )
     return name && isLateBindableName( name );
 }
 
+/**
+ * A declaration has a dynamic name if both of the following are true:
+ *   1. The declaration has a computed property name
+ *   2. The computed name is *not* expressed as Symbol.<name>, where name
+ *      is a property of the Symbol constructor that denotes a built in
+ *      Symbol.
+ *
+ * @param {Declaration} declaration
+ */
+export function hasDynamicName( declaration )
+{
+    const name = getNameOfDeclaration( declaration );
+
+    return name && isDynamicName( name );
+}
+
+/**
+ * @param {DeclarationName} name
+ * @return {boolean}
+ */
+export function isDynamicName( name )
+{
+    return name.kind === SyntaxKind.ComputedPropertyName &&
+        !isStringOrNumericLiteral( name.expression ) &&
+        !isWellKnownSymbolSyntactically( name.expression );
+}
 
 
 /**
@@ -988,25 +848,6 @@ export function binarySearch( array, value, keySelector = x => x.id, keyComparer
     }
 
     return ~low;
-}
-
-/**
- * Iterates through 'array' by index and performs the callback on each element of array until the callback
- * returns a truthy value, then returns that value.
- * If no such value is found, the callback is applied to each element of array and undefined is returned.
- */
-export function forEach( array, callback )
-{
-    if ( Array.isArray( array ) )
-    {
-        for ( let i = 0; i < array.length; i++ )
-        {
-            const result = callback( array[ i ], i );
-            if ( result ) return result;
-        }
-    }
-
-    return undefined;
 }
 
 export function getTextOfIdentifierOrLiteral( node )
@@ -1196,9 +1037,9 @@ export function get_ext_ref( ...name )
 export function isReservedMemberName( name )
 {
     return name.charCodeAt( 0 ) === CharacterCodes._ &&
-           name.charCodeAt( 1 ) === CharacterCodes._ &&
-           name.charCodeAt( 2 ) !== CharacterCodes._ &&
-           name.charCodeAt( 2 ) !== CharacterCodes.at;
+        name.charCodeAt( 1 ) === CharacterCodes._ &&
+        name.charCodeAt( 2 ) !== CharacterCodes._ &&
+        name.charCodeAt( 2 ) !== CharacterCodes.at;
 }
 
 
@@ -1209,9 +1050,9 @@ export function isReservedMemberName( name )
 export function getSourceOfAssignment( node )
 {
     return isExpressionStatement( node ) &&
-           node.expression && isBinaryExpression( node.expression ) &&
-           node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
-           node.expression.right;
+        node.expression && isBinaryExpression( node.expression ) &&
+        node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
+        node.expression.right;
 }
 
 export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( node )
@@ -1229,16 +1070,16 @@ export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( no
 export function getSingleVariableOfVariableStatement( node )
 {
     return node.kind === SyntaxKind.VariableStatement &&
-           node.declarationList.declarations.length > 0 &&
-           node.declarationList.declarations[ 0 ];
+        node.declarationList.declarations.length > 0 &&
+        node.declarationList.declarations[ 0 ];
 }
 
 export function getSingleInitializerOfVariableStatement( node, child )
 {
     return node.kind === SyntaxKind.VariableStatement &&
-           node.declarationList.declarations.length > 0 &&
-           ( !child || node.declarationList.declarations[ 0 ].initializer === child ) &&
-           node.declarationList.declarations[ 0 ].initializer;
+        node.declarationList.declarations.length > 0 &&
+        ( !child || node.declarationList.declarations[ 0 ].initializer === child ) &&
+        node.declarationList.declarations[ 0 ].initializer;
 }
 
 
@@ -1248,175 +1089,175 @@ export function getNestedModuleDeclaration( node )
     return node.kind === SyntaxKind.ModuleDeclaration && node.body && node.body.kind === SyntaxKind.ModuleDeclaration && node.body;
 }
 
-/**
- * @param {ts.Node} node
- * @return {boolean}
- */
-export function isInJavaScriptFile( node )
-{
-    return node && !!( node.flags & NodeFlags.JavaScriptFile );
-}
-
-/**
- * Given a BinaryExpression, returns SpecialPropertyAssignmentKind for the various kinds of property
- * assignments we treat as special in the binder
- *
- * @param {ts.BinaryExpression} expr
- * @return {SpecialPropertyAssignmentKind}
- */
-export function getSpecialPropertyAssignmentKind( expr )
-{
-    if ( !isInJavaScriptFile( expr ) )
-        return SpecialPropertyAssignmentKind.None;
-
-    if ( expr.operatorToken.kind !== SyntaxKind.EqualsToken || expr.left.kind !== SyntaxKind.PropertyAccessExpression )
-        return SpecialPropertyAssignmentKind.None;
-
-    const lhs = expr.left;
-    if ( lhs.expression.kind === SyntaxKind.Identifier )
-    {
-        const lhsId = lhs.expression;
-        if ( lhsId.escapedText === "exports" )
-        // exports.name = expr
-            return SpecialPropertyAssignmentKind.ExportsProperty;
-        else if ( lhsId.escapedText === "module" && lhs.name.escapedText === "exports" )
-        // module.exports = expr
-            return SpecialPropertyAssignmentKind.ModuleExports;
-        else
-        // F.x = expr
-            return SpecialPropertyAssignmentKind.Property;
-    }
-    else if ( lhs.expression.kind === SyntaxKind.ThisKeyword )
-        return SpecialPropertyAssignmentKind.ThisProperty;
-    else if ( lhs.expression.kind === SyntaxKind.PropertyAccessExpression )
-    {
-        // chained dot, e.g. x.y.z = expr; this var is the 'x.y' part
-        const innerPropertyAccess = lhs.expression;
-        if ( innerPropertyAccess.expression.kind === SyntaxKind.Identifier )
-        {
-            // module.exports.name = expr
-            const innerPropertyAccessIdentifier = innerPropertyAccess.expression;
-            if ( innerPropertyAccessIdentifier.escapedText === "module" && innerPropertyAccess.name.escapedText === "exports" )
-
-                return SpecialPropertyAssignmentKind.ExportsProperty;
-
-            if ( innerPropertyAccess.name.escapedText === "prototype" )
-                return SpecialPropertyAssignmentKind.PrototypeProperty;
-
-        }
-    }
-
-
-    return SpecialPropertyAssignmentKind.None;
-}
-
-/**
- * @param {ts.Node} node
- * @return {boolean}
- */
-export function isObjectLiteralOrClassExpressionMethod( node )
-{
-    return node.kind === SyntaxKind.MethodDeclaration && ( node.parent.kind === SyntaxKind.ObjectLiteralExpression || node.parent.kind === SyntaxKind.ClassExpression );
-}
-
-/**
- *
- * @param {ts.Node} node
- * @return {Node|boolean}
- */
-export function isFunctionLike( node )
-{
-    return node && isFunctionLikeKind( node.kind );
-}
-
-/**
- * @param {ts.Node} node
- */
-export function isFunctionLikeDeclaration( node )
-{
-    return node && isFunctionLikeDeclarationKind( node.kind );
-}
-
-/**
- * @param {SyntaxKind} kind
- * @return {boolean}
- */
-function isFunctionLikeDeclarationKind( kind )
-{
-    switch ( kind )
-    {
-        case SyntaxKind.FunctionDeclaration:
-        case SyntaxKind.MethodDeclaration:
-        case SyntaxKind.Constructor:
-        case SyntaxKind.GetAccessor:
-        case SyntaxKind.SetAccessor:
-        case SyntaxKind.FunctionExpression:
-        case SyntaxKind.ArrowFunction:
-            return true;
-        default:
-            return false;
-    }
-}
-
-/**
- * @param {SyntaxKind} kind
- * @return {boolean}
- */
-export function isFunctionLikeKind( kind )
-{
-    switch ( kind )
-    {
-        case SyntaxKind.MethodSignature:
-        case SyntaxKind.CallSignature:
-        case SyntaxKind.ConstructSignature:
-        case SyntaxKind.IndexSignature:
-        case SyntaxKind.FunctionType:
-        case SyntaxKind.JSDocFunctionType:
-        case SyntaxKind.ConstructorType:
-            return true;
-        default:
-            return isFunctionLikeDeclarationKind( kind );
-    }
-}
-
-/**
- * @param {ts.Node} node
- * @return {boolean}
- */
-export function isConst( node )
-{
-    return !!( getCombinedNodeFlags( node ) & NodeFlags.Const )
-           || !!( getCombinedModifierFlags( node ) & ModifierFlags.Const );
-}
-
-/**
- * @param {Node} node
- * @return {Node}
- */
-function walkUpBindingElementsAndPatterns( node )
-{
-    while ( node && ( node.kind === SyntaxKind.BindingElement || isBindingPattern( node ) ) )
-    {
-        node = node.parent;
-    }
-
-    return node;
-}
-
-/**
- * @param {Node} node
- * @return {BindingPattern}
- */
-export function isBindingPattern( node )
-{
-    if ( node )
-    {
-        const kind = node.kind;
-        return kind === SyntaxKind.ArrayBindingPattern || kind === SyntaxKind.ObjectBindingPattern;
-    }
-
-    return false;
-}
+// /**
+//  * @param {ts.Node} node
+//  * @return {boolean}
+//  */
+// export function isInJavaScriptFile( node )
+// {
+//     return node && !!( node.flags & NodeFlags.JavaScriptFile );
+// }
+//
+// /**
+//  * Given a BinaryExpression, returns SpecialPropertyAssignmentKind for the various kinds of property
+//  * assignments we treat as special in the binder
+//  *
+//  * @param {ts.BinaryExpression} expr
+//  * @return {SpecialPropertyAssignmentKind}
+//  */
+// export function getSpecialPropertyAssignmentKind( expr )
+// {
+//     if ( !isInJavaScriptFile( expr ) )
+//         return SpecialPropertyAssignmentKind.None;
+//
+//     if ( expr.operatorToken.kind !== SyntaxKind.EqualsToken || expr.left.kind !== SyntaxKind.PropertyAccessExpression )
+//         return SpecialPropertyAssignmentKind.None;
+//
+//     const lhs = expr.left;
+//     if ( lhs.expression.kind === SyntaxKind.Identifier )
+//     {
+//         const lhsId = lhs.expression;
+//         if ( lhsId.escapedText === "exports" )
+//         // exports.name = expr
+//             return SpecialPropertyAssignmentKind.ExportsProperty;
+//         else if ( lhsId.escapedText === "module" && lhs.name.escapedText === "exports" )
+//         // module.exports = expr
+//             return SpecialPropertyAssignmentKind.ModuleExports;
+//         else
+//         // F.x = expr
+//             return SpecialPropertyAssignmentKind.Property;
+//     }
+//     else if ( lhs.expression.kind === SyntaxKind.ThisKeyword )
+//         return SpecialPropertyAssignmentKind.ThisProperty;
+//     else if ( lhs.expression.kind === SyntaxKind.PropertyAccessExpression )
+//     {
+//         // chained dot, e.g. x.y.z = expr; this var is the 'x.y' part
+//         const innerPropertyAccess = lhs.expression;
+//         if ( innerPropertyAccess.expression.kind === SyntaxKind.Identifier )
+//         {
+//             // module.exports.name = expr
+//             const innerPropertyAccessIdentifier = innerPropertyAccess.expression;
+//             if ( innerPropertyAccessIdentifier.escapedText === "module" && innerPropertyAccess.name.escapedText === "exports" )
+//
+//                 return SpecialPropertyAssignmentKind.ExportsProperty;
+//
+//             if ( innerPropertyAccess.name.escapedText === "prototype" )
+//                 return SpecialPropertyAssignmentKind.PrototypeProperty;
+//
+//         }
+//     }
+//
+//
+//     return SpecialPropertyAssignmentKind.None;
+// }
+//
+// /**
+//  * @param {ts.Node} node
+//  * @return {boolean}
+//  */
+// export function isObjectLiteralOrClassExpressionMethod( node )
+// {
+//     return node.kind === SyntaxKind.MethodDeclaration && ( node.parent.kind === SyntaxKind.ObjectLiteralExpression || node.parent.kind === SyntaxKind.ClassExpression );
+// }
+//
+// /**
+//  *
+//  * @param {ts.Node} node
+//  * @return {Node|boolean}
+//  */
+// export function isFunctionLike( node )
+// {
+//     return node && isFunctionLikeKind( node.kind );
+// }
+//
+// /**
+//  * @param {ts.Node} node
+//  */
+// export function isFunctionLikeDeclaration( node )
+// {
+//     return node && isFunctionLikeDeclarationKind( node.kind );
+// }
+//
+// /**
+//  * @param {SyntaxKind} kind
+//  * @return {boolean}
+//  */
+// function isFunctionLikeDeclarationKind( kind )
+// {
+//     switch ( kind )
+//     {
+//         case SyntaxKind.FunctionDeclaration:
+//         case SyntaxKind.MethodDeclaration:
+//         case SyntaxKind.Constructor:
+//         case SyntaxKind.GetAccessor:
+//         case SyntaxKind.SetAccessor:
+//         case SyntaxKind.FunctionExpression:
+//         case SyntaxKind.ArrowFunction:
+//             return true;
+//         default:
+//             return false;
+//     }
+// }
+//
+// /**
+//  * @param {SyntaxKind} kind
+//  * @return {boolean}
+//  */
+// export function isFunctionLikeKind( kind )
+// {
+//     switch ( kind )
+//     {
+//         case SyntaxKind.MethodSignature:
+//         case SyntaxKind.CallSignature:
+//         case SyntaxKind.ConstructSignature:
+//         case SyntaxKind.IndexSignature:
+//         case SyntaxKind.FunctionType:
+//         case SyntaxKind.JSDocFunctionType:
+//         case SyntaxKind.ConstructorType:
+//             return true;
+//         default:
+//             return isFunctionLikeDeclarationKind( kind );
+//     }
+// }
+//
+// /**
+//  * @param {ts.Node} node
+//  * @return {boolean}
+//  */
+// export function isConst( node )
+// {
+//     return !!( getCombinedNodeFlags( node ) & NodeFlags.Const )
+//            || !!( getCombinedModifierFlags( node ) & ModifierFlags.Const );
+// }
+//
+// /**
+//  * @param {ts.Node} node
+//  * @return {ts.Node}
+//  */
+// function walkUpBindingElementsAndPatterns( node )
+// {
+//     while ( node && ( node.kind === SyntaxKind.BindingElement || isBindingPattern( node ) ) )
+//     {
+//         node = node.parent;
+//     }
+//
+//     return node;
+// }
+//
+// /**
+//  * @param {Node} node
+//  * @return {BindingPattern}
+//  */
+// export function isBindingPattern( node )
+// {
+//     if ( node )
+//     {
+//         const kind = node.kind;
+//         return kind === SyntaxKind.ArrayBindingPattern || kind === SyntaxKind.ObjectBindingPattern;
+//     }
+//
+//     return false;
+// }
 
 /**
  * @param {ts.Node} node
@@ -1445,22 +1286,26 @@ export function getCombinedModifierFlags( node )
     return flags;
 }
 
-// Returns the node flags for this node and all relevant parent nodes.  This is done so that
-// nodes like variable declarations and binding elements can returned a view of their flags
-// that includes the modifiers from their container.  i.e. flags like export/declare aren't
-// stored on the variable declaration directly, but on the containing variable statement
-// (if it has one).  Similarly, flags for let/const are store on the variable declaration
-// list.  By calling this function, all those flags are combined so that the client can treat
-// the node as if it actually had those flags.
-export function getCombinedNodeFlags( node: Node ): NodeFlags
+/**
+ * Returns the node flags for this node and all relevant parent nodes.  This is done so that
+ * nodes like variable declarations and binding elements can returned a view of their flags
+ * that includes the modifiers from their container.  i.e. flags like export/declare aren't
+ * stored on the variable declaration directly, but on the containing variable statement
+ * (if it has one).  Similarly, flags for let/const are store on the variable declaration
+ * list.  By calling this function, all those flags are combined so that the client can treat
+ * the node as if it actually had those flags.
+ *
+ * @param {ts.Node} node
+ * @return {number|NodeFlags}
+ */
+export function getCombinedNodeFlags( node )
 {
     node = walkUpBindingElementsAndPatterns( node );
 
     let flags = node.flags;
+
     if ( node.kind === SyntaxKind.VariableDeclaration )
-    {
         node = node.parent;
-    }
 
     if ( node && node.kind === SyntaxKind.VariableDeclarationList )
     {
@@ -1469,26 +1314,244 @@ export function getCombinedNodeFlags( node: Node ): NodeFlags
     }
 
     if ( node && node.kind === SyntaxKind.VariableStatement )
-    {
         flags |= node.flags;
-    }
 
-    return flags;
+    return NodeFlags( flags );
 }
 
-export const createSymbolTable = () => new Map();
+// export function getNestedModuleDeclaration( node )
+// {
+//     return node.kind === SyntaxKind.ModuleDeclaration &&
+//         node.body &&
+//         node.body.kind === SyntaxKind.ModuleDeclaration &&
+//         node.body;
+// }
 
+// /**
+//  * @param {ts.Node} node
+//  * @return {?(ts.Expression|ts.Node)}
+//  */
+// export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( node )
+// {
+//     switch ( node.kind )
+//     {
+//         case SyntaxKind.VariableStatement:
+//             const v = getSingleVariableOfVariableStatement( node );
+//             return v && v.initializer;
+//         case SyntaxKind.PropertyDeclaration:
+//             return node.initializer;
+//     }
+// }
+//
+// /**
+//  * @param {ts.Node} node
+//  * @return {?(ts.VariableDeclaration|ts.Node)}
+//  */
+// function getSingleVariableOfVariableStatement( node )
+// {
+//     return isVariableStatement( node ) &&
+//         node.declarationList.declarations.length > 0 &&
+//         node.declarationList.declarations[ 0 ];
+// }
 
-export function isAsyncFunction( node )
+/**
+ * @param {ts.SourceFile|ts.Node} sourceFile
+ * @param {ts.Expression|ts.Node} node
+ * @return {*|boolean}
+ */
+export function isExportsOrModuleExportsOrAlias( sourceFile, node )
 {
-    switch ( node.kind )
+    return isExportsIdentifier( node ) ||
+        isModuleExportsPropertyAccessExpression( node ) ||
+        isIdentifier( node ) && isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node );
+}
+
+/**
+ * @param {ts.SourceFile|ts.Node} sourceFile
+ * @param {ts.Identifier|ts.Node} node
+ * @return {*|boolean}
+ */
+export function isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node )
+{
+    const symbol = lookupSymbolForNameWorker( sourceFile, node.escapedText );
+
+    return symbol && symbol.valueDeclaration && isVariableDeclaration( symbol.valueDeclaration ) &&
+        symbol.valueDeclaration.initializer && isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, symbol.valueDeclaration.initializer );
+}
+
+/**
+ * @param {ts.SourceFile|ts.Node} sourceFile
+ * @param {ts.Expression|ts.Node} node
+ * @return {*|boolean}
+ */
+export function isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node )
+{
+    return isExportsOrModuleExportsOrAlias( sourceFile, node ) ||
+        ( isAssignmentExpression( node, /* excludeCompoundAssignements */ true ) && (
+            isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.left ) || isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.right ) ) );
+}
+
+/**
+ * @param {ts.Node} container
+ * @param {string} name
+ * @return {?Symbol}
+ */
+export function lookupSymbolForNameWorker( container, name )
+{
+    const local = container.locals && container.locals.get( name );
+
+    if ( local ) return local.exportSymbol || local;
+
+    return container.symbol && container.symbol.exports && container.symbol.exports.get( name );
+}
+
+/**
+ * The binder visits every node in the syntax tree so it is a convenient place to perform a single localized
+ * check for reserved words used as identifiers in strict mode code.
+ *
+ * @param node
+ */
+function checkStrictModeIdentifier( node )
+{
+    if ( node.originalKeywordKind >= SyntaxKind.FirstFutureReservedWord &&
+        node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
+        !isIdentifierName( node ) &&
+        !( node.flags & NodeFlags.Ambient ) )
     {
-        case SyntaxKind.FunctionDeclaration:
-        case SyntaxKind.FunctionExpression:
-        case SyntaxKind.ArrowFunction:
-        case SyntaxKind.MethodDeclaration:
-            return ( node ).body !== undefined && ( node ).asteriskToken === undefined && hasModifier( node, ModifierFlags.Async );
+        error( node, 'reserved word somehow' );
+    }
+}
+
+function isLogicalExpression( node )
+{
+    while ( true )
+    {
+        if ( node.kind === SyntaxKind.ParenthesizedExpression )
+            node = node.expression;
+        else if ( node.kind === SyntaxKind.PrefixUnaryExpression && node.operator === SyntaxKind.ExclamationToken )
+            node = node.operand;
+        else
+            return node.kind === SyntaxKind.BinaryExpression && (
+                node.operatorToken.kind === SyntaxKind.AmpersandAmpersandToken ||
+                node.operatorToken.kind === SyntaxKind.BarBarToken );
+
+    }
+}
+
+export function isTopLevelLogicalExpression( node )
+{
+    while ( node.parent.kind === SyntaxKind.ParenthesizedExpression ||
+    node.parent.kind === SyntaxKind.PrefixUnaryExpression &&
+    node.parent.operator === SyntaxKind.ExclamationToken )
+        node = node.parent;
+
+    return !isStatementCondition( node ) && !isLogicalExpression( node.parent );
+}
+
+function isStatementCondition( node )
+{
+    const parent = node.parent;
+
+    switch ( parent.kind )
+    {
+        case SyntaxKind.IfStatement:
+        case SyntaxKind.WhileStatement:
+        case SyntaxKind.DoStatement:
+            return parent.expression === node;
+        case SyntaxKind.ForStatement:
+        case SyntaxKind.ConditionalExpression:
+            return parent.condition === node;
     }
 
     return false;
+}
+
+/**
+ * @param f
+ */
+export function set_file( f )
+{
+    currentFile = f;
+}
+
+/**
+ * Returns true if this node is missing from the actual source code. A 'missing' node is different
+ * from 'undefined/defined'. When a node is undefined (which can happen for optional nodes
+ * in the tree), it is definitely missing. However, a node may be defined, but still be
+ * missing.  This happens whenever the parser knows it needs to parse something, but can't
+ * get anything in the source code that it expects at that location. For example:
+ *
+ *          let a: ;
+ *
+ * Here, the Type in the Type-Annotation is not-optional (as there is a colon in the source
+ * code). So the parser will attempt to parse out a type, and will create an actual node.
+ * However, this node will be 'missing' in the sense that no actual source-code/tokens are
+ * contained within it.
+ *
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function nodeIsMissing( node )
+{
+    if ( node === undefined )
+        return true;
+
+
+    return node.pos === node.end && node.pos >= 0 && node.kind !== SyntaxKind.EndOfFileToken;
+}
+
+/**
+ * @param {ts.Node} node
+ * @return {boolean}
+ */
+export function nodeIsPresent( node )
+{
+    return !nodeIsMissing( node );
+}
+
+/**
+ * The binder visits every node in the syntax tree so it is a convenient place to perform a single localized
+ * check for reserved words used as identifiers in strict mode code.
+ *
+ * @param {ts.Node} node
+ */
+export function checkStrictModeIdentifier( node )
+{
+    if ( node.originalKeywordKind >= SyntaxKind.FirstFutureReservedWord &&
+        node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
+        !isIdentifierName( node ) &&
+        !( node.flags & NodeFlags.Ambient ) )
+    {
+
+        warn( node, "Strict mode identifier issue" );
+    }
+}
+
+/**
+ * @param {ts.Node} contextNode
+ * @param {ts.Node} name
+ */
+export function checkStrictModeEvalOrArguments( contextNode, name )
+{
+    if ( name && name.kind === SyntaxKind.Identifier )
+    {
+        if ( isEvalOrArgumentsIdentifier( name ) )
+        {
+            // We check first if the name is inside class declaration or class expression; if so give explicit message
+            // otherwise report generic error message.
+            warn( name, "Don't use eval or arguments as identifier names" );
+        }
+    }
+}
+
+function isEvalOrArgumentsIdentifier( node )
+{
+    return isIdentifier( node ) && ( node.escapedText === "eval" || node.escapedText === "arguments" );
+}
+
+export function positionIsSynthesized( pos )
+{
+    // This is a fast way of testing the following conditions:
+    //  pos === undefined || pos === null || isNaN(pos) || pos < 0;
+    return !( pos >= 0 );
 }

@@ -724,7 +724,7 @@ export function forEachChild( node, cbNode, cbNodes )
             return visitNodes( cbNode, cbNodes, node.tags );
         case SyntaxKind.JSDocParameterTag:
         case SyntaxKind.JSDocPropertyTag:
-            if ( ( node as JSDocPropertyLikeTag ).isNameFirst )
+            if ( node.isNameFirst )
             {
                 return visitNode( cbNode, node.name ) ||
                        visitNode( cbNode, node.typeExpression );
@@ -754,12 +754,10 @@ export function forEachChild( node, cbNode, cbNodes )
                        visitNode( cbNode, node.typeExpression );
             }
         case SyntaxKind.JSDocTypeLiteral:
-            if ( ( node as JSDocTypeLiteral ).jsDocPropertyTags )
+            if ( node.jsDocPropertyTags )
             {
-                for ( const tag of ( node as JSDocTypeLiteral ).jsDocPropertyTags )
-                {
+                for ( const tag of node.jsDocPropertyTags )
                     visitNode( cbNode, tag );
-                }
             }
             return;
         case SyntaxKind.PartiallyEmittedExpression:

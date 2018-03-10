@@ -124,11 +124,12 @@ Li;
 import {
     binarySearch, containsIdenticalType,
     containsType,
-    forEach,
-    getNameOfDeclaration,
     idText, implement,
-    output, set_ext_ref
+    set_ext_ref
 } from "../utils";
+
+import { getNameOfDeclaration } from "./nodes";
+import { forEach } from "./array-ish";
 
 import {
     ObjectFlags,
@@ -142,6 +143,7 @@ import {
 } from "../types";
 
 import { SyntaxKind } from "../ts/ts-helpers";
+import { output }     from "../utils/source-code";
 
 /** @type {GenericType[]} */
 const tupleTypes = [];

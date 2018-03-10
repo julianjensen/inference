@@ -9,12 +9,12 @@
 
 "use strict";
 
-import program                       from 'commander';
-import fs                            from 'fs';
-import { inspect, promisify }        from 'util';
+import program                from 'commander';
+import fs                     from 'fs';
+import { inspect, promisify } from 'util';
 // import { parse, prep }               from './src/parse-file';
-import { create_reporters } from "./src/utils";
-import { settings }                  from "./src/ts/ts-imports";
+import { create_reporters }   from "./src/utils/source-code";
+import { settings }           from "./src/ts/ts-imports";
 
 const
     readFile       = promisify( fs.readFile ),

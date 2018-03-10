@@ -8,36 +8,19 @@
 
 "use strict";
 
-import { inspect }  from 'util';
-import { nodeName } from "../ts/ts-helpers";
-import { array }    from "convenience";
-import { output }   from "../utils";
+import { inspect }   from 'util';
+import { nodeName }  from "../ts/ts-helpers";
+import { array }     from "convenience";
+import { output }    from "../utils/source-code";
+import { NodeFlags } from "../types";
 import {
     get_type,
     create_type_alias,
     create_constructor,
     parser,
     context
-}                   from "../earlier/declaration";
+}                    from "../earlier/declaration";
 
-const NodeFlags   = {
-    None:               0,
-    Let:                1 << 0,  // Variable declaration
-    Const:              1 << 1,  // Variable declaration
-    NestedNamespace:    1 << 2,  // Namespace declaration
-    Synthesized:        1 << 3,  // Node was synthesized during transformation
-    Namespace:          1 << 4,  // Namespace declaration
-    ExportContext:      1 << 5,  // Export context (initialized by binding)
-    ContainsThis:       1 << 6,  // Interface contains references to "this"
-    HasImplicitReturn:  1 << 7,  // If function implicitly returns on one of codepaths (initialized by binding)
-    HasExplicitReturn:  1 << 8,  // If function has explicit reachable return on one of codepaths (initialized by binding)
-    GlobalAugmentation: 1 << 9,  // Set if module declaration is an augmentation for the global scope
-    HasAsyncFunctions:  1 << 10, // If the file has async functions (initialized by binding)
-    DisallowInContext:  1 << 11, // If node was parsed in a context where 'in-expressions' are not allowed
-    YieldContext:       1 << 12, // If node was parsed in the 'yield' context created when parsing a generator
-    DecoratorContext:   1 << 13, // If node was parsed as part of a decorator
-    AwaitContext:       1 << 14 // If node was parsed in the 'await' context created when parsing an async function
-};
 const
       is_keyword  = ( mods, kw ) => !!mods && !!mods.find( n => nodeName( n ) === kw ),
       is_optional = node => !!node && !!node.questionToken,

@@ -1228,6 +1228,16 @@ export const SpecialPropertyAssignmentKind = make_enum_from_object(
         Property:          5
     } );
 
+/**
+ * @typedef {object<string|number,string|number>} EnumAlias
+ */
+/**
+ * @enum
+ * @name ContainerFlags
+ * @type {function(number|string|ContainerFlags):ContainerFlags|number}
+ * @returns {ContainerFlags}
+ * @type {function<string|number,string|number|ContainerFlags>}
+ */
 export const ContainerFlags = make_enum_from_object( {
     // The current node is not a container, and no container manipulation should happen before
     // recursing into it.
@@ -1261,3 +1271,17 @@ export const ElementKind = make_enum_from_object( {
     Accessor: 2
 } );
 
+/**
+ * @enum
+ * @name ModuleInstanceState
+ */
+export const ModuleInstanceState = make_enum_from_object(
+    /**
+     * @enum
+     * @name ModuleInstanceState
+     */
+    {
+    NonInstantiated: 0,
+        Instantiated: 1,
+        ConstEnumOnly: 2
+} );

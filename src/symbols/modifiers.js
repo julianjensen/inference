@@ -69,7 +69,7 @@ export function getModifierFlags( node )
 
     const flags = getModifierFlagsNoCache( node );
 
-    node.modifierFlagsCache = flags | ModifierFlags.HasComputedFlags;
+    node.modifierFlagsCache = flags() | ModifierFlags.HasComputedFlags;
 
     return ModifierFlags( flags );
 }

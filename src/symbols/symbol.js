@@ -10,15 +10,26 @@
  * @typedef {Map} SymbolTable
  */
 
-import { SyntaxKind }                                                                                                  from "../ts/ts-helpers";
+import { SyntaxKind }         from "../ts/ts-helpers";
 import {
     CharacterCodes,
     SymbolFlags,
-    enumRelation, TypeFlags, CheckFlags, InternalSymbolName
-}                                                                                                               from "../types";
-import { get_ext_ref, getNameOfDeclaration, hasLateBindableName, implement, isReservedMemberName} from "../utils";
-import { hasStaticModifier }                                                                                    from "./modifiers";
-import { pushIfUnique, some }                                                                                   from "./array-ish";
+    CheckFlags,
+    InternalSymbolName
+}                             from "../types";
+import {
+    get_ext_ref,
+    implement,
+    unescapeLeadingUnderscores,
+    isReservedMemberName,
+    hasLateBindableName,
+    enumRelation
+}                             from "../utils";
+import { hasStaticModifier }  from "./modifiers";
+import { pushIfUnique, some } from "./array-ish";
+import {
+    getNameOfDeclaration
+} from "./nodes";
 
 let nextSymbolId = 1;
 
@@ -54,6 +65,34 @@ export class Symbol
         /** @type {SymbolFlags} */
         this.flags = flags;
     }
+
+    get name()
+    {
+        return unescapeLeadingUnderscores( this.escapedName );
+    }
+
+    set name( ns )
+    {
+        this.escapedName = ns;
+    }
+
+    get displayName()
+    {
+        const _name = this._escapedName;
+
+        return _name.length >= 3 && _name.charCodeAt( 0 ) === CharacterCodes._ && _name.charCodeAt( 1 ) === CharacterCodes._ && _name.charCodeAt( 2 ) === CharacterCodes._ ? _name.substr( 1 ) : _name;
+    }
+
+    get escapedName()
+    {
+        return this._escapedName;
+    }
+
+    set escapedName( name )
+    {
+        this._escapedName = name.length >= 2 && name.charCodeAt( 0 ) === CharacterCodes._ && name.charCodeAt( 1 ) === CharacterCodes._ ? "_" + name : name;
+    }
+
 
     /**
      * @return {SymbolFlags|number}
@@ -95,23 +134,6 @@ export class Symbol
             if ( !vdecl || ( vdecl.kind !== node.kind && vdecl.kind === SyntaxKind.ModuleDeclaration ) )
                 this.valueDeclaration = node;
         }
-    }
-
-    get displayName()
-    {
-        const _name = this._escapedName;
-
-        return _name.length >= 3 && _name.charCodeAt( 0 ) === CharacterCodes._ && _name.charCodeAt( 1 ) === CharacterCodes._ && _name.charCodeAt( 2 ) === CharacterCodes._ ? _name.substr( 1 ) : _name;
-    }
-
-    get escapedName()
-    {
-        return this._escapedName;
-    }
-
-    set escapedName( name )
-    {
-        this._escapedName = name.length >= 2 && name.charCodeAt( 0 ) === CharacterCodes._ && name.charCodeAt( 1 ) === CharacterCodes._ ? "_" + name : name;
     }
 
     /**
@@ -208,17 +230,18 @@ export class Symbol
 
         return links[ resolutionKind ];
     }
+
     hasExportAssignment()
     {
         return this.exports.get( InternalSymbolName.ExportEquals ) !== undefined;
     }
 
-    static symbolsToArray(symbols)
+    static symbolsToArray( symbols )
     {
         const result = [];
 
         symbols.forEach( ( symbol, id ) => {
-            if ( !isReservedMemberName( id ) ) result.push(symbol);
+            if ( !isReservedMemberName( id ) ) result.push( symbol );
         } );
 
         return result;
@@ -228,6 +251,7 @@ export class Symbol
     {
         return Symbol.symbolsToArray( this.getExports() );
     }
+
     /**
      * @param {Symbol} moduleSymbol
      * @return {SymbolTable}

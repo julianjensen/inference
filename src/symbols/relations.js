@@ -15,7 +15,9 @@ import {
     IndexKind,
     ObjectFlags,
     ModifierFlags
+}                     from "../types";
 
+import {
     strictNullChecks,
     enumRelation,
     subtypeRelation,
@@ -23,8 +25,7 @@ import {
     definitelyAssignableRelation,
     comparableRelation,
     identityRelation
-
-}                     from "../types";
+} from "../utils";
 
 let maybeKeys; // string[];
 let sourceStack; // Type[];

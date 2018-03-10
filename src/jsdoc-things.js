@@ -9,9 +9,13 @@
 
 import * as assert from "assert";
 import {
-    getNestedModuleDeclaration, getSingleInitializerOfVariableStatement,
+    getSingleInitializerOfVariableStatement,
     getSingleVariableOfVariableStatement,
     getSourceOfAssignment,
+    getNestedModuleDeclaration
+} from "./utils";
+
+import {
     getSpecialPropertyAssignmentKind,
     hasInitializer,
     hasJSDocNodes,
@@ -19,7 +23,7 @@ import {
     isExpression,
     isIdentifier,
     isVariableLike
-}                                        from "./utils";
+}                                        from "typescript";
 import { SyntaxKind }                    from "./ts/ts-helpers";
 import { addRange, flatMap }             from "./symbols/array-ish";
 import { SpecialPropertyAssignmentKind } from "./types";
@@ -121,18 +125,18 @@ export function getNameOfDeclaration( declaration )
                 return name.right;
             break;
 
-        // case SyntaxKind.BinaryExpression:
-        //     const expr = declaration;
-        //
-        //     switch ( getSpecialPropertyAssignmentKind( expr ) )
-        //     {
-        //         case SpecialPropertyAssignmentKind.ExportsProperty:
-        //         case SpecialPropertyAssignmentKind.ThisProperty:
-        //         case SpecialPropertyAssignmentKind.Property:
-        //         case SpecialPropertyAssignmentKind.PrototypeProperty:
-        //             return ( expr.left ).name;
-        //     }
-        //     return void 0;
+        case SyntaxKind.BinaryExpression:
+            const expr = declaration;
+
+            switch ( getSpecialPropertyAssignmentKind( expr ) )
+            {
+                case SpecialPropertyAssignmentKind.ExportsProperty:
+                case SpecialPropertyAssignmentKind.ThisProperty:
+                case SpecialPropertyAssignmentKind.Property:
+                case SpecialPropertyAssignmentKind.PrototypeProperty:
+                    return ( expr.left ).name;
+            }
+            return void 0;
 
         case SyntaxKind.JSDocTypedefTag:
             return getNameOfJSDocTypedef( declaration );

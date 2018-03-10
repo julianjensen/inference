@@ -144,8 +144,7 @@ export function findLast( array, predicate )
     for ( let i = array.length - 1; i >= 0; i-- )
     {
         const value = array[ i ];
-        if ( predicate( value, i ) )
-            return value;
+        if ( predicate( value, i ) ) return value;
     }
 
     return undefined;
@@ -163,10 +162,34 @@ export function findMap( array, callback )
     for ( let i = 0; i < array.length; i++ )
     {
         const result = callback( array[ i ], i );
-        if ( result )
-            return result;
+        if ( result ) return result;
     }
 
     assert( false );
+}
+
+/**
+ * Iterates through 'array' by index and performs the callback on each element of array until the callback
+ * returns a truthy value, then returns that value.
+ * If no such value is found, the callback is applied to each element of array and undefined is returned.
+ *
+ * @param {ReadonlyArray<T> | undefined} array
+ * @param {function(element: T, index: number): U | undefined} callback
+ *
+ */
+export function forEach(array, callback )
+{
+    if (array)
+    {
+        for (let i = 0; i < array.length; i++)
+        {
+            const result = callback(array[i], i);
+
+            if (result)
+                return result;
+        }
+    }
+
+    return undefined;
 }
 
