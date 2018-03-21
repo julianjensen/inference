@@ -664,6 +664,7 @@ export class Type
      */
     constructor( flags )
     {
+        console.log( `Create new type: "${this.constructor.name}"` );
         this.primitive = null;
         this.name      = null;
         this.parent    = null;

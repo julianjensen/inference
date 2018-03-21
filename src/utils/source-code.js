@@ -7,12 +7,12 @@
 
 'use strict';
 
-import assert from "assert";
-import { SyntaxKind }                                                   from "../ts/ts-helpers";
-import { CharacterCodes }                                               from "../types";
+import assert                                                                          from "assert";
+import { SyntaxKind }                                                                  from "../ts/ts-helpers";
+import { CharacterCodes }                                                              from "./char-codes";
 import { binarySearch, comparer, hasJSDocNodes, nodeIsMissing, positionIsSynthesized } from "../utils";
-import chalk                                                            from 'chalk';
-import { isJSDocNode }                                                  from "typescript";
+import chalk                                                                           from 'chalk';
+import { isJSDocNode }                                                                 from "typescript";
 
 export const fullTripleSlashReferencePathRegEx            = /^(\/\/\/\s*<reference\s+path\s*=\s*)(['"])(.+?)\2.*?\/>/;
 export const fullTripleSlashAMDReferencePathRegEx         = /^(\/\/\/\s*<amd-dependency\s+path\s*=\s*)(['"])(.+?)\2.*?\/>/;
@@ -29,6 +29,7 @@ const
      * @return {boolean}
      */
     has                                       = ( o, n ) => Reflect.has( o, n );
+
 
 /**
  * @param {string} fileName
@@ -113,11 +114,15 @@ export function create_reporters( fileName, source )
      */
     function error( msg, node, opts = {} )
     {
-        let { noThrow = true, show = true, color = red } = opts,
-            [ start, end ]                               = get_start_end( node ),
-            loc                                          = loc_info( start, end ),
-            fileLoc                                      = loc && `In "${fileName}", line ${loc.start.line + 1}: `,
-            txt                                          = ( loc ? fileLoc : '' ) + msg;
+        let {
+                noThrow = true,
+                show    = true,
+                color   = red
+            }              = opts,
+            [ start, end ] = get_start_end( node ),
+            loc            = loc_info( start, end ),
+            fileLoc        = loc && `In "${fileName}", line ${loc.start.line + 1}: `,
+            txt            = ( loc ? fileLoc : '' ) + msg;
 
         if ( show && node )
             txt += '\n\n' + show_source( node, 0 );
@@ -142,7 +147,7 @@ export function create_reporters( fileName, source )
             loc            = loc_info( start, end ),
             sline          = loc.start.sourceLine,
             indicator      = ' '.repeat( loc.start.offset ) + '^',
-            skip = loc.start.offset;
+            skip           = loc.start.offset;
 
         while ( sline.charCodeAt( skip ) <= CharacterCodes.space && skip < 1000 )
         {
@@ -188,6 +193,8 @@ export function create_reporters( fileName, source )
     function offset_to_line_offset( pos )
     {
         let lineNumber;
+
+        pos = skipTrivia( source, pos );
 
         return [ lineNumber = binary_search( pos, lineOffsets ), pos - lineOffsets[ lineNumber ] ];
     }
@@ -300,14 +307,14 @@ export function create_reporters( fileName, source )
         // Verify this is /// comment, but do the regexp match only when we first can find /// in the comment text
         // so that we don't end up computing comment string and doing match for all // comments
         if ( text.charCodeAt( commentPos + 1 ) === CharacterCodes.slash &&
-            commentPos + 2 < commentEnd &&
-            text.charCodeAt( commentPos + 2 ) === CharacterCodes.slash )
+             commentPos + 2 < commentEnd &&
+             text.charCodeAt( commentPos + 2 ) === CharacterCodes.slash )
         {
             const textSubStr = text.substring( commentPos, commentEnd );
             return textSubStr.match( fullTripleSlashReferencePathRegEx ) ||
-                textSubStr.match( fullTripleSlashAMDReferencePathRegEx ) ||
-                textSubStr.match( fullTripleSlashReferenceTypeReferenceDirectiveRegEx ) ||
-                textSubStr.match( defaultLibReferenceRegEx );
+                   textSubStr.match( fullTripleSlashAMDReferencePathRegEx ) ||
+                   textSubStr.match( fullTripleSlashReferenceTypeReferenceDirectiveRegEx ) ||
+                   textSubStr.match( defaultLibReferenceRegEx );
         }
 
         return false;
@@ -385,6 +392,11 @@ export function create_reporters( fileName, source )
         return text.substring( includeTrivia ? node.pos : skipTrivia( text, node.pos ), node.end );
     }
 
+    function get_actual_pos( pos )
+    {
+        return skipTrivia( source, pos );
+    }
+
     /**
      * @param {string} sourceText
      * @param {ts.Node} node
@@ -425,6 +437,13 @@ export function create_reporters( fileName, source )
         return binarySearch( nodeArray, node, getPos, comparer );
     }
 
+    function get_line( lineNumber )
+    {
+        if ( lineNumber < 0 || lineNumber >= lineOffsets.length - 1 ) return '';
+
+        return source.substring( lineOffsets[ lineNumber ], lineOffsets[ lineNumber + 1 ] );
+    }
+
     return {
         getTextOfNodeFromSourceText,
         isRecognizedTripleSlashComment,
@@ -435,7 +454,11 @@ export function create_reporters( fileName, source )
         fatal,
         error,
         warn,
-        log
+        log,
+        offset_to_line_offset,
+        get_line,
+        get_actual_pos,
+        numLines: lineOffsets.length - 1
     };
 }
 
@@ -443,47 +466,44 @@ export function create_reporters( fileName, source )
  *
  * @param {string} text
  * @param {number} pos
- * @param {boolean} [stopAfterLineBreak],
+ * @param {boolean} [stopAfterLineBreak=false],
  * @param {boolean} [stopAtComments=false]
  * @return {number}
  */
-export function skipTrivia( text, pos, stopAfterLineBreak, stopAtComments = false )
+export function skipTrivia( text, pos, stopAfterLineBreak = false, stopAtComments = false )
 {
     if ( positionIsSynthesized( pos ) )
-    {
         return pos;
-    }
 
     // Keep in sync with couldStartTrivia
     while ( true )
     {
         const ch = text.charCodeAt( pos );
+
         switch ( ch )
         {
             case CharacterCodes.carriageReturn:
                 if ( text.charCodeAt( pos + 1 ) === CharacterCodes.lineFeed )
-                {
                     pos++;
-                }
+
             // falls through
-            case CharacterCodes.lineFeed:
+            case +CharacterCodes.lineFeed:
                 pos++;
                 if ( stopAfterLineBreak )
-                {
                     return pos;
-                }
                 continue;
+
             case CharacterCodes.tab:
             case CharacterCodes.verticalTab:
             case CharacterCodes.formFeed:
             case CharacterCodes.space:
                 pos++;
                 continue;
+
             case CharacterCodes.slash:
                 if ( stopAtComments )
-                {
                     break;
-                }
+
                 if ( text.charCodeAt( pos + 1 ) === CharacterCodes.slash )
                 {
                     pos += 2;
@@ -497,6 +517,7 @@ export function skipTrivia( text, pos, stopAfterLineBreak, stopAtComments = fals
                     }
                     continue;
                 }
+
                 if ( text.charCodeAt( pos + 1 ) === CharacterCodes.asterisk )
                 {
                     pos += 2;
@@ -540,6 +561,7 @@ export function skipTrivia( text, pos, stopAfterLineBreak, stopAtComments = fals
                 }
                 break;
         }
+
         return pos;
     }
 }
@@ -572,7 +594,7 @@ function isConflictMarkerTrivia( text, pos )
             }
 
             return ch === CharacterCodes.equals ||
-                text.charCodeAt( pos + mergeConflictMarkerLength ) === CharacterCodes.space;
+                   text.charCodeAt( pos + mergeConflictMarkerLength ) === CharacterCodes.space;
         }
     }
 
@@ -630,7 +652,56 @@ function isShebangTrivia( text, pos )
     return shebangTriviaRegex.test( text );
 }
 
-function isLineBreak( chr )
+function scanShebangTrivia( text, pos )
 {
-    return chr === CharacterCodes.carriageReturn || chr === CharacterCodes.lineFeed;
+    const shebang = shebangTriviaRegex.exec( text )[ 0 ];
+
+    pos = pos + shebang.length;
+
+    return pos;
 }
+
+function isWhiteSpaceLike( ch )
+{
+    return isWhiteSpaceSingleLine( ch ) || isLineBreak( ch );
+}
+
+/** Does not include line breaks. For that, see isWhiteSpaceLike. */
+function isWhiteSpaceSingleLine( ch )
+{
+    // Note: nextLine is in the Zs space, and should be considered to be a whitespace.
+    // It is explicitly not a line-break as it isn't in the exact set specified by EcmaScript.
+    return ch === CharacterCodes.space ||
+           ch === CharacterCodes.tab ||
+           ch === CharacterCodes.verticalTab ||
+           ch === CharacterCodes.formFeed ||
+           ch === CharacterCodes.nonBreakingSpace ||
+           ch === CharacterCodes.nextLine ||
+           ch === CharacterCodes.ogham ||
+           ch >= CharacterCodes.enQuad && ch <= CharacterCodes.zeroWidthSpace ||
+           ch === CharacterCodes.narrowNoBreakSpace ||
+           ch === CharacterCodes.mathematicalSpace ||
+           ch === CharacterCodes.ideographicSpace ||
+           ch === CharacterCodes.byteOrderMark;
+}
+
+function isLineBreak( ch )
+{
+    // ES5 7.3:
+    // The ECMAScript line terminator characters are listed in Table 3.
+    //     Table 3: Line Terminator Characters
+    //     Code Unit Value     Name                    Formal Name
+    //     \u000A              Line Feed               <LF>
+    //     \u000D              Carriage Return         <CR>
+    //     \u2028              Line separator          <LS>
+    //     \u2029              Paragraph separator     <PS>
+    // Only the characters in Table 3 are treated as line terminators. Other new line or line
+    // breaking characters are treated as white space but not as line terminators.
+
+    return ch === CharacterCodes.lineFeed ||
+           ch === CharacterCodes.carriageReturn ||
+           ch === CharacterCodes.lineSeparator ||
+           ch === CharacterCodes.paragraphSeparator;
+}
+
+

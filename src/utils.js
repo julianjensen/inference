@@ -5,24 +5,43 @@
  * @date 19-Jan-2018
  *********************************************************************************************************************/
 
+
 "use strict";
 
 export const createSymbolTable = () => new Map();
 
-import * as assert                                                                                                                         from 'assert';
-import util                                                                                                                                from 'util';
-import { EventEmitter }                                                                                                                    from "events";
-import { SyntaxKind }                                                                                                                      from "./ts/ts-helpers";
-import { CharacterCodes, CheckFlags, InternalSymbolName, ModifierFlags, NodeFlags, SpecialPropertyAssignmentKind, SymbolFlags, TypeFlags } from "./types";
-import { getNameOfDeclaration }                                                                                                            from "./symbols/nodes";
-import { getModifierFlags, hasModifier }                                                                                                   from "./symbols/modifiers";
+import os from "os";
+export const
+    platform = os.platform(),
+    isWindows = platform === 'win32' || platform === 'win64',
+    EOL = os.EOL;
+
+import * as assert                       from 'assert';
+import util                              from 'util';
+import { EventEmitter }                  from "events";
+import { SyntaxKind }                    from "./ts/ts-helpers";
+import { CharacterCodes }                from "./utils/char-codes";
+import {
+    CheckFlags,
+    InternalSymbolName,
+    ModifierFlags,
+    NodeFlags,
+    SpecialPropertyAssignmentKind,
+    SymbolFlags,
+    TypeFlags,
+    TokenFlags
+}                                        from "./types";
+import { getNameOfDeclaration }          from "./symbols/nodes";
+import { getModifierFlags, hasModifier } from "./symbols/modifiers";
 import {
     isAssignmentExpression,
     isBinaryExpression,
     isExpression,
     isIdentifierName,
-    isVariableDeclaration
-}                                                                                                                                          from "typescript";
+    isVariableDeclaration,
+    isStringOrNumericLiteral,
+    isWellKnownSymbolSyntactically
+}                                        from "typescript";
 
 let currentFile = {
     fatal: ( ...args ) => console.error( ...args ),
@@ -31,8 +50,23 @@ let currentFile = {
     log:   ( ...args ) => console.log( ...args )
 };
 
+let inStrictMode = true;
 
+/**
+ * @param {boolean} [strict=true]
+ */
+export function set_strict_mode( strict = true )
+{
+    inStrictMode = strict;
+}
 
+/**
+ * @return {boolean}
+ */
+export function get_strict_mode()
+{
+    return inStrictMode;
+}
 
 const
     top   = node => {
@@ -307,36 +341,36 @@ export function isDeclaration( node )
 function isDeclarationKind( kind )
 {
     return kind === SyntaxKind.ArrowFunction
-        || kind === SyntaxKind.BindingElement
-        || kind === SyntaxKind.ClassDeclaration
-        || kind === SyntaxKind.ClassExpression
-        || kind === SyntaxKind.Constructor
-        || kind === SyntaxKind.EnumDeclaration
-        || kind === SyntaxKind.EnumMember
-        || kind === SyntaxKind.ExportSpecifier
-        || kind === SyntaxKind.FunctionDeclaration
-        || kind === SyntaxKind.FunctionExpression
-        || kind === SyntaxKind.GetAccessor
-        || kind === SyntaxKind.ImportClause
-        || kind === SyntaxKind.ImportEqualsDeclaration
-        || kind === SyntaxKind.ImportSpecifier
-        || kind === SyntaxKind.InterfaceDeclaration
-        || kind === SyntaxKind.JsxAttribute
-        || kind === SyntaxKind.MethodDeclaration
-        || kind === SyntaxKind.MethodSignature
-        || kind === SyntaxKind.ModuleDeclaration
-        || kind === SyntaxKind.NamespaceExportDeclaration
-        || kind === SyntaxKind.NamespaceImport
-        || kind === SyntaxKind.Parameter
-        || kind === SyntaxKind.PropertyAssignment
-        || kind === SyntaxKind.PropertyDeclaration
-        || kind === SyntaxKind.PropertySignature
-        || kind === SyntaxKind.SetAccessor
-        || kind === SyntaxKind.ShorthandPropertyAssignment
-        || kind === SyntaxKind.TypeAliasDeclaration
-        || kind === SyntaxKind.TypeParameter
-        || kind === SyntaxKind.VariableDeclaration
-        || kind === SyntaxKind.JSDocTypedefTag;
+           || kind === SyntaxKind.BindingElement
+           || kind === SyntaxKind.ClassDeclaration
+           || kind === SyntaxKind.ClassExpression
+           || kind === SyntaxKind.Constructor
+           || kind === SyntaxKind.EnumDeclaration
+           || kind === SyntaxKind.EnumMember
+           || kind === SyntaxKind.ExportSpecifier
+           || kind === SyntaxKind.FunctionDeclaration
+           || kind === SyntaxKind.FunctionExpression
+           || kind === SyntaxKind.GetAccessor
+           || kind === SyntaxKind.ImportClause
+           || kind === SyntaxKind.ImportEqualsDeclaration
+           || kind === SyntaxKind.ImportSpecifier
+           || kind === SyntaxKind.InterfaceDeclaration
+           || kind === SyntaxKind.JsxAttribute
+           || kind === SyntaxKind.MethodDeclaration
+           || kind === SyntaxKind.MethodSignature
+           || kind === SyntaxKind.ModuleDeclaration
+           || kind === SyntaxKind.NamespaceExportDeclaration
+           || kind === SyntaxKind.NamespaceImport
+           || kind === SyntaxKind.Parameter
+           || kind === SyntaxKind.PropertyAssignment
+           || kind === SyntaxKind.PropertyDeclaration
+           || kind === SyntaxKind.PropertySignature
+           || kind === SyntaxKind.SetAccessor
+           || kind === SyntaxKind.ShorthandPropertyAssignment
+           || kind === SyntaxKind.TypeAliasDeclaration
+           || kind === SyntaxKind.TypeParameter
+           || kind === SyntaxKind.VariableDeclaration
+           || kind === SyntaxKind.JSDocTypedefTag;
 }
 
 export function isIdentifier( node )
@@ -349,8 +383,8 @@ export function isJSXTagName( node )
     const parent = node.parent;
 
     if ( parent.kind === SyntaxKind.JsxOpeningElement ||
-        parent.kind === SyntaxKind.JsxSelfClosingElement ||
-        parent.kind === SyntaxKind.JsxClosingElement )
+         parent.kind === SyntaxKind.JsxSelfClosingElement ||
+         parent.kind === SyntaxKind.JsxClosingElement )
     {
         return parent.tagName === node;
     }
@@ -449,15 +483,15 @@ export function isInExpressionContext( node )
             const forStatement = parent;
 
             return ( forStatement.initializer === node && forStatement.initializer.kind !== SyntaxKind.VariableDeclarationList ) ||
-                forStatement.condition === node ||
-                forStatement.incrementor === node;
+                   forStatement.condition === node ||
+                   forStatement.incrementor === node;
 
         case SyntaxKind.ForInStatement:
         case SyntaxKind.ForOfStatement:
             const forInStatement = parent;
 
             return ( forInStatement.initializer === node && forInStatement.initializer.kind !== SyntaxKind.VariableDeclarationList ) ||
-                forInStatement.expression === node;
+                   forInStatement.expression === node;
 
         case SyntaxKind.TypeAssertionExpression:
         case SyntaxKind.AsExpression:
@@ -650,8 +684,7 @@ export function isClassLike( node )
 
 export function isAmbientModule( node )
 {
-    return node && node.kind === SyntaxKind.ModuleDeclaration &&
-        ( node.name.kind === SyntaxKind.StringLiteral || isGlobalScopeAugmentation( node ) );
+    return node && node.kind === SyntaxKind.ModuleDeclaration && ( node.name.kind === SyntaxKind.StringLiteral || isGlobalScopeAugmentation( node ) );
 }
 
 export function isGlobalScopeAugmentation( module )
@@ -662,7 +695,7 @@ export function isGlobalScopeAugmentation( module )
 export function isEntityNameExpression( node )
 {
     return node.kind === SyntaxKind.Identifier ||
-        node.kind === SyntaxKind.PropertyAccessExpression && isEntityNameExpression( node.expression );
+           node.kind === SyntaxKind.PropertyAccessExpression && isEntityNameExpression( node.expression );
 }
 
 /**
@@ -683,8 +716,8 @@ function checkComputedPropertyName( node )
         // This will allow types number, string, symbol or any. It will also allow enums, the unknown
         // type, and any union of these types (like string | number).
         if ( links.resolvedType.flags & TypeFlags.Nullable ||
-            !isTypeAssignableToKind( links.resolvedType, TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.ESSymbolLike ) &&
-            !isTypeAssignableTo( links.resolvedType, get_ext_ref( 'UnionType' ).getUnionType( get_ext_ref( 'stringType', 'numberType', 'esSymbolType' ) ) ) )
+             !isTypeAssignableToKind( links.resolvedType, TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.ESSymbolLike ) &&
+             !isTypeAssignableTo( links.resolvedType, get_ext_ref( 'UnionType' ).getUnionType( get_ext_ref( 'stringType', 'numberType', 'esSymbolType' ) ) ) )
         {
             error( node, "A computed property name must be of type string number symbol or any" );
         }
@@ -742,8 +775,8 @@ export function hasDynamicName( declaration )
 export function isDynamicName( name )
 {
     return name.kind === SyntaxKind.ComputedPropertyName &&
-        !isStringOrNumericLiteral( name.expression ) &&
-        !isWellKnownSymbolSyntactically( name.expression );
+           !isStringOrNumericLiteral( name.expression ) &&
+           !isWellKnownSymbolSyntactically( name.expression );
 }
 
 
@@ -850,6 +883,10 @@ export function binarySearch( array, value, keySelector = x => x.id, keyComparer
     return ~low;
 }
 
+/**
+ * @param {ts.Node} node
+ * @return {string}
+ */
 export function getTextOfIdentifierOrLiteral( node )
 {
     return node.kind === SyntaxKind.Identifier ? idText( node ) : node.text;
@@ -952,27 +989,32 @@ function walk_object( obj )
 
         for ( const [ name, value ] of Object.entries( obj ) )
         {
-            if ( name === 'parent' || name === 'checker' ) // || name === 'pos' || name === 'end' )
+            if ( name === 'text' && typeof value === 'string' && value.length > 80 )
+                obj[ name ] = value.replace( /^([\s\S]{0,90}\s)[^]*/, '$1...' );
+            else if ( name === 'parent' || name === 'checker' ) // || name === 'pos' || name === 'end' )
                 delete obj[ name ];
             else if ( name === 'kind' && typeof obj.kind === 'number' )
                 obj.kind = SyntaxKind[ obj.kind ];
             else if ( name === 'modifierFlagsCache' && typeof obj.modifierFlagsCache === 'number' )
-                obj.modifierFlagsCache = `${ModifierFlags( obj.modifierFlagsCache )}`;
+                obj.modifierFlagsCache = `${ModifierFlags.create( obj.modifierFlagsCache )}`;
             else if ( name === 'checkFlags' && typeof obj.checkFlags === 'number' )
-                obj.checkFlags = `${CheckFlags( obj.checkFlags )}`;
+                obj.checkFlags = `${CheckFlags.create( obj.checkFlags )}`;
             else if ( name === 'flags' && typeof obj.flags === 'number' )
             {
                 if ( obj.constructor.name === 'Type' || obj.constructor.name === 'TypeObject' )
-                    obj.flags = `${TypeFlags( value )}`;
+                    obj.flags = `${TypeFlags.create( value )}`;
                 else if ( obj.constructor.name === 'Symbol' || obj.constructor.name === 'SymbolObject' )
-                    obj.flags = `${SymbolFlags( value )}`;
+                    obj.flags = `${SymbolFlags.create( value )}`;
                 else if ( obj.constructor.name === 'Node' || obj.constructor.name === 'NodeObject' )
-                    obj.flags = `${NodeFlags( value )}`;
+                    obj.flags = `${NodeFlags.create( value )}`;
                 else
                     obj.flags = value;
             }
             else if ( object( value ) )
             {
+                if ( revisit.has( value ) ) return value;
+                revisit.add( value );
+
                 if ( has( value, 'kind' ) && value.kind === SyntaxKind.Identifier )
                     obj[ name ] = value.escapedText || value.name || `[ "${Object.keys( value ).join( '", "' )}" ]`;
                 else
@@ -1037,9 +1079,9 @@ export function get_ext_ref( ...name )
 export function isReservedMemberName( name )
 {
     return name.charCodeAt( 0 ) === CharacterCodes._ &&
-        name.charCodeAt( 1 ) === CharacterCodes._ &&
-        name.charCodeAt( 2 ) !== CharacterCodes._ &&
-        name.charCodeAt( 2 ) !== CharacterCodes.at;
+           name.charCodeAt( 1 ) === CharacterCodes._ &&
+           name.charCodeAt( 2 ) !== CharacterCodes._ &&
+           name.charCodeAt( 2 ) !== CharacterCodes.at;
 }
 
 
@@ -1050,9 +1092,9 @@ export function isReservedMemberName( name )
 export function getSourceOfAssignment( node )
 {
     return isExpressionStatement( node ) &&
-        node.expression && isBinaryExpression( node.expression ) &&
-        node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
-        node.expression.right;
+           node.expression && isBinaryExpression( node.expression ) &&
+           node.expression.operatorToken.kind === SyntaxKind.EqualsToken &&
+           node.expression.right;
 }
 
 export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( node )
@@ -1070,16 +1112,16 @@ export function getSingleInitializerOfVariableStatementOrPropertyDeclaration( no
 export function getSingleVariableOfVariableStatement( node )
 {
     return node.kind === SyntaxKind.VariableStatement &&
-        node.declarationList.declarations.length > 0 &&
-        node.declarationList.declarations[ 0 ];
+           node.declarationList.declarations.length > 0 &&
+           node.declarationList.declarations[ 0 ];
 }
 
 export function getSingleInitializerOfVariableStatement( node, child )
 {
     return node.kind === SyntaxKind.VariableStatement &&
-        node.declarationList.declarations.length > 0 &&
-        ( !child || node.declarationList.declarations[ 0 ].initializer === child ) &&
-        node.declarationList.declarations[ 0 ].initializer;
+           node.declarationList.declarations.length > 0 &&
+           ( !child || node.declarationList.declarations[ 0 ].initializer === child ) &&
+           node.declarationList.declarations[ 0 ].initializer;
 }
 
 
@@ -1362,8 +1404,8 @@ export function getCombinedNodeFlags( node )
 export function isExportsOrModuleExportsOrAlias( sourceFile, node )
 {
     return isExportsIdentifier( node ) ||
-        isModuleExportsPropertyAccessExpression( node ) ||
-        isIdentifier( node ) && isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node );
+           isModuleExportsPropertyAccessExpression( node ) ||
+           isIdentifier( node ) && isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node );
 }
 
 /**
@@ -1376,7 +1418,7 @@ export function isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node
     const symbol = lookupSymbolForNameWorker( sourceFile, node.escapedText );
 
     return symbol && symbol.valueDeclaration && isVariableDeclaration( symbol.valueDeclaration ) &&
-        symbol.valueDeclaration.initializer && isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, symbol.valueDeclaration.initializer );
+           symbol.valueDeclaration.initializer && isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, symbol.valueDeclaration.initializer );
 }
 
 /**
@@ -1387,8 +1429,8 @@ export function isNameOfExportsOrModuleExportsAliasDeclaration( sourceFile, node
 export function isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node )
 {
     return isExportsOrModuleExportsOrAlias( sourceFile, node ) ||
-        ( isAssignmentExpression( node, /* excludeCompoundAssignements */ true ) && (
-            isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.left ) || isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.right ) ) );
+           ( isAssignmentExpression( node, /* excludeCompoundAssignements */ true ) && (
+               isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.left ) || isExportsOrModuleExportsOrAliasOrAssignment( sourceFile, node.right ) ) );
 }
 
 /**
@@ -1414,9 +1456,9 @@ export function lookupSymbolForNameWorker( container, name )
 function checkStrictModeIdentifier( node )
 {
     if ( node.originalKeywordKind >= SyntaxKind.FirstFutureReservedWord &&
-        node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
-        !isIdentifierName( node ) &&
-        !( node.flags & NodeFlags.Ambient ) )
+         node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
+         !isIdentifierName( node ) &&
+         !( node.flags & NodeFlags.Ambient ) )
     {
         error( node, 'reserved word somehow' );
     }
@@ -1441,8 +1483,8 @@ function isLogicalExpression( node )
 export function isTopLevelLogicalExpression( node )
 {
     while ( node.parent.kind === SyntaxKind.ParenthesizedExpression ||
-    node.parent.kind === SyntaxKind.PrefixUnaryExpression &&
-    node.parent.operator === SyntaxKind.ExclamationToken )
+            node.parent.kind === SyntaxKind.PrefixUnaryExpression &&
+            node.parent.operator === SyntaxKind.ExclamationToken )
         node = node.parent;
 
     return !isStatementCondition( node ) && !isLogicalExpression( node.parent );
@@ -1518,9 +1560,9 @@ export function nodeIsPresent( node )
 export function checkStrictModeIdentifier( node )
 {
     if ( node.originalKeywordKind >= SyntaxKind.FirstFutureReservedWord &&
-        node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
-        !isIdentifierName( node ) &&
-        !( node.flags & NodeFlags.Ambient ) )
+         node.originalKeywordKind <= SyntaxKind.LastFutureReservedWord &&
+         !isIdentifierName( node ) &&
+         !( node.flags & NodeFlags.Ambient ) )
     {
 
         warn( node, "Strict mode identifier issue" );
@@ -1554,4 +1596,16 @@ export function positionIsSynthesized( pos )
     // This is a fast way of testing the following conditions:
     //  pos === undefined || pos === null || isNaN(pos) || pos < 0;
     return !( pos >= 0 );
+}
+
+export function checkStrictModeNumericLiteral( node )
+{
+    return !( inStrictMode && node.numericLiteralFlags & TokenFlags.Octal );
+}
+
+export function canonical_name( filename )
+{
+    if ( filename.startsWith( './' ) ) filename = filename.substr( 2 );
+
+    return isWindows ? filename.toLowerCase() :filename;
 }

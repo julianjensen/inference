@@ -177,19 +177,49 @@ export function findMap( array, callback )
  * @param {function(element: T, index: number): U | undefined} callback
  *
  */
-export function forEach(array, callback )
+export function forEach( array, callback )
 {
-    if (array)
+    if ( array )
     {
-        for (let i = 0; i < array.length; i++)
+        for ( let i = 0; i < array.length; i++ )
         {
-            const result = callback(array[i], i);
+            const result = callback( array[ i ], i );
 
-            if (result)
+            if ( result )
                 return result;
         }
     }
 
     return undefined;
+}
+
+/**
+ * @param {Array<ts.Node>} node
+ * @param {function} callback
+ * @return {?ts.Node}
+ */
+export function findAncestor( node, callback )
+{
+    while ( node )
+    {
+        const result = callback( node );
+
+        if ( result === "quit" )
+            return undefined;
+        else if ( result )
+            return node;
+
+        node = node.parent;
+    }
+
+    return undefined;
+}
+
+/**
+ * Returns the last element of an array if non-empty, `undefined` otherwise.
+ */
+export function lastOrUndefined( array )
+{
+    return array.length === 0 ? undefined : array[ array.length - 1 ];
 }
 

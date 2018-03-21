@@ -1,23 +1,22 @@
-/* eslint-disable max-len,max-lines,operator-linebreak */
 /** *********************************************************************************************************************
  * Enums extracted from /mnt/e/code/typescript/src/compiler/types.ts
  ************************************************************************************************************************/
 "use strict";
 
-import util from "util";
-
-let tmp;
+let DEBUG;
 
 const
-    isObject = o => typeof o === 'object' && !Array.isArray( o ) && o !== null,
-    wrapped = ( lhs, rhs ) => ( { enumerable: true, writable: true, configurable: true, value: { toString: () => lhs, valueOf: () => rhs, [ Symbol.toPrimitive ]: hint => hint === 'string' ? lhs : rhs } } ),
+    wrapped = ( lhsName, rhs ) => ( { enumerable: true, writable: true, configurable: true, value: { toString: () => lhsName, valueOf: () => rhs, [ Symbol.toPrimitive ]: hint => hint === 'string' ? lhsName : rhs } } ),
+            inspect = require( 'util' ).inspect,
+        $ = ( o, d =2 ) => inspect( o, { depth: typeof d === 'number' ? d : 2, colors: true } ),
+
     named = name => ( { enumerable: true, writable: true, configurable: true, value: name } ),
+    has = ( o, n ) => Reflect.has( o, n ),
     VALUE = Symbol( 'value' ),
-    asString = function( base ) {
-        return function( _num = 0 ) {
-            let i   = 1,
-                s   = [],
-                num = +_num;
+    asString = function( base ) { return function( _num = 0 ) {
+                let i   = 1,
+                    s   = [],
+                    num = +_num;
 
                 if ( typeof _num === 'string' ) return _num;
 
@@ -31,29 +30,32 @@ const
                 }
 
                 return s.join( ' | ' );
-            };
+            }
         },
-    templ = () => ( {
-        create( val )
-        {
-            const o = Object.create( Object.getPrototypeOf( this ) );
-            o[ VALUE ] = +( isObject( val ) && Reflect.has( val, VALUE ) ? val[ VALUE ] : ( +val || 0 ) );
-            return o;
-        },
-        get value() { return this[ VALUE ]; },
-        set value( v ) { this[ VALUE ] = v; },
-        asString,
-        toString() { return this[ VALUE ] ? this.asString( this[ VALUE ] ) : '<no value>'; },
-        valueOf() { return this[ VALUE ] || 0; },
-        [ Symbol.toPrimitive ]( hint ) { return hint === 'string' ? this.toString() : this.valueOf(); },
-        [ util.inspect.custom ]( depth, options ) { return this.toString(); }
-    } );
+    templ    = () => {
+        const _ = {
+            create( val )
+            {
+                const o = Object.create( Object.getPrototypeOf( this ) );
+                o[ VALUE ] = val || 0;
+                return o;
+            },
+            get value() { return this[ VALUE ]; },
+            set value( v ) { this[ VALUE ] = v; },
+            asString,
+            toString() { return this[ VALUE ] ? this.asString( this[ VALUE ] ) : '<no value>'; },
+            valueOf() { return this[ VALUE ] || 0; },
+            [ Symbol.toPrimitive ]( hint ) { return hint === 'string' ? this.toString() : this.valueOf(); }
+        };
+
+        return _;
+    };
 
 /** *********************************************************************************************************************
  * @enum
  * @name Comparison
  ************************************************************************************************************************/
-let Comparison = {};
+let Comparison = {}; // Object.create( ( () => new ( function Comparison() {} )() )(), {} );
 Comparison.LessThan = wrapped( 'LessThan', -1 );
 Comparison[ +Comparison.LessThan.value ] = typeof Comparison[ +Comparison.LessThan.value ] !== 'number' ? named( 'LessThan' ) : Comparison[ +Comparison.LessThan.value ];
 Comparison.EqualTo = wrapped( 'EqualTo', 0 );
@@ -61,14 +63,675 @@ Comparison[ +Comparison.EqualTo.value ] = typeof Comparison[ +Comparison.EqualTo
 Comparison.GreaterThan = wrapped( 'GreaterThan', 1 );
 Comparison[ +Comparison.GreaterThan.value ] = typeof Comparison[ +Comparison.GreaterThan.value ] !== 'number' ? named( 'GreaterThan' ) : Comparison[ +Comparison.GreaterThan.value ];
 
-Comparison = Object.create( tmp = templ(), Comparison );
-tmp.asString = asString( Comparison );
+Comparison = Object.create( templ(), Comparison );
+Object.getPrototypeOf( Comparison ).asString = asString( Comparison );
+
+/** *********************************************************************************************************************
+ * @enum
+ * @name SyntaxKind
+ ************************************************************************************************************************/
+let SyntaxKind = {}; // Object.create( ( () => new ( function SyntaxKind() {} )() )(), {} );
+SyntaxKind.Unknown = wrapped( 'Unknown', 1 );
+SyntaxKind[ +SyntaxKind.Unknown.value ] = typeof SyntaxKind[ +SyntaxKind.Unknown.value ] !== 'number' ? named( 'Unknown' ) : SyntaxKind[ +SyntaxKind.Unknown.value ];
+SyntaxKind.EndOfFileToken = wrapped( 'EndOfFileToken', 2 );
+SyntaxKind[ +SyntaxKind.EndOfFileToken.value ] = typeof SyntaxKind[ +SyntaxKind.EndOfFileToken.value ] !== 'number' ? named( 'EndOfFileToken' ) : SyntaxKind[ +SyntaxKind.EndOfFileToken.value ];
+SyntaxKind.SingleLineCommentTrivia = wrapped( 'SingleLineCommentTrivia', 3 );
+SyntaxKind[ +SyntaxKind.SingleLineCommentTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.SingleLineCommentTrivia.value ] !== 'number' ? named( 'SingleLineCommentTrivia' ) : SyntaxKind[ +SyntaxKind.SingleLineCommentTrivia.value ];
+SyntaxKind.MultiLineCommentTrivia = wrapped( 'MultiLineCommentTrivia', 4 );
+SyntaxKind[ +SyntaxKind.MultiLineCommentTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.MultiLineCommentTrivia.value ] !== 'number' ? named( 'MultiLineCommentTrivia' ) : SyntaxKind[ +SyntaxKind.MultiLineCommentTrivia.value ];
+SyntaxKind.NewLineTrivia = wrapped( 'NewLineTrivia', 5 );
+SyntaxKind[ +SyntaxKind.NewLineTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.NewLineTrivia.value ] !== 'number' ? named( 'NewLineTrivia' ) : SyntaxKind[ +SyntaxKind.NewLineTrivia.value ];
+SyntaxKind.WhitespaceTrivia = wrapped( 'WhitespaceTrivia', 6 );
+SyntaxKind[ +SyntaxKind.WhitespaceTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.WhitespaceTrivia.value ] !== 'number' ? named( 'WhitespaceTrivia' ) : SyntaxKind[ +SyntaxKind.WhitespaceTrivia.value ];
+SyntaxKind.ShebangTrivia = wrapped( 'ShebangTrivia', 7 );
+SyntaxKind[ +SyntaxKind.ShebangTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.ShebangTrivia.value ] !== 'number' ? named( 'ShebangTrivia' ) : SyntaxKind[ +SyntaxKind.ShebangTrivia.value ];
+SyntaxKind.ConflictMarkerTrivia = wrapped( 'ConflictMarkerTrivia', 8 );
+SyntaxKind[ +SyntaxKind.ConflictMarkerTrivia.value ] = typeof SyntaxKind[ +SyntaxKind.ConflictMarkerTrivia.value ] !== 'number' ? named( 'ConflictMarkerTrivia' ) : SyntaxKind[ +SyntaxKind.ConflictMarkerTrivia.value ];
+SyntaxKind.NumericLiteral = wrapped( 'NumericLiteral', 9 );
+SyntaxKind[ +SyntaxKind.NumericLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.NumericLiteral.value ] !== 'number' ? named( 'NumericLiteral' ) : SyntaxKind[ +SyntaxKind.NumericLiteral.value ];
+SyntaxKind.StringLiteral = wrapped( 'StringLiteral', 10 );
+SyntaxKind[ +SyntaxKind.StringLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.StringLiteral.value ] !== 'number' ? named( 'StringLiteral' ) : SyntaxKind[ +SyntaxKind.StringLiteral.value ];
+SyntaxKind.JsxText = wrapped( 'JsxText', 11 );
+SyntaxKind[ +SyntaxKind.JsxText.value ] = typeof SyntaxKind[ +SyntaxKind.JsxText.value ] !== 'number' ? named( 'JsxText' ) : SyntaxKind[ +SyntaxKind.JsxText.value ];
+SyntaxKind.JsxTextAllWhiteSpaces = wrapped( 'JsxTextAllWhiteSpaces', 12 );
+SyntaxKind[ +SyntaxKind.JsxTextAllWhiteSpaces.value ] = typeof SyntaxKind[ +SyntaxKind.JsxTextAllWhiteSpaces.value ] !== 'number' ? named( 'JsxTextAllWhiteSpaces' ) : SyntaxKind[ +SyntaxKind.JsxTextAllWhiteSpaces.value ];
+SyntaxKind.RegularExpressionLiteral = wrapped( 'RegularExpressionLiteral', 13 );
+SyntaxKind[ +SyntaxKind.RegularExpressionLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.RegularExpressionLiteral.value ] !== 'number' ? named( 'RegularExpressionLiteral' ) : SyntaxKind[ +SyntaxKind.RegularExpressionLiteral.value ];
+SyntaxKind.NoSubstitutionTemplateLiteral = wrapped( 'NoSubstitutionTemplateLiteral', 14 );
+SyntaxKind[ +SyntaxKind.NoSubstitutionTemplateLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.NoSubstitutionTemplateLiteral.value ] !== 'number' ? named( 'NoSubstitutionTemplateLiteral' ) : SyntaxKind[ +SyntaxKind.NoSubstitutionTemplateLiteral.value ];
+SyntaxKind.TemplateHead = wrapped( 'TemplateHead', 15 );
+SyntaxKind[ +SyntaxKind.TemplateHead.value ] = typeof SyntaxKind[ +SyntaxKind.TemplateHead.value ] !== 'number' ? named( 'TemplateHead' ) : SyntaxKind[ +SyntaxKind.TemplateHead.value ];
+SyntaxKind.TemplateMiddle = wrapped( 'TemplateMiddle', 16 );
+SyntaxKind[ +SyntaxKind.TemplateMiddle.value ] = typeof SyntaxKind[ +SyntaxKind.TemplateMiddle.value ] !== 'number' ? named( 'TemplateMiddle' ) : SyntaxKind[ +SyntaxKind.TemplateMiddle.value ];
+SyntaxKind.TemplateTail = wrapped( 'TemplateTail', 17 );
+SyntaxKind[ +SyntaxKind.TemplateTail.value ] = typeof SyntaxKind[ +SyntaxKind.TemplateTail.value ] !== 'number' ? named( 'TemplateTail' ) : SyntaxKind[ +SyntaxKind.TemplateTail.value ];
+SyntaxKind.OpenBraceToken = wrapped( 'OpenBraceToken', 18 );
+SyntaxKind[ +SyntaxKind.OpenBraceToken.value ] = typeof SyntaxKind[ +SyntaxKind.OpenBraceToken.value ] !== 'number' ? named( 'OpenBraceToken' ) : SyntaxKind[ +SyntaxKind.OpenBraceToken.value ];
+SyntaxKind.CloseBraceToken = wrapped( 'CloseBraceToken', 19 );
+SyntaxKind[ +SyntaxKind.CloseBraceToken.value ] = typeof SyntaxKind[ +SyntaxKind.CloseBraceToken.value ] !== 'number' ? named( 'CloseBraceToken' ) : SyntaxKind[ +SyntaxKind.CloseBraceToken.value ];
+SyntaxKind.OpenParenToken = wrapped( 'OpenParenToken', 20 );
+SyntaxKind[ +SyntaxKind.OpenParenToken.value ] = typeof SyntaxKind[ +SyntaxKind.OpenParenToken.value ] !== 'number' ? named( 'OpenParenToken' ) : SyntaxKind[ +SyntaxKind.OpenParenToken.value ];
+SyntaxKind.CloseParenToken = wrapped( 'CloseParenToken', 21 );
+SyntaxKind[ +SyntaxKind.CloseParenToken.value ] = typeof SyntaxKind[ +SyntaxKind.CloseParenToken.value ] !== 'number' ? named( 'CloseParenToken' ) : SyntaxKind[ +SyntaxKind.CloseParenToken.value ];
+SyntaxKind.OpenBracketToken = wrapped( 'OpenBracketToken', 22 );
+SyntaxKind[ +SyntaxKind.OpenBracketToken.value ] = typeof SyntaxKind[ +SyntaxKind.OpenBracketToken.value ] !== 'number' ? named( 'OpenBracketToken' ) : SyntaxKind[ +SyntaxKind.OpenBracketToken.value ];
+SyntaxKind.CloseBracketToken = wrapped( 'CloseBracketToken', 23 );
+SyntaxKind[ +SyntaxKind.CloseBracketToken.value ] = typeof SyntaxKind[ +SyntaxKind.CloseBracketToken.value ] !== 'number' ? named( 'CloseBracketToken' ) : SyntaxKind[ +SyntaxKind.CloseBracketToken.value ];
+SyntaxKind.DotToken = wrapped( 'DotToken', 24 );
+SyntaxKind[ +SyntaxKind.DotToken.value ] = typeof SyntaxKind[ +SyntaxKind.DotToken.value ] !== 'number' ? named( 'DotToken' ) : SyntaxKind[ +SyntaxKind.DotToken.value ];
+SyntaxKind.DotDotDotToken = wrapped( 'DotDotDotToken', 25 );
+SyntaxKind[ +SyntaxKind.DotDotDotToken.value ] = typeof SyntaxKind[ +SyntaxKind.DotDotDotToken.value ] !== 'number' ? named( 'DotDotDotToken' ) : SyntaxKind[ +SyntaxKind.DotDotDotToken.value ];
+SyntaxKind.SemicolonToken = wrapped( 'SemicolonToken', 26 );
+SyntaxKind[ +SyntaxKind.SemicolonToken.value ] = typeof SyntaxKind[ +SyntaxKind.SemicolonToken.value ] !== 'number' ? named( 'SemicolonToken' ) : SyntaxKind[ +SyntaxKind.SemicolonToken.value ];
+SyntaxKind.CommaToken = wrapped( 'CommaToken', 27 );
+SyntaxKind[ +SyntaxKind.CommaToken.value ] = typeof SyntaxKind[ +SyntaxKind.CommaToken.value ] !== 'number' ? named( 'CommaToken' ) : SyntaxKind[ +SyntaxKind.CommaToken.value ];
+SyntaxKind.LessThanToken = wrapped( 'LessThanToken', 28 );
+SyntaxKind[ +SyntaxKind.LessThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.LessThanToken.value ] !== 'number' ? named( 'LessThanToken' ) : SyntaxKind[ +SyntaxKind.LessThanToken.value ];
+SyntaxKind.LessThanSlashToken = wrapped( 'LessThanSlashToken', 29 );
+SyntaxKind[ +SyntaxKind.LessThanSlashToken.value ] = typeof SyntaxKind[ +SyntaxKind.LessThanSlashToken.value ] !== 'number' ? named( 'LessThanSlashToken' ) : SyntaxKind[ +SyntaxKind.LessThanSlashToken.value ];
+SyntaxKind.GreaterThanToken = wrapped( 'GreaterThanToken', 30 );
+SyntaxKind[ +SyntaxKind.GreaterThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanToken.value ] !== 'number' ? named( 'GreaterThanToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanToken.value ];
+SyntaxKind.LessThanEqualsToken = wrapped( 'LessThanEqualsToken', 31 );
+SyntaxKind[ +SyntaxKind.LessThanEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.LessThanEqualsToken.value ] !== 'number' ? named( 'LessThanEqualsToken' ) : SyntaxKind[ +SyntaxKind.LessThanEqualsToken.value ];
+SyntaxKind.GreaterThanEqualsToken = wrapped( 'GreaterThanEqualsToken', 32 );
+SyntaxKind[ +SyntaxKind.GreaterThanEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanEqualsToken.value ] !== 'number' ? named( 'GreaterThanEqualsToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanEqualsToken.value ];
+SyntaxKind.EqualsEqualsToken = wrapped( 'EqualsEqualsToken', 33 );
+SyntaxKind[ +SyntaxKind.EqualsEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.EqualsEqualsToken.value ] !== 'number' ? named( 'EqualsEqualsToken' ) : SyntaxKind[ +SyntaxKind.EqualsEqualsToken.value ];
+SyntaxKind.ExclamationEqualsToken = wrapped( 'ExclamationEqualsToken', 34 );
+SyntaxKind[ +SyntaxKind.ExclamationEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.ExclamationEqualsToken.value ] !== 'number' ? named( 'ExclamationEqualsToken' ) : SyntaxKind[ +SyntaxKind.ExclamationEqualsToken.value ];
+SyntaxKind.EqualsEqualsEqualsToken = wrapped( 'EqualsEqualsEqualsToken', 35 );
+SyntaxKind[ +SyntaxKind.EqualsEqualsEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.EqualsEqualsEqualsToken.value ] !== 'number' ? named( 'EqualsEqualsEqualsToken' ) : SyntaxKind[ +SyntaxKind.EqualsEqualsEqualsToken.value ];
+SyntaxKind.ExclamationEqualsEqualsToken = wrapped( 'ExclamationEqualsEqualsToken', 36 );
+SyntaxKind[ +SyntaxKind.ExclamationEqualsEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.ExclamationEqualsEqualsToken.value ] !== 'number' ? named( 'ExclamationEqualsEqualsToken' ) : SyntaxKind[ +SyntaxKind.ExclamationEqualsEqualsToken.value ];
+SyntaxKind.EqualsGreaterThanToken = wrapped( 'EqualsGreaterThanToken', 37 );
+SyntaxKind[ +SyntaxKind.EqualsGreaterThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.EqualsGreaterThanToken.value ] !== 'number' ? named( 'EqualsGreaterThanToken' ) : SyntaxKind[ +SyntaxKind.EqualsGreaterThanToken.value ];
+SyntaxKind.PlusToken = wrapped( 'PlusToken', 38 );
+SyntaxKind[ +SyntaxKind.PlusToken.value ] = typeof SyntaxKind[ +SyntaxKind.PlusToken.value ] !== 'number' ? named( 'PlusToken' ) : SyntaxKind[ +SyntaxKind.PlusToken.value ];
+SyntaxKind.MinusToken = wrapped( 'MinusToken', 39 );
+SyntaxKind[ +SyntaxKind.MinusToken.value ] = typeof SyntaxKind[ +SyntaxKind.MinusToken.value ] !== 'number' ? named( 'MinusToken' ) : SyntaxKind[ +SyntaxKind.MinusToken.value ];
+SyntaxKind.AsteriskToken = wrapped( 'AsteriskToken', 40 );
+SyntaxKind[ +SyntaxKind.AsteriskToken.value ] = typeof SyntaxKind[ +SyntaxKind.AsteriskToken.value ] !== 'number' ? named( 'AsteriskToken' ) : SyntaxKind[ +SyntaxKind.AsteriskToken.value ];
+SyntaxKind.AsteriskAsteriskToken = wrapped( 'AsteriskAsteriskToken', 41 );
+SyntaxKind[ +SyntaxKind.AsteriskAsteriskToken.value ] = typeof SyntaxKind[ +SyntaxKind.AsteriskAsteriskToken.value ] !== 'number' ? named( 'AsteriskAsteriskToken' ) : SyntaxKind[ +SyntaxKind.AsteriskAsteriskToken.value ];
+SyntaxKind.SlashToken = wrapped( 'SlashToken', 42 );
+SyntaxKind[ +SyntaxKind.SlashToken.value ] = typeof SyntaxKind[ +SyntaxKind.SlashToken.value ] !== 'number' ? named( 'SlashToken' ) : SyntaxKind[ +SyntaxKind.SlashToken.value ];
+SyntaxKind.PercentToken = wrapped( 'PercentToken', 43 );
+SyntaxKind[ +SyntaxKind.PercentToken.value ] = typeof SyntaxKind[ +SyntaxKind.PercentToken.value ] !== 'number' ? named( 'PercentToken' ) : SyntaxKind[ +SyntaxKind.PercentToken.value ];
+SyntaxKind.PlusPlusToken = wrapped( 'PlusPlusToken', 44 );
+SyntaxKind[ +SyntaxKind.PlusPlusToken.value ] = typeof SyntaxKind[ +SyntaxKind.PlusPlusToken.value ] !== 'number' ? named( 'PlusPlusToken' ) : SyntaxKind[ +SyntaxKind.PlusPlusToken.value ];
+SyntaxKind.MinusMinusToken = wrapped( 'MinusMinusToken', 45 );
+SyntaxKind[ +SyntaxKind.MinusMinusToken.value ] = typeof SyntaxKind[ +SyntaxKind.MinusMinusToken.value ] !== 'number' ? named( 'MinusMinusToken' ) : SyntaxKind[ +SyntaxKind.MinusMinusToken.value ];
+SyntaxKind.LessThanLessThanToken = wrapped( 'LessThanLessThanToken', 46 );
+SyntaxKind[ +SyntaxKind.LessThanLessThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.LessThanLessThanToken.value ] !== 'number' ? named( 'LessThanLessThanToken' ) : SyntaxKind[ +SyntaxKind.LessThanLessThanToken.value ];
+SyntaxKind.GreaterThanGreaterThanToken = wrapped( 'GreaterThanGreaterThanToken', 47 );
+SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanToken.value ] !== 'number' ? named( 'GreaterThanGreaterThanToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanToken.value ];
+SyntaxKind.GreaterThanGreaterThanGreaterThanToken = wrapped( 'GreaterThanGreaterThanGreaterThanToken', 48 );
+SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanToken.value ] !== 'number' ? named( 'GreaterThanGreaterThanGreaterThanToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanToken.value ];
+SyntaxKind.AmpersandToken = wrapped( 'AmpersandToken', 49 );
+SyntaxKind[ +SyntaxKind.AmpersandToken.value ] = typeof SyntaxKind[ +SyntaxKind.AmpersandToken.value ] !== 'number' ? named( 'AmpersandToken' ) : SyntaxKind[ +SyntaxKind.AmpersandToken.value ];
+SyntaxKind.BarToken = wrapped( 'BarToken', 50 );
+SyntaxKind[ +SyntaxKind.BarToken.value ] = typeof SyntaxKind[ +SyntaxKind.BarToken.value ] !== 'number' ? named( 'BarToken' ) : SyntaxKind[ +SyntaxKind.BarToken.value ];
+SyntaxKind.CaretToken = wrapped( 'CaretToken', 51 );
+SyntaxKind[ +SyntaxKind.CaretToken.value ] = typeof SyntaxKind[ +SyntaxKind.CaretToken.value ] !== 'number' ? named( 'CaretToken' ) : SyntaxKind[ +SyntaxKind.CaretToken.value ];
+SyntaxKind.ExclamationToken = wrapped( 'ExclamationToken', 52 );
+SyntaxKind[ +SyntaxKind.ExclamationToken.value ] = typeof SyntaxKind[ +SyntaxKind.ExclamationToken.value ] !== 'number' ? named( 'ExclamationToken' ) : SyntaxKind[ +SyntaxKind.ExclamationToken.value ];
+SyntaxKind.TildeToken = wrapped( 'TildeToken', 53 );
+SyntaxKind[ +SyntaxKind.TildeToken.value ] = typeof SyntaxKind[ +SyntaxKind.TildeToken.value ] !== 'number' ? named( 'TildeToken' ) : SyntaxKind[ +SyntaxKind.TildeToken.value ];
+SyntaxKind.AmpersandAmpersandToken = wrapped( 'AmpersandAmpersandToken', 54 );
+SyntaxKind[ +SyntaxKind.AmpersandAmpersandToken.value ] = typeof SyntaxKind[ +SyntaxKind.AmpersandAmpersandToken.value ] !== 'number' ? named( 'AmpersandAmpersandToken' ) : SyntaxKind[ +SyntaxKind.AmpersandAmpersandToken.value ];
+SyntaxKind.BarBarToken = wrapped( 'BarBarToken', 55 );
+SyntaxKind[ +SyntaxKind.BarBarToken.value ] = typeof SyntaxKind[ +SyntaxKind.BarBarToken.value ] !== 'number' ? named( 'BarBarToken' ) : SyntaxKind[ +SyntaxKind.BarBarToken.value ];
+SyntaxKind.QuestionToken = wrapped( 'QuestionToken', 56 );
+SyntaxKind[ +SyntaxKind.QuestionToken.value ] = typeof SyntaxKind[ +SyntaxKind.QuestionToken.value ] !== 'number' ? named( 'QuestionToken' ) : SyntaxKind[ +SyntaxKind.QuestionToken.value ];
+SyntaxKind.ColonToken = wrapped( 'ColonToken', 57 );
+SyntaxKind[ +SyntaxKind.ColonToken.value ] = typeof SyntaxKind[ +SyntaxKind.ColonToken.value ] !== 'number' ? named( 'ColonToken' ) : SyntaxKind[ +SyntaxKind.ColonToken.value ];
+SyntaxKind.AtToken = wrapped( 'AtToken', 58 );
+SyntaxKind[ +SyntaxKind.AtToken.value ] = typeof SyntaxKind[ +SyntaxKind.AtToken.value ] !== 'number' ? named( 'AtToken' ) : SyntaxKind[ +SyntaxKind.AtToken.value ];
+SyntaxKind.EqualsToken = wrapped( 'EqualsToken', 59 );
+SyntaxKind[ +SyntaxKind.EqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.EqualsToken.value ] !== 'number' ? named( 'EqualsToken' ) : SyntaxKind[ +SyntaxKind.EqualsToken.value ];
+SyntaxKind.PlusEqualsToken = wrapped( 'PlusEqualsToken', 60 );
+SyntaxKind[ +SyntaxKind.PlusEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.PlusEqualsToken.value ] !== 'number' ? named( 'PlusEqualsToken' ) : SyntaxKind[ +SyntaxKind.PlusEqualsToken.value ];
+SyntaxKind.MinusEqualsToken = wrapped( 'MinusEqualsToken', 61 );
+SyntaxKind[ +SyntaxKind.MinusEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.MinusEqualsToken.value ] !== 'number' ? named( 'MinusEqualsToken' ) : SyntaxKind[ +SyntaxKind.MinusEqualsToken.value ];
+SyntaxKind.AsteriskEqualsToken = wrapped( 'AsteriskEqualsToken', 62 );
+SyntaxKind[ +SyntaxKind.AsteriskEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.AsteriskEqualsToken.value ] !== 'number' ? named( 'AsteriskEqualsToken' ) : SyntaxKind[ +SyntaxKind.AsteriskEqualsToken.value ];
+SyntaxKind.AsteriskAsteriskEqualsToken = wrapped( 'AsteriskAsteriskEqualsToken', 63 );
+SyntaxKind[ +SyntaxKind.AsteriskAsteriskEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.AsteriskAsteriskEqualsToken.value ] !== 'number' ? named( 'AsteriskAsteriskEqualsToken' ) : SyntaxKind[ +SyntaxKind.AsteriskAsteriskEqualsToken.value ];
+SyntaxKind.SlashEqualsToken = wrapped( 'SlashEqualsToken', 64 );
+SyntaxKind[ +SyntaxKind.SlashEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.SlashEqualsToken.value ] !== 'number' ? named( 'SlashEqualsToken' ) : SyntaxKind[ +SyntaxKind.SlashEqualsToken.value ];
+SyntaxKind.PercentEqualsToken = wrapped( 'PercentEqualsToken', 65 );
+SyntaxKind[ +SyntaxKind.PercentEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.PercentEqualsToken.value ] !== 'number' ? named( 'PercentEqualsToken' ) : SyntaxKind[ +SyntaxKind.PercentEqualsToken.value ];
+SyntaxKind.LessThanLessThanEqualsToken = wrapped( 'LessThanLessThanEqualsToken', 66 );
+SyntaxKind[ +SyntaxKind.LessThanLessThanEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.LessThanLessThanEqualsToken.value ] !== 'number' ? named( 'LessThanLessThanEqualsToken' ) : SyntaxKind[ +SyntaxKind.LessThanLessThanEqualsToken.value ];
+SyntaxKind.GreaterThanGreaterThanEqualsToken = wrapped( 'GreaterThanGreaterThanEqualsToken', 67 );
+SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanEqualsToken.value ] !== 'number' ? named( 'GreaterThanGreaterThanEqualsToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanEqualsToken.value ];
+SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken = wrapped( 'GreaterThanGreaterThanGreaterThanEqualsToken', 68 );
+SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken.value ] !== 'number' ? named( 'GreaterThanGreaterThanGreaterThanEqualsToken' ) : SyntaxKind[ +SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken.value ];
+SyntaxKind.AmpersandEqualsToken = wrapped( 'AmpersandEqualsToken', 69 );
+SyntaxKind[ +SyntaxKind.AmpersandEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.AmpersandEqualsToken.value ] !== 'number' ? named( 'AmpersandEqualsToken' ) : SyntaxKind[ +SyntaxKind.AmpersandEqualsToken.value ];
+SyntaxKind.BarEqualsToken = wrapped( 'BarEqualsToken', 70 );
+SyntaxKind[ +SyntaxKind.BarEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.BarEqualsToken.value ] !== 'number' ? named( 'BarEqualsToken' ) : SyntaxKind[ +SyntaxKind.BarEqualsToken.value ];
+SyntaxKind.CaretEqualsToken = wrapped( 'CaretEqualsToken', 71 );
+SyntaxKind[ +SyntaxKind.CaretEqualsToken.value ] = typeof SyntaxKind[ +SyntaxKind.CaretEqualsToken.value ] !== 'number' ? named( 'CaretEqualsToken' ) : SyntaxKind[ +SyntaxKind.CaretEqualsToken.value ];
+SyntaxKind.Identifier = wrapped( 'Identifier', 72 );
+SyntaxKind[ +SyntaxKind.Identifier.value ] = typeof SyntaxKind[ +SyntaxKind.Identifier.value ] !== 'number' ? named( 'Identifier' ) : SyntaxKind[ +SyntaxKind.Identifier.value ];
+SyntaxKind.BreakKeyword = wrapped( 'BreakKeyword', 73 );
+SyntaxKind[ +SyntaxKind.BreakKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.BreakKeyword.value ] !== 'number' ? named( 'BreakKeyword' ) : SyntaxKind[ +SyntaxKind.BreakKeyword.value ];
+SyntaxKind.CaseKeyword = wrapped( 'CaseKeyword', 74 );
+SyntaxKind[ +SyntaxKind.CaseKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.CaseKeyword.value ] !== 'number' ? named( 'CaseKeyword' ) : SyntaxKind[ +SyntaxKind.CaseKeyword.value ];
+SyntaxKind.CatchKeyword = wrapped( 'CatchKeyword', 75 );
+SyntaxKind[ +SyntaxKind.CatchKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.CatchKeyword.value ] !== 'number' ? named( 'CatchKeyword' ) : SyntaxKind[ +SyntaxKind.CatchKeyword.value ];
+SyntaxKind.ClassKeyword = wrapped( 'ClassKeyword', 76 );
+SyntaxKind[ +SyntaxKind.ClassKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ClassKeyword.value ] !== 'number' ? named( 'ClassKeyword' ) : SyntaxKind[ +SyntaxKind.ClassKeyword.value ];
+SyntaxKind.ConstKeyword = wrapped( 'ConstKeyword', 77 );
+SyntaxKind[ +SyntaxKind.ConstKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ConstKeyword.value ] !== 'number' ? named( 'ConstKeyword' ) : SyntaxKind[ +SyntaxKind.ConstKeyword.value ];
+SyntaxKind.ContinueKeyword = wrapped( 'ContinueKeyword', 78 );
+SyntaxKind[ +SyntaxKind.ContinueKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ContinueKeyword.value ] !== 'number' ? named( 'ContinueKeyword' ) : SyntaxKind[ +SyntaxKind.ContinueKeyword.value ];
+SyntaxKind.DebuggerKeyword = wrapped( 'DebuggerKeyword', 79 );
+SyntaxKind[ +SyntaxKind.DebuggerKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.DebuggerKeyword.value ] !== 'number' ? named( 'DebuggerKeyword' ) : SyntaxKind[ +SyntaxKind.DebuggerKeyword.value ];
+SyntaxKind.DefaultKeyword = wrapped( 'DefaultKeyword', 80 );
+SyntaxKind[ +SyntaxKind.DefaultKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.DefaultKeyword.value ] !== 'number' ? named( 'DefaultKeyword' ) : SyntaxKind[ +SyntaxKind.DefaultKeyword.value ];
+SyntaxKind.DeleteKeyword = wrapped( 'DeleteKeyword', 81 );
+SyntaxKind[ +SyntaxKind.DeleteKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.DeleteKeyword.value ] !== 'number' ? named( 'DeleteKeyword' ) : SyntaxKind[ +SyntaxKind.DeleteKeyword.value ];
+SyntaxKind.DoKeyword = wrapped( 'DoKeyword', 82 );
+SyntaxKind[ +SyntaxKind.DoKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.DoKeyword.value ] !== 'number' ? named( 'DoKeyword' ) : SyntaxKind[ +SyntaxKind.DoKeyword.value ];
+SyntaxKind.ElseKeyword = wrapped( 'ElseKeyword', 83 );
+SyntaxKind[ +SyntaxKind.ElseKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ElseKeyword.value ] !== 'number' ? named( 'ElseKeyword' ) : SyntaxKind[ +SyntaxKind.ElseKeyword.value ];
+SyntaxKind.EnumKeyword = wrapped( 'EnumKeyword', 84 );
+SyntaxKind[ +SyntaxKind.EnumKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.EnumKeyword.value ] !== 'number' ? named( 'EnumKeyword' ) : SyntaxKind[ +SyntaxKind.EnumKeyword.value ];
+SyntaxKind.ExportKeyword = wrapped( 'ExportKeyword', 85 );
+SyntaxKind[ +SyntaxKind.ExportKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ExportKeyword.value ] !== 'number' ? named( 'ExportKeyword' ) : SyntaxKind[ +SyntaxKind.ExportKeyword.value ];
+SyntaxKind.ExtendsKeyword = wrapped( 'ExtendsKeyword', 86 );
+SyntaxKind[ +SyntaxKind.ExtendsKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ExtendsKeyword.value ] !== 'number' ? named( 'ExtendsKeyword' ) : SyntaxKind[ +SyntaxKind.ExtendsKeyword.value ];
+SyntaxKind.FalseKeyword = wrapped( 'FalseKeyword', 87 );
+SyntaxKind[ +SyntaxKind.FalseKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.FalseKeyword.value ] !== 'number' ? named( 'FalseKeyword' ) : SyntaxKind[ +SyntaxKind.FalseKeyword.value ];
+SyntaxKind.FinallyKeyword = wrapped( 'FinallyKeyword', 88 );
+SyntaxKind[ +SyntaxKind.FinallyKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.FinallyKeyword.value ] !== 'number' ? named( 'FinallyKeyword' ) : SyntaxKind[ +SyntaxKind.FinallyKeyword.value ];
+SyntaxKind.ForKeyword = wrapped( 'ForKeyword', 89 );
+SyntaxKind[ +SyntaxKind.ForKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ForKeyword.value ] !== 'number' ? named( 'ForKeyword' ) : SyntaxKind[ +SyntaxKind.ForKeyword.value ];
+SyntaxKind.FunctionKeyword = wrapped( 'FunctionKeyword', 90 );
+SyntaxKind[ +SyntaxKind.FunctionKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.FunctionKeyword.value ] !== 'number' ? named( 'FunctionKeyword' ) : SyntaxKind[ +SyntaxKind.FunctionKeyword.value ];
+SyntaxKind.IfKeyword = wrapped( 'IfKeyword', 91 );
+SyntaxKind[ +SyntaxKind.IfKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.IfKeyword.value ] !== 'number' ? named( 'IfKeyword' ) : SyntaxKind[ +SyntaxKind.IfKeyword.value ];
+SyntaxKind.ImportKeyword = wrapped( 'ImportKeyword', 92 );
+SyntaxKind[ +SyntaxKind.ImportKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ImportKeyword.value ] !== 'number' ? named( 'ImportKeyword' ) : SyntaxKind[ +SyntaxKind.ImportKeyword.value ];
+SyntaxKind.InKeyword = wrapped( 'InKeyword', 93 );
+SyntaxKind[ +SyntaxKind.InKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.InKeyword.value ] !== 'number' ? named( 'InKeyword' ) : SyntaxKind[ +SyntaxKind.InKeyword.value ];
+SyntaxKind.InstanceOfKeyword = wrapped( 'InstanceOfKeyword', 94 );
+SyntaxKind[ +SyntaxKind.InstanceOfKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.InstanceOfKeyword.value ] !== 'number' ? named( 'InstanceOfKeyword' ) : SyntaxKind[ +SyntaxKind.InstanceOfKeyword.value ];
+SyntaxKind.NewKeyword = wrapped( 'NewKeyword', 95 );
+SyntaxKind[ +SyntaxKind.NewKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.NewKeyword.value ] !== 'number' ? named( 'NewKeyword' ) : SyntaxKind[ +SyntaxKind.NewKeyword.value ];
+SyntaxKind.NullKeyword = wrapped( 'NullKeyword', 96 );
+SyntaxKind[ +SyntaxKind.NullKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.NullKeyword.value ] !== 'number' ? named( 'NullKeyword' ) : SyntaxKind[ +SyntaxKind.NullKeyword.value ];
+SyntaxKind.ReturnKeyword = wrapped( 'ReturnKeyword', 97 );
+SyntaxKind[ +SyntaxKind.ReturnKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ReturnKeyword.value ] !== 'number' ? named( 'ReturnKeyword' ) : SyntaxKind[ +SyntaxKind.ReturnKeyword.value ];
+SyntaxKind.SuperKeyword = wrapped( 'SuperKeyword', 98 );
+SyntaxKind[ +SyntaxKind.SuperKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.SuperKeyword.value ] !== 'number' ? named( 'SuperKeyword' ) : SyntaxKind[ +SyntaxKind.SuperKeyword.value ];
+SyntaxKind.SwitchKeyword = wrapped( 'SwitchKeyword', 99 );
+SyntaxKind[ +SyntaxKind.SwitchKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.SwitchKeyword.value ] !== 'number' ? named( 'SwitchKeyword' ) : SyntaxKind[ +SyntaxKind.SwitchKeyword.value ];
+SyntaxKind.ThisKeyword = wrapped( 'ThisKeyword', 100 );
+SyntaxKind[ +SyntaxKind.ThisKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ThisKeyword.value ] !== 'number' ? named( 'ThisKeyword' ) : SyntaxKind[ +SyntaxKind.ThisKeyword.value ];
+SyntaxKind.ThrowKeyword = wrapped( 'ThrowKeyword', 101 );
+SyntaxKind[ +SyntaxKind.ThrowKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ThrowKeyword.value ] !== 'number' ? named( 'ThrowKeyword' ) : SyntaxKind[ +SyntaxKind.ThrowKeyword.value ];
+SyntaxKind.TrueKeyword = wrapped( 'TrueKeyword', 102 );
+SyntaxKind[ +SyntaxKind.TrueKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.TrueKeyword.value ] !== 'number' ? named( 'TrueKeyword' ) : SyntaxKind[ +SyntaxKind.TrueKeyword.value ];
+SyntaxKind.TryKeyword = wrapped( 'TryKeyword', 103 );
+SyntaxKind[ +SyntaxKind.TryKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.TryKeyword.value ] !== 'number' ? named( 'TryKeyword' ) : SyntaxKind[ +SyntaxKind.TryKeyword.value ];
+SyntaxKind.TypeOfKeyword = wrapped( 'TypeOfKeyword', 104 );
+SyntaxKind[ +SyntaxKind.TypeOfKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.TypeOfKeyword.value ] !== 'number' ? named( 'TypeOfKeyword' ) : SyntaxKind[ +SyntaxKind.TypeOfKeyword.value ];
+SyntaxKind.VarKeyword = wrapped( 'VarKeyword', 105 );
+SyntaxKind[ +SyntaxKind.VarKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.VarKeyword.value ] !== 'number' ? named( 'VarKeyword' ) : SyntaxKind[ +SyntaxKind.VarKeyword.value ];
+SyntaxKind.VoidKeyword = wrapped( 'VoidKeyword', 106 );
+SyntaxKind[ +SyntaxKind.VoidKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.VoidKeyword.value ] !== 'number' ? named( 'VoidKeyword' ) : SyntaxKind[ +SyntaxKind.VoidKeyword.value ];
+SyntaxKind.WhileKeyword = wrapped( 'WhileKeyword', 107 );
+SyntaxKind[ +SyntaxKind.WhileKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.WhileKeyword.value ] !== 'number' ? named( 'WhileKeyword' ) : SyntaxKind[ +SyntaxKind.WhileKeyword.value ];
+SyntaxKind.WithKeyword = wrapped( 'WithKeyword', 108 );
+SyntaxKind[ +SyntaxKind.WithKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.WithKeyword.value ] !== 'number' ? named( 'WithKeyword' ) : SyntaxKind[ +SyntaxKind.WithKeyword.value ];
+SyntaxKind.ImplementsKeyword = wrapped( 'ImplementsKeyword', 109 );
+SyntaxKind[ +SyntaxKind.ImplementsKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ImplementsKeyword.value ] !== 'number' ? named( 'ImplementsKeyword' ) : SyntaxKind[ +SyntaxKind.ImplementsKeyword.value ];
+SyntaxKind.InterfaceKeyword = wrapped( 'InterfaceKeyword', 110 );
+SyntaxKind[ +SyntaxKind.InterfaceKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.InterfaceKeyword.value ] !== 'number' ? named( 'InterfaceKeyword' ) : SyntaxKind[ +SyntaxKind.InterfaceKeyword.value ];
+SyntaxKind.LetKeyword = wrapped( 'LetKeyword', 111 );
+SyntaxKind[ +SyntaxKind.LetKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.LetKeyword.value ] !== 'number' ? named( 'LetKeyword' ) : SyntaxKind[ +SyntaxKind.LetKeyword.value ];
+SyntaxKind.PackageKeyword = wrapped( 'PackageKeyword', 112 );
+SyntaxKind[ +SyntaxKind.PackageKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.PackageKeyword.value ] !== 'number' ? named( 'PackageKeyword' ) : SyntaxKind[ +SyntaxKind.PackageKeyword.value ];
+SyntaxKind.PrivateKeyword = wrapped( 'PrivateKeyword', 113 );
+SyntaxKind[ +SyntaxKind.PrivateKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.PrivateKeyword.value ] !== 'number' ? named( 'PrivateKeyword' ) : SyntaxKind[ +SyntaxKind.PrivateKeyword.value ];
+SyntaxKind.ProtectedKeyword = wrapped( 'ProtectedKeyword', 114 );
+SyntaxKind[ +SyntaxKind.ProtectedKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ProtectedKeyword.value ] !== 'number' ? named( 'ProtectedKeyword' ) : SyntaxKind[ +SyntaxKind.ProtectedKeyword.value ];
+SyntaxKind.PublicKeyword = wrapped( 'PublicKeyword', 115 );
+SyntaxKind[ +SyntaxKind.PublicKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.PublicKeyword.value ] !== 'number' ? named( 'PublicKeyword' ) : SyntaxKind[ +SyntaxKind.PublicKeyword.value ];
+SyntaxKind.StaticKeyword = wrapped( 'StaticKeyword', 116 );
+SyntaxKind[ +SyntaxKind.StaticKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.StaticKeyword.value ] !== 'number' ? named( 'StaticKeyword' ) : SyntaxKind[ +SyntaxKind.StaticKeyword.value ];
+SyntaxKind.YieldKeyword = wrapped( 'YieldKeyword', 117 );
+SyntaxKind[ +SyntaxKind.YieldKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.YieldKeyword.value ] !== 'number' ? named( 'YieldKeyword' ) : SyntaxKind[ +SyntaxKind.YieldKeyword.value ];
+SyntaxKind.AbstractKeyword = wrapped( 'AbstractKeyword', 118 );
+SyntaxKind[ +SyntaxKind.AbstractKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.AbstractKeyword.value ] !== 'number' ? named( 'AbstractKeyword' ) : SyntaxKind[ +SyntaxKind.AbstractKeyword.value ];
+SyntaxKind.AsKeyword = wrapped( 'AsKeyword', 119 );
+SyntaxKind[ +SyntaxKind.AsKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.AsKeyword.value ] !== 'number' ? named( 'AsKeyword' ) : SyntaxKind[ +SyntaxKind.AsKeyword.value ];
+SyntaxKind.AnyKeyword = wrapped( 'AnyKeyword', 120 );
+SyntaxKind[ +SyntaxKind.AnyKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.AnyKeyword.value ] !== 'number' ? named( 'AnyKeyword' ) : SyntaxKind[ +SyntaxKind.AnyKeyword.value ];
+SyntaxKind.AsyncKeyword = wrapped( 'AsyncKeyword', 121 );
+SyntaxKind[ +SyntaxKind.AsyncKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.AsyncKeyword.value ] !== 'number' ? named( 'AsyncKeyword' ) : SyntaxKind[ +SyntaxKind.AsyncKeyword.value ];
+SyntaxKind.AwaitKeyword = wrapped( 'AwaitKeyword', 122 );
+SyntaxKind[ +SyntaxKind.AwaitKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.AwaitKeyword.value ] !== 'number' ? named( 'AwaitKeyword' ) : SyntaxKind[ +SyntaxKind.AwaitKeyword.value ];
+SyntaxKind.BooleanKeyword = wrapped( 'BooleanKeyword', 123 );
+SyntaxKind[ +SyntaxKind.BooleanKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.BooleanKeyword.value ] !== 'number' ? named( 'BooleanKeyword' ) : SyntaxKind[ +SyntaxKind.BooleanKeyword.value ];
+SyntaxKind.ConstructorKeyword = wrapped( 'ConstructorKeyword', 124 );
+SyntaxKind[ +SyntaxKind.ConstructorKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ConstructorKeyword.value ] !== 'number' ? named( 'ConstructorKeyword' ) : SyntaxKind[ +SyntaxKind.ConstructorKeyword.value ];
+SyntaxKind.DeclareKeyword = wrapped( 'DeclareKeyword', 125 );
+SyntaxKind[ +SyntaxKind.DeclareKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.DeclareKeyword.value ] !== 'number' ? named( 'DeclareKeyword' ) : SyntaxKind[ +SyntaxKind.DeclareKeyword.value ];
+SyntaxKind.GetKeyword = wrapped( 'GetKeyword', 126 );
+SyntaxKind[ +SyntaxKind.GetKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.GetKeyword.value ] !== 'number' ? named( 'GetKeyword' ) : SyntaxKind[ +SyntaxKind.GetKeyword.value ];
+SyntaxKind.IsKeyword = wrapped( 'IsKeyword', 127 );
+SyntaxKind[ +SyntaxKind.IsKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.IsKeyword.value ] !== 'number' ? named( 'IsKeyword' ) : SyntaxKind[ +SyntaxKind.IsKeyword.value ];
+SyntaxKind.KeyOfKeyword = wrapped( 'KeyOfKeyword', 128 );
+SyntaxKind[ +SyntaxKind.KeyOfKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.KeyOfKeyword.value ] !== 'number' ? named( 'KeyOfKeyword' ) : SyntaxKind[ +SyntaxKind.KeyOfKeyword.value ];
+SyntaxKind.ModuleKeyword = wrapped( 'ModuleKeyword', 129 );
+SyntaxKind[ +SyntaxKind.ModuleKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ModuleKeyword.value ] !== 'number' ? named( 'ModuleKeyword' ) : SyntaxKind[ +SyntaxKind.ModuleKeyword.value ];
+SyntaxKind.NamespaceKeyword = wrapped( 'NamespaceKeyword', 130 );
+SyntaxKind[ +SyntaxKind.NamespaceKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.NamespaceKeyword.value ] !== 'number' ? named( 'NamespaceKeyword' ) : SyntaxKind[ +SyntaxKind.NamespaceKeyword.value ];
+SyntaxKind.NeverKeyword = wrapped( 'NeverKeyword', 131 );
+SyntaxKind[ +SyntaxKind.NeverKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.NeverKeyword.value ] !== 'number' ? named( 'NeverKeyword' ) : SyntaxKind[ +SyntaxKind.NeverKeyword.value ];
+SyntaxKind.ReadonlyKeyword = wrapped( 'ReadonlyKeyword', 132 );
+SyntaxKind[ +SyntaxKind.ReadonlyKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ReadonlyKeyword.value ] !== 'number' ? named( 'ReadonlyKeyword' ) : SyntaxKind[ +SyntaxKind.ReadonlyKeyword.value ];
+SyntaxKind.RequireKeyword = wrapped( 'RequireKeyword', 133 );
+SyntaxKind[ +SyntaxKind.RequireKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.RequireKeyword.value ] !== 'number' ? named( 'RequireKeyword' ) : SyntaxKind[ +SyntaxKind.RequireKeyword.value ];
+SyntaxKind.NumberKeyword = wrapped( 'NumberKeyword', 134 );
+SyntaxKind[ +SyntaxKind.NumberKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.NumberKeyword.value ] !== 'number' ? named( 'NumberKeyword' ) : SyntaxKind[ +SyntaxKind.NumberKeyword.value ];
+SyntaxKind.ObjectKeyword = wrapped( 'ObjectKeyword', 135 );
+SyntaxKind[ +SyntaxKind.ObjectKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.ObjectKeyword.value ] !== 'number' ? named( 'ObjectKeyword' ) : SyntaxKind[ +SyntaxKind.ObjectKeyword.value ];
+SyntaxKind.SetKeyword = wrapped( 'SetKeyword', 136 );
+SyntaxKind[ +SyntaxKind.SetKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.SetKeyword.value ] !== 'number' ? named( 'SetKeyword' ) : SyntaxKind[ +SyntaxKind.SetKeyword.value ];
+SyntaxKind.StringKeyword = wrapped( 'StringKeyword', 137 );
+SyntaxKind[ +SyntaxKind.StringKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.StringKeyword.value ] !== 'number' ? named( 'StringKeyword' ) : SyntaxKind[ +SyntaxKind.StringKeyword.value ];
+SyntaxKind.SymbolKeyword = wrapped( 'SymbolKeyword', 138 );
+SyntaxKind[ +SyntaxKind.SymbolKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.SymbolKeyword.value ] !== 'number' ? named( 'SymbolKeyword' ) : SyntaxKind[ +SyntaxKind.SymbolKeyword.value ];
+SyntaxKind.TypeKeyword = wrapped( 'TypeKeyword', 139 );
+SyntaxKind[ +SyntaxKind.TypeKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.TypeKeyword.value ] !== 'number' ? named( 'TypeKeyword' ) : SyntaxKind[ +SyntaxKind.TypeKeyword.value ];
+SyntaxKind.UndefinedKeyword = wrapped( 'UndefinedKeyword', 140 );
+SyntaxKind[ +SyntaxKind.UndefinedKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.UndefinedKeyword.value ] !== 'number' ? named( 'UndefinedKeyword' ) : SyntaxKind[ +SyntaxKind.UndefinedKeyword.value ];
+SyntaxKind.UniqueKeyword = wrapped( 'UniqueKeyword', 141 );
+SyntaxKind[ +SyntaxKind.UniqueKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.UniqueKeyword.value ] !== 'number' ? named( 'UniqueKeyword' ) : SyntaxKind[ +SyntaxKind.UniqueKeyword.value ];
+SyntaxKind.FromKeyword = wrapped( 'FromKeyword', 142 );
+SyntaxKind[ +SyntaxKind.FromKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.FromKeyword.value ] !== 'number' ? named( 'FromKeyword' ) : SyntaxKind[ +SyntaxKind.FromKeyword.value ];
+SyntaxKind.GlobalKeyword = wrapped( 'GlobalKeyword', 143 );
+SyntaxKind[ +SyntaxKind.GlobalKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.GlobalKeyword.value ] !== 'number' ? named( 'GlobalKeyword' ) : SyntaxKind[ +SyntaxKind.GlobalKeyword.value ];
+SyntaxKind.OfKeyword = wrapped( 'OfKeyword', 144 );
+SyntaxKind[ +SyntaxKind.OfKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.OfKeyword.value ] !== 'number' ? named( 'OfKeyword' ) : SyntaxKind[ +SyntaxKind.OfKeyword.value ];
+SyntaxKind.QualifiedName = wrapped( 'QualifiedName', 145 );
+SyntaxKind[ +SyntaxKind.QualifiedName.value ] = typeof SyntaxKind[ +SyntaxKind.QualifiedName.value ] !== 'number' ? named( 'QualifiedName' ) : SyntaxKind[ +SyntaxKind.QualifiedName.value ];
+SyntaxKind.ComputedPropertyName = wrapped( 'ComputedPropertyName', 146 );
+SyntaxKind[ +SyntaxKind.ComputedPropertyName.value ] = typeof SyntaxKind[ +SyntaxKind.ComputedPropertyName.value ] !== 'number' ? named( 'ComputedPropertyName' ) : SyntaxKind[ +SyntaxKind.ComputedPropertyName.value ];
+SyntaxKind.TypeParameter = wrapped( 'TypeParameter', 147 );
+SyntaxKind[ +SyntaxKind.TypeParameter.value ] = typeof SyntaxKind[ +SyntaxKind.TypeParameter.value ] !== 'number' ? named( 'TypeParameter' ) : SyntaxKind[ +SyntaxKind.TypeParameter.value ];
+SyntaxKind.Parameter = wrapped( 'Parameter', 148 );
+SyntaxKind[ +SyntaxKind.Parameter.value ] = typeof SyntaxKind[ +SyntaxKind.Parameter.value ] !== 'number' ? named( 'Parameter' ) : SyntaxKind[ +SyntaxKind.Parameter.value ];
+SyntaxKind.Decorator = wrapped( 'Decorator', 149 );
+SyntaxKind[ +SyntaxKind.Decorator.value ] = typeof SyntaxKind[ +SyntaxKind.Decorator.value ] !== 'number' ? named( 'Decorator' ) : SyntaxKind[ +SyntaxKind.Decorator.value ];
+SyntaxKind.PropertySignature = wrapped( 'PropertySignature', 150 );
+SyntaxKind[ +SyntaxKind.PropertySignature.value ] = typeof SyntaxKind[ +SyntaxKind.PropertySignature.value ] !== 'number' ? named( 'PropertySignature' ) : SyntaxKind[ +SyntaxKind.PropertySignature.value ];
+SyntaxKind.PropertyDeclaration = wrapped( 'PropertyDeclaration', 151 );
+SyntaxKind[ +SyntaxKind.PropertyDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.PropertyDeclaration.value ] !== 'number' ? named( 'PropertyDeclaration' ) : SyntaxKind[ +SyntaxKind.PropertyDeclaration.value ];
+SyntaxKind.MethodSignature = wrapped( 'MethodSignature', 152 );
+SyntaxKind[ +SyntaxKind.MethodSignature.value ] = typeof SyntaxKind[ +SyntaxKind.MethodSignature.value ] !== 'number' ? named( 'MethodSignature' ) : SyntaxKind[ +SyntaxKind.MethodSignature.value ];
+SyntaxKind.MethodDeclaration = wrapped( 'MethodDeclaration', 153 );
+SyntaxKind[ +SyntaxKind.MethodDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.MethodDeclaration.value ] !== 'number' ? named( 'MethodDeclaration' ) : SyntaxKind[ +SyntaxKind.MethodDeclaration.value ];
+SyntaxKind.Constructor = wrapped( 'Constructor', 154 );
+SyntaxKind[ +SyntaxKind.Constructor.value ] = typeof SyntaxKind[ +SyntaxKind.Constructor.value ] !== 'number' ? named( 'Constructor' ) : SyntaxKind[ +SyntaxKind.Constructor.value ];
+SyntaxKind.GetAccessor = wrapped( 'GetAccessor', 155 );
+SyntaxKind[ +SyntaxKind.GetAccessor.value ] = typeof SyntaxKind[ +SyntaxKind.GetAccessor.value ] !== 'number' ? named( 'GetAccessor' ) : SyntaxKind[ +SyntaxKind.GetAccessor.value ];
+SyntaxKind.SetAccessor = wrapped( 'SetAccessor', 156 );
+SyntaxKind[ +SyntaxKind.SetAccessor.value ] = typeof SyntaxKind[ +SyntaxKind.SetAccessor.value ] !== 'number' ? named( 'SetAccessor' ) : SyntaxKind[ +SyntaxKind.SetAccessor.value ];
+SyntaxKind.CallSignature = wrapped( 'CallSignature', 157 );
+SyntaxKind[ +SyntaxKind.CallSignature.value ] = typeof SyntaxKind[ +SyntaxKind.CallSignature.value ] !== 'number' ? named( 'CallSignature' ) : SyntaxKind[ +SyntaxKind.CallSignature.value ];
+SyntaxKind.ConstructSignature = wrapped( 'ConstructSignature', 158 );
+SyntaxKind[ +SyntaxKind.ConstructSignature.value ] = typeof SyntaxKind[ +SyntaxKind.ConstructSignature.value ] !== 'number' ? named( 'ConstructSignature' ) : SyntaxKind[ +SyntaxKind.ConstructSignature.value ];
+SyntaxKind.IndexSignature = wrapped( 'IndexSignature', 159 );
+SyntaxKind[ +SyntaxKind.IndexSignature.value ] = typeof SyntaxKind[ +SyntaxKind.IndexSignature.value ] !== 'number' ? named( 'IndexSignature' ) : SyntaxKind[ +SyntaxKind.IndexSignature.value ];
+SyntaxKind.TypePredicate = wrapped( 'TypePredicate', 160 );
+SyntaxKind[ +SyntaxKind.TypePredicate.value ] = typeof SyntaxKind[ +SyntaxKind.TypePredicate.value ] !== 'number' ? named( 'TypePredicate' ) : SyntaxKind[ +SyntaxKind.TypePredicate.value ];
+SyntaxKind.TypeReference = wrapped( 'TypeReference', 161 );
+SyntaxKind[ +SyntaxKind.TypeReference.value ] = typeof SyntaxKind[ +SyntaxKind.TypeReference.value ] !== 'number' ? named( 'TypeReference' ) : SyntaxKind[ +SyntaxKind.TypeReference.value ];
+SyntaxKind.FunctionType = wrapped( 'FunctionType', 162 );
+SyntaxKind[ +SyntaxKind.FunctionType.value ] = typeof SyntaxKind[ +SyntaxKind.FunctionType.value ] !== 'number' ? named( 'FunctionType' ) : SyntaxKind[ +SyntaxKind.FunctionType.value ];
+SyntaxKind.ConstructorType = wrapped( 'ConstructorType', 163 );
+SyntaxKind[ +SyntaxKind.ConstructorType.value ] = typeof SyntaxKind[ +SyntaxKind.ConstructorType.value ] !== 'number' ? named( 'ConstructorType' ) : SyntaxKind[ +SyntaxKind.ConstructorType.value ];
+SyntaxKind.TypeQuery = wrapped( 'TypeQuery', 164 );
+SyntaxKind[ +SyntaxKind.TypeQuery.value ] = typeof SyntaxKind[ +SyntaxKind.TypeQuery.value ] !== 'number' ? named( 'TypeQuery' ) : SyntaxKind[ +SyntaxKind.TypeQuery.value ];
+SyntaxKind.TypeLiteral = wrapped( 'TypeLiteral', 165 );
+SyntaxKind[ +SyntaxKind.TypeLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.TypeLiteral.value ] !== 'number' ? named( 'TypeLiteral' ) : SyntaxKind[ +SyntaxKind.TypeLiteral.value ];
+SyntaxKind.ArrayType = wrapped( 'ArrayType', 166 );
+SyntaxKind[ +SyntaxKind.ArrayType.value ] = typeof SyntaxKind[ +SyntaxKind.ArrayType.value ] !== 'number' ? named( 'ArrayType' ) : SyntaxKind[ +SyntaxKind.ArrayType.value ];
+SyntaxKind.TupleType = wrapped( 'TupleType', 167 );
+SyntaxKind[ +SyntaxKind.TupleType.value ] = typeof SyntaxKind[ +SyntaxKind.TupleType.value ] !== 'number' ? named( 'TupleType' ) : SyntaxKind[ +SyntaxKind.TupleType.value ];
+SyntaxKind.UnionType = wrapped( 'UnionType', 168 );
+SyntaxKind[ +SyntaxKind.UnionType.value ] = typeof SyntaxKind[ +SyntaxKind.UnionType.value ] !== 'number' ? named( 'UnionType' ) : SyntaxKind[ +SyntaxKind.UnionType.value ];
+SyntaxKind.IntersectionType = wrapped( 'IntersectionType', 169 );
+SyntaxKind[ +SyntaxKind.IntersectionType.value ] = typeof SyntaxKind[ +SyntaxKind.IntersectionType.value ] !== 'number' ? named( 'IntersectionType' ) : SyntaxKind[ +SyntaxKind.IntersectionType.value ];
+SyntaxKind.ParenthesizedType = wrapped( 'ParenthesizedType', 170 );
+SyntaxKind[ +SyntaxKind.ParenthesizedType.value ] = typeof SyntaxKind[ +SyntaxKind.ParenthesizedType.value ] !== 'number' ? named( 'ParenthesizedType' ) : SyntaxKind[ +SyntaxKind.ParenthesizedType.value ];
+SyntaxKind.ThisType = wrapped( 'ThisType', 171 );
+SyntaxKind[ +SyntaxKind.ThisType.value ] = typeof SyntaxKind[ +SyntaxKind.ThisType.value ] !== 'number' ? named( 'ThisType' ) : SyntaxKind[ +SyntaxKind.ThisType.value ];
+SyntaxKind.TypeOperator = wrapped( 'TypeOperator', 172 );
+SyntaxKind[ +SyntaxKind.TypeOperator.value ] = typeof SyntaxKind[ +SyntaxKind.TypeOperator.value ] !== 'number' ? named( 'TypeOperator' ) : SyntaxKind[ +SyntaxKind.TypeOperator.value ];
+SyntaxKind.IndexedAccessType = wrapped( 'IndexedAccessType', 173 );
+SyntaxKind[ +SyntaxKind.IndexedAccessType.value ] = typeof SyntaxKind[ +SyntaxKind.IndexedAccessType.value ] !== 'number' ? named( 'IndexedAccessType' ) : SyntaxKind[ +SyntaxKind.IndexedAccessType.value ];
+SyntaxKind.MappedType = wrapped( 'MappedType', 174 );
+SyntaxKind[ +SyntaxKind.MappedType.value ] = typeof SyntaxKind[ +SyntaxKind.MappedType.value ] !== 'number' ? named( 'MappedType' ) : SyntaxKind[ +SyntaxKind.MappedType.value ];
+SyntaxKind.LiteralType = wrapped( 'LiteralType', 175 );
+SyntaxKind[ +SyntaxKind.LiteralType.value ] = typeof SyntaxKind[ +SyntaxKind.LiteralType.value ] !== 'number' ? named( 'LiteralType' ) : SyntaxKind[ +SyntaxKind.LiteralType.value ];
+SyntaxKind.ObjectBindingPattern = wrapped( 'ObjectBindingPattern', 176 );
+SyntaxKind[ +SyntaxKind.ObjectBindingPattern.value ] = typeof SyntaxKind[ +SyntaxKind.ObjectBindingPattern.value ] !== 'number' ? named( 'ObjectBindingPattern' ) : SyntaxKind[ +SyntaxKind.ObjectBindingPattern.value ];
+SyntaxKind.ArrayBindingPattern = wrapped( 'ArrayBindingPattern', 177 );
+SyntaxKind[ +SyntaxKind.ArrayBindingPattern.value ] = typeof SyntaxKind[ +SyntaxKind.ArrayBindingPattern.value ] !== 'number' ? named( 'ArrayBindingPattern' ) : SyntaxKind[ +SyntaxKind.ArrayBindingPattern.value ];
+SyntaxKind.BindingElement = wrapped( 'BindingElement', 178 );
+SyntaxKind[ +SyntaxKind.BindingElement.value ] = typeof SyntaxKind[ +SyntaxKind.BindingElement.value ] !== 'number' ? named( 'BindingElement' ) : SyntaxKind[ +SyntaxKind.BindingElement.value ];
+SyntaxKind.ArrayLiteralExpression = wrapped( 'ArrayLiteralExpression', 179 );
+SyntaxKind[ +SyntaxKind.ArrayLiteralExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ArrayLiteralExpression.value ] !== 'number' ? named( 'ArrayLiteralExpression' ) : SyntaxKind[ +SyntaxKind.ArrayLiteralExpression.value ];
+SyntaxKind.ObjectLiteralExpression = wrapped( 'ObjectLiteralExpression', 180 );
+SyntaxKind[ +SyntaxKind.ObjectLiteralExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ObjectLiteralExpression.value ] !== 'number' ? named( 'ObjectLiteralExpression' ) : SyntaxKind[ +SyntaxKind.ObjectLiteralExpression.value ];
+SyntaxKind.PropertyAccessExpression = wrapped( 'PropertyAccessExpression', 181 );
+SyntaxKind[ +SyntaxKind.PropertyAccessExpression.value ] = typeof SyntaxKind[ +SyntaxKind.PropertyAccessExpression.value ] !== 'number' ? named( 'PropertyAccessExpression' ) : SyntaxKind[ +SyntaxKind.PropertyAccessExpression.value ];
+SyntaxKind.ElementAccessExpression = wrapped( 'ElementAccessExpression', 182 );
+SyntaxKind[ +SyntaxKind.ElementAccessExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ElementAccessExpression.value ] !== 'number' ? named( 'ElementAccessExpression' ) : SyntaxKind[ +SyntaxKind.ElementAccessExpression.value ];
+SyntaxKind.CallExpression = wrapped( 'CallExpression', 183 );
+SyntaxKind[ +SyntaxKind.CallExpression.value ] = typeof SyntaxKind[ +SyntaxKind.CallExpression.value ] !== 'number' ? named( 'CallExpression' ) : SyntaxKind[ +SyntaxKind.CallExpression.value ];
+SyntaxKind.NewExpression = wrapped( 'NewExpression', 184 );
+SyntaxKind[ +SyntaxKind.NewExpression.value ] = typeof SyntaxKind[ +SyntaxKind.NewExpression.value ] !== 'number' ? named( 'NewExpression' ) : SyntaxKind[ +SyntaxKind.NewExpression.value ];
+SyntaxKind.TaggedTemplateExpression = wrapped( 'TaggedTemplateExpression', 185 );
+SyntaxKind[ +SyntaxKind.TaggedTemplateExpression.value ] = typeof SyntaxKind[ +SyntaxKind.TaggedTemplateExpression.value ] !== 'number' ? named( 'TaggedTemplateExpression' ) : SyntaxKind[ +SyntaxKind.TaggedTemplateExpression.value ];
+SyntaxKind.TypeAssertionExpression = wrapped( 'TypeAssertionExpression', 186 );
+SyntaxKind[ +SyntaxKind.TypeAssertionExpression.value ] = typeof SyntaxKind[ +SyntaxKind.TypeAssertionExpression.value ] !== 'number' ? named( 'TypeAssertionExpression' ) : SyntaxKind[ +SyntaxKind.TypeAssertionExpression.value ];
+SyntaxKind.ParenthesizedExpression = wrapped( 'ParenthesizedExpression', 187 );
+SyntaxKind[ +SyntaxKind.ParenthesizedExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ParenthesizedExpression.value ] !== 'number' ? named( 'ParenthesizedExpression' ) : SyntaxKind[ +SyntaxKind.ParenthesizedExpression.value ];
+SyntaxKind.FunctionExpression = wrapped( 'FunctionExpression', 188 );
+SyntaxKind[ +SyntaxKind.FunctionExpression.value ] = typeof SyntaxKind[ +SyntaxKind.FunctionExpression.value ] !== 'number' ? named( 'FunctionExpression' ) : SyntaxKind[ +SyntaxKind.FunctionExpression.value ];
+SyntaxKind.ArrowFunction = wrapped( 'ArrowFunction', 189 );
+SyntaxKind[ +SyntaxKind.ArrowFunction.value ] = typeof SyntaxKind[ +SyntaxKind.ArrowFunction.value ] !== 'number' ? named( 'ArrowFunction' ) : SyntaxKind[ +SyntaxKind.ArrowFunction.value ];
+SyntaxKind.DeleteExpression = wrapped( 'DeleteExpression', 190 );
+SyntaxKind[ +SyntaxKind.DeleteExpression.value ] = typeof SyntaxKind[ +SyntaxKind.DeleteExpression.value ] !== 'number' ? named( 'DeleteExpression' ) : SyntaxKind[ +SyntaxKind.DeleteExpression.value ];
+SyntaxKind.TypeOfExpression = wrapped( 'TypeOfExpression', 191 );
+SyntaxKind[ +SyntaxKind.TypeOfExpression.value ] = typeof SyntaxKind[ +SyntaxKind.TypeOfExpression.value ] !== 'number' ? named( 'TypeOfExpression' ) : SyntaxKind[ +SyntaxKind.TypeOfExpression.value ];
+SyntaxKind.VoidExpression = wrapped( 'VoidExpression', 192 );
+SyntaxKind[ +SyntaxKind.VoidExpression.value ] = typeof SyntaxKind[ +SyntaxKind.VoidExpression.value ] !== 'number' ? named( 'VoidExpression' ) : SyntaxKind[ +SyntaxKind.VoidExpression.value ];
+SyntaxKind.AwaitExpression = wrapped( 'AwaitExpression', 193 );
+SyntaxKind[ +SyntaxKind.AwaitExpression.value ] = typeof SyntaxKind[ +SyntaxKind.AwaitExpression.value ] !== 'number' ? named( 'AwaitExpression' ) : SyntaxKind[ +SyntaxKind.AwaitExpression.value ];
+SyntaxKind.PrefixUnaryExpression = wrapped( 'PrefixUnaryExpression', 194 );
+SyntaxKind[ +SyntaxKind.PrefixUnaryExpression.value ] = typeof SyntaxKind[ +SyntaxKind.PrefixUnaryExpression.value ] !== 'number' ? named( 'PrefixUnaryExpression' ) : SyntaxKind[ +SyntaxKind.PrefixUnaryExpression.value ];
+SyntaxKind.PostfixUnaryExpression = wrapped( 'PostfixUnaryExpression', 195 );
+SyntaxKind[ +SyntaxKind.PostfixUnaryExpression.value ] = typeof SyntaxKind[ +SyntaxKind.PostfixUnaryExpression.value ] !== 'number' ? named( 'PostfixUnaryExpression' ) : SyntaxKind[ +SyntaxKind.PostfixUnaryExpression.value ];
+SyntaxKind.BinaryExpression = wrapped( 'BinaryExpression', 196 );
+SyntaxKind[ +SyntaxKind.BinaryExpression.value ] = typeof SyntaxKind[ +SyntaxKind.BinaryExpression.value ] !== 'number' ? named( 'BinaryExpression' ) : SyntaxKind[ +SyntaxKind.BinaryExpression.value ];
+SyntaxKind.ConditionalExpression = wrapped( 'ConditionalExpression', 197 );
+SyntaxKind[ +SyntaxKind.ConditionalExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ConditionalExpression.value ] !== 'number' ? named( 'ConditionalExpression' ) : SyntaxKind[ +SyntaxKind.ConditionalExpression.value ];
+SyntaxKind.TemplateExpression = wrapped( 'TemplateExpression', 198 );
+SyntaxKind[ +SyntaxKind.TemplateExpression.value ] = typeof SyntaxKind[ +SyntaxKind.TemplateExpression.value ] !== 'number' ? named( 'TemplateExpression' ) : SyntaxKind[ +SyntaxKind.TemplateExpression.value ];
+SyntaxKind.YieldExpression = wrapped( 'YieldExpression', 199 );
+SyntaxKind[ +SyntaxKind.YieldExpression.value ] = typeof SyntaxKind[ +SyntaxKind.YieldExpression.value ] !== 'number' ? named( 'YieldExpression' ) : SyntaxKind[ +SyntaxKind.YieldExpression.value ];
+SyntaxKind.SpreadElement = wrapped( 'SpreadElement', 200 );
+SyntaxKind[ +SyntaxKind.SpreadElement.value ] = typeof SyntaxKind[ +SyntaxKind.SpreadElement.value ] !== 'number' ? named( 'SpreadElement' ) : SyntaxKind[ +SyntaxKind.SpreadElement.value ];
+SyntaxKind.ClassExpression = wrapped( 'ClassExpression', 201 );
+SyntaxKind[ +SyntaxKind.ClassExpression.value ] = typeof SyntaxKind[ +SyntaxKind.ClassExpression.value ] !== 'number' ? named( 'ClassExpression' ) : SyntaxKind[ +SyntaxKind.ClassExpression.value ];
+SyntaxKind.OmittedExpression = wrapped( 'OmittedExpression', 202 );
+SyntaxKind[ +SyntaxKind.OmittedExpression.value ] = typeof SyntaxKind[ +SyntaxKind.OmittedExpression.value ] !== 'number' ? named( 'OmittedExpression' ) : SyntaxKind[ +SyntaxKind.OmittedExpression.value ];
+SyntaxKind.ExpressionWithTypeArguments = wrapped( 'ExpressionWithTypeArguments', 203 );
+SyntaxKind[ +SyntaxKind.ExpressionWithTypeArguments.value ] = typeof SyntaxKind[ +SyntaxKind.ExpressionWithTypeArguments.value ] !== 'number' ? named( 'ExpressionWithTypeArguments' ) : SyntaxKind[ +SyntaxKind.ExpressionWithTypeArguments.value ];
+SyntaxKind.AsExpression = wrapped( 'AsExpression', 204 );
+SyntaxKind[ +SyntaxKind.AsExpression.value ] = typeof SyntaxKind[ +SyntaxKind.AsExpression.value ] !== 'number' ? named( 'AsExpression' ) : SyntaxKind[ +SyntaxKind.AsExpression.value ];
+SyntaxKind.NonNullExpression = wrapped( 'NonNullExpression', 205 );
+SyntaxKind[ +SyntaxKind.NonNullExpression.value ] = typeof SyntaxKind[ +SyntaxKind.NonNullExpression.value ] !== 'number' ? named( 'NonNullExpression' ) : SyntaxKind[ +SyntaxKind.NonNullExpression.value ];
+SyntaxKind.MetaProperty = wrapped( 'MetaProperty', 206 );
+SyntaxKind[ +SyntaxKind.MetaProperty.value ] = typeof SyntaxKind[ +SyntaxKind.MetaProperty.value ] !== 'number' ? named( 'MetaProperty' ) : SyntaxKind[ +SyntaxKind.MetaProperty.value ];
+SyntaxKind.TemplateSpan = wrapped( 'TemplateSpan', 207 );
+SyntaxKind[ +SyntaxKind.TemplateSpan.value ] = typeof SyntaxKind[ +SyntaxKind.TemplateSpan.value ] !== 'number' ? named( 'TemplateSpan' ) : SyntaxKind[ +SyntaxKind.TemplateSpan.value ];
+SyntaxKind.SemicolonClassElement = wrapped( 'SemicolonClassElement', 208 );
+SyntaxKind[ +SyntaxKind.SemicolonClassElement.value ] = typeof SyntaxKind[ +SyntaxKind.SemicolonClassElement.value ] !== 'number' ? named( 'SemicolonClassElement' ) : SyntaxKind[ +SyntaxKind.SemicolonClassElement.value ];
+SyntaxKind.Block = wrapped( 'Block', 209 );
+SyntaxKind[ +SyntaxKind.Block.value ] = typeof SyntaxKind[ +SyntaxKind.Block.value ] !== 'number' ? named( 'Block' ) : SyntaxKind[ +SyntaxKind.Block.value ];
+SyntaxKind.VariableStatement = wrapped( 'VariableStatement', 210 );
+SyntaxKind[ +SyntaxKind.VariableStatement.value ] = typeof SyntaxKind[ +SyntaxKind.VariableStatement.value ] !== 'number' ? named( 'VariableStatement' ) : SyntaxKind[ +SyntaxKind.VariableStatement.value ];
+SyntaxKind.EmptyStatement = wrapped( 'EmptyStatement', 211 );
+SyntaxKind[ +SyntaxKind.EmptyStatement.value ] = typeof SyntaxKind[ +SyntaxKind.EmptyStatement.value ] !== 'number' ? named( 'EmptyStatement' ) : SyntaxKind[ +SyntaxKind.EmptyStatement.value ];
+SyntaxKind.ExpressionStatement = wrapped( 'ExpressionStatement', 212 );
+SyntaxKind[ +SyntaxKind.ExpressionStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ExpressionStatement.value ] !== 'number' ? named( 'ExpressionStatement' ) : SyntaxKind[ +SyntaxKind.ExpressionStatement.value ];
+SyntaxKind.IfStatement = wrapped( 'IfStatement', 213 );
+SyntaxKind[ +SyntaxKind.IfStatement.value ] = typeof SyntaxKind[ +SyntaxKind.IfStatement.value ] !== 'number' ? named( 'IfStatement' ) : SyntaxKind[ +SyntaxKind.IfStatement.value ];
+SyntaxKind.DoStatement = wrapped( 'DoStatement', 214 );
+SyntaxKind[ +SyntaxKind.DoStatement.value ] = typeof SyntaxKind[ +SyntaxKind.DoStatement.value ] !== 'number' ? named( 'DoStatement' ) : SyntaxKind[ +SyntaxKind.DoStatement.value ];
+SyntaxKind.WhileStatement = wrapped( 'WhileStatement', 215 );
+SyntaxKind[ +SyntaxKind.WhileStatement.value ] = typeof SyntaxKind[ +SyntaxKind.WhileStatement.value ] !== 'number' ? named( 'WhileStatement' ) : SyntaxKind[ +SyntaxKind.WhileStatement.value ];
+SyntaxKind.ForStatement = wrapped( 'ForStatement', 216 );
+SyntaxKind[ +SyntaxKind.ForStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ForStatement.value ] !== 'number' ? named( 'ForStatement' ) : SyntaxKind[ +SyntaxKind.ForStatement.value ];
+SyntaxKind.ForInStatement = wrapped( 'ForInStatement', 217 );
+SyntaxKind[ +SyntaxKind.ForInStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ForInStatement.value ] !== 'number' ? named( 'ForInStatement' ) : SyntaxKind[ +SyntaxKind.ForInStatement.value ];
+SyntaxKind.ForOfStatement = wrapped( 'ForOfStatement', 218 );
+SyntaxKind[ +SyntaxKind.ForOfStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ForOfStatement.value ] !== 'number' ? named( 'ForOfStatement' ) : SyntaxKind[ +SyntaxKind.ForOfStatement.value ];
+SyntaxKind.ContinueStatement = wrapped( 'ContinueStatement', 219 );
+SyntaxKind[ +SyntaxKind.ContinueStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ContinueStatement.value ] !== 'number' ? named( 'ContinueStatement' ) : SyntaxKind[ +SyntaxKind.ContinueStatement.value ];
+SyntaxKind.BreakStatement = wrapped( 'BreakStatement', 220 );
+SyntaxKind[ +SyntaxKind.BreakStatement.value ] = typeof SyntaxKind[ +SyntaxKind.BreakStatement.value ] !== 'number' ? named( 'BreakStatement' ) : SyntaxKind[ +SyntaxKind.BreakStatement.value ];
+SyntaxKind.ReturnStatement = wrapped( 'ReturnStatement', 221 );
+SyntaxKind[ +SyntaxKind.ReturnStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ReturnStatement.value ] !== 'number' ? named( 'ReturnStatement' ) : SyntaxKind[ +SyntaxKind.ReturnStatement.value ];
+SyntaxKind.WithStatement = wrapped( 'WithStatement', 222 );
+SyntaxKind[ +SyntaxKind.WithStatement.value ] = typeof SyntaxKind[ +SyntaxKind.WithStatement.value ] !== 'number' ? named( 'WithStatement' ) : SyntaxKind[ +SyntaxKind.WithStatement.value ];
+SyntaxKind.SwitchStatement = wrapped( 'SwitchStatement', 223 );
+SyntaxKind[ +SyntaxKind.SwitchStatement.value ] = typeof SyntaxKind[ +SyntaxKind.SwitchStatement.value ] !== 'number' ? named( 'SwitchStatement' ) : SyntaxKind[ +SyntaxKind.SwitchStatement.value ];
+SyntaxKind.LabeledStatement = wrapped( 'LabeledStatement', 224 );
+SyntaxKind[ +SyntaxKind.LabeledStatement.value ] = typeof SyntaxKind[ +SyntaxKind.LabeledStatement.value ] !== 'number' ? named( 'LabeledStatement' ) : SyntaxKind[ +SyntaxKind.LabeledStatement.value ];
+SyntaxKind.ThrowStatement = wrapped( 'ThrowStatement', 225 );
+SyntaxKind[ +SyntaxKind.ThrowStatement.value ] = typeof SyntaxKind[ +SyntaxKind.ThrowStatement.value ] !== 'number' ? named( 'ThrowStatement' ) : SyntaxKind[ +SyntaxKind.ThrowStatement.value ];
+SyntaxKind.TryStatement = wrapped( 'TryStatement', 226 );
+SyntaxKind[ +SyntaxKind.TryStatement.value ] = typeof SyntaxKind[ +SyntaxKind.TryStatement.value ] !== 'number' ? named( 'TryStatement' ) : SyntaxKind[ +SyntaxKind.TryStatement.value ];
+SyntaxKind.DebuggerStatement = wrapped( 'DebuggerStatement', 227 );
+SyntaxKind[ +SyntaxKind.DebuggerStatement.value ] = typeof SyntaxKind[ +SyntaxKind.DebuggerStatement.value ] !== 'number' ? named( 'DebuggerStatement' ) : SyntaxKind[ +SyntaxKind.DebuggerStatement.value ];
+SyntaxKind.VariableDeclaration = wrapped( 'VariableDeclaration', 228 );
+SyntaxKind[ +SyntaxKind.VariableDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.VariableDeclaration.value ] !== 'number' ? named( 'VariableDeclaration' ) : SyntaxKind[ +SyntaxKind.VariableDeclaration.value ];
+SyntaxKind.VariableDeclarationList = wrapped( 'VariableDeclarationList', 229 );
+SyntaxKind[ +SyntaxKind.VariableDeclarationList.value ] = typeof SyntaxKind[ +SyntaxKind.VariableDeclarationList.value ] !== 'number' ? named( 'VariableDeclarationList' ) : SyntaxKind[ +SyntaxKind.VariableDeclarationList.value ];
+SyntaxKind.FunctionDeclaration = wrapped( 'FunctionDeclaration', 230 );
+SyntaxKind[ +SyntaxKind.FunctionDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.FunctionDeclaration.value ] !== 'number' ? named( 'FunctionDeclaration' ) : SyntaxKind[ +SyntaxKind.FunctionDeclaration.value ];
+SyntaxKind.ClassDeclaration = wrapped( 'ClassDeclaration', 231 );
+SyntaxKind[ +SyntaxKind.ClassDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.ClassDeclaration.value ] !== 'number' ? named( 'ClassDeclaration' ) : SyntaxKind[ +SyntaxKind.ClassDeclaration.value ];
+SyntaxKind.InterfaceDeclaration = wrapped( 'InterfaceDeclaration', 232 );
+SyntaxKind[ +SyntaxKind.InterfaceDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.InterfaceDeclaration.value ] !== 'number' ? named( 'InterfaceDeclaration' ) : SyntaxKind[ +SyntaxKind.InterfaceDeclaration.value ];
+SyntaxKind.TypeAliasDeclaration = wrapped( 'TypeAliasDeclaration', 233 );
+SyntaxKind[ +SyntaxKind.TypeAliasDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.TypeAliasDeclaration.value ] !== 'number' ? named( 'TypeAliasDeclaration' ) : SyntaxKind[ +SyntaxKind.TypeAliasDeclaration.value ];
+SyntaxKind.EnumDeclaration = wrapped( 'EnumDeclaration', 234 );
+SyntaxKind[ +SyntaxKind.EnumDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.EnumDeclaration.value ] !== 'number' ? named( 'EnumDeclaration' ) : SyntaxKind[ +SyntaxKind.EnumDeclaration.value ];
+SyntaxKind.ModuleDeclaration = wrapped( 'ModuleDeclaration', 235 );
+SyntaxKind[ +SyntaxKind.ModuleDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.ModuleDeclaration.value ] !== 'number' ? named( 'ModuleDeclaration' ) : SyntaxKind[ +SyntaxKind.ModuleDeclaration.value ];
+SyntaxKind.ModuleBlock = wrapped( 'ModuleBlock', 236 );
+SyntaxKind[ +SyntaxKind.ModuleBlock.value ] = typeof SyntaxKind[ +SyntaxKind.ModuleBlock.value ] !== 'number' ? named( 'ModuleBlock' ) : SyntaxKind[ +SyntaxKind.ModuleBlock.value ];
+SyntaxKind.CaseBlock = wrapped( 'CaseBlock', 237 );
+SyntaxKind[ +SyntaxKind.CaseBlock.value ] = typeof SyntaxKind[ +SyntaxKind.CaseBlock.value ] !== 'number' ? named( 'CaseBlock' ) : SyntaxKind[ +SyntaxKind.CaseBlock.value ];
+SyntaxKind.NamespaceExportDeclaration = wrapped( 'NamespaceExportDeclaration', 238 );
+SyntaxKind[ +SyntaxKind.NamespaceExportDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.NamespaceExportDeclaration.value ] !== 'number' ? named( 'NamespaceExportDeclaration' ) : SyntaxKind[ +SyntaxKind.NamespaceExportDeclaration.value ];
+SyntaxKind.ImportEqualsDeclaration = wrapped( 'ImportEqualsDeclaration', 239 );
+SyntaxKind[ +SyntaxKind.ImportEqualsDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.ImportEqualsDeclaration.value ] !== 'number' ? named( 'ImportEqualsDeclaration' ) : SyntaxKind[ +SyntaxKind.ImportEqualsDeclaration.value ];
+SyntaxKind.ImportDeclaration = wrapped( 'ImportDeclaration', 240 );
+SyntaxKind[ +SyntaxKind.ImportDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.ImportDeclaration.value ] !== 'number' ? named( 'ImportDeclaration' ) : SyntaxKind[ +SyntaxKind.ImportDeclaration.value ];
+SyntaxKind.ImportClause = wrapped( 'ImportClause', 241 );
+SyntaxKind[ +SyntaxKind.ImportClause.value ] = typeof SyntaxKind[ +SyntaxKind.ImportClause.value ] !== 'number' ? named( 'ImportClause' ) : SyntaxKind[ +SyntaxKind.ImportClause.value ];
+SyntaxKind.NamespaceImport = wrapped( 'NamespaceImport', 242 );
+SyntaxKind[ +SyntaxKind.NamespaceImport.value ] = typeof SyntaxKind[ +SyntaxKind.NamespaceImport.value ] !== 'number' ? named( 'NamespaceImport' ) : SyntaxKind[ +SyntaxKind.NamespaceImport.value ];
+SyntaxKind.NamedImports = wrapped( 'NamedImports', 243 );
+SyntaxKind[ +SyntaxKind.NamedImports.value ] = typeof SyntaxKind[ +SyntaxKind.NamedImports.value ] !== 'number' ? named( 'NamedImports' ) : SyntaxKind[ +SyntaxKind.NamedImports.value ];
+SyntaxKind.ImportSpecifier = wrapped( 'ImportSpecifier', 244 );
+SyntaxKind[ +SyntaxKind.ImportSpecifier.value ] = typeof SyntaxKind[ +SyntaxKind.ImportSpecifier.value ] !== 'number' ? named( 'ImportSpecifier' ) : SyntaxKind[ +SyntaxKind.ImportSpecifier.value ];
+SyntaxKind.ExportAssignment = wrapped( 'ExportAssignment', 245 );
+SyntaxKind[ +SyntaxKind.ExportAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.ExportAssignment.value ] !== 'number' ? named( 'ExportAssignment' ) : SyntaxKind[ +SyntaxKind.ExportAssignment.value ];
+SyntaxKind.ExportDeclaration = wrapped( 'ExportDeclaration', 246 );
+SyntaxKind[ +SyntaxKind.ExportDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.ExportDeclaration.value ] !== 'number' ? named( 'ExportDeclaration' ) : SyntaxKind[ +SyntaxKind.ExportDeclaration.value ];
+SyntaxKind.NamedExports = wrapped( 'NamedExports', 247 );
+SyntaxKind[ +SyntaxKind.NamedExports.value ] = typeof SyntaxKind[ +SyntaxKind.NamedExports.value ] !== 'number' ? named( 'NamedExports' ) : SyntaxKind[ +SyntaxKind.NamedExports.value ];
+SyntaxKind.ExportSpecifier = wrapped( 'ExportSpecifier', 248 );
+SyntaxKind[ +SyntaxKind.ExportSpecifier.value ] = typeof SyntaxKind[ +SyntaxKind.ExportSpecifier.value ] !== 'number' ? named( 'ExportSpecifier' ) : SyntaxKind[ +SyntaxKind.ExportSpecifier.value ];
+SyntaxKind.MissingDeclaration = wrapped( 'MissingDeclaration', 249 );
+SyntaxKind[ +SyntaxKind.MissingDeclaration.value ] = typeof SyntaxKind[ +SyntaxKind.MissingDeclaration.value ] !== 'number' ? named( 'MissingDeclaration' ) : SyntaxKind[ +SyntaxKind.MissingDeclaration.value ];
+SyntaxKind.ExternalModuleReference = wrapped( 'ExternalModuleReference', 250 );
+SyntaxKind[ +SyntaxKind.ExternalModuleReference.value ] = typeof SyntaxKind[ +SyntaxKind.ExternalModuleReference.value ] !== 'number' ? named( 'ExternalModuleReference' ) : SyntaxKind[ +SyntaxKind.ExternalModuleReference.value ];
+SyntaxKind.JsxElement = wrapped( 'JsxElement', 251 );
+SyntaxKind[ +SyntaxKind.JsxElement.value ] = typeof SyntaxKind[ +SyntaxKind.JsxElement.value ] !== 'number' ? named( 'JsxElement' ) : SyntaxKind[ +SyntaxKind.JsxElement.value ];
+SyntaxKind.JsxSelfClosingElement = wrapped( 'JsxSelfClosingElement', 252 );
+SyntaxKind[ +SyntaxKind.JsxSelfClosingElement.value ] = typeof SyntaxKind[ +SyntaxKind.JsxSelfClosingElement.value ] !== 'number' ? named( 'JsxSelfClosingElement' ) : SyntaxKind[ +SyntaxKind.JsxSelfClosingElement.value ];
+SyntaxKind.JsxOpeningElement = wrapped( 'JsxOpeningElement', 253 );
+SyntaxKind[ +SyntaxKind.JsxOpeningElement.value ] = typeof SyntaxKind[ +SyntaxKind.JsxOpeningElement.value ] !== 'number' ? named( 'JsxOpeningElement' ) : SyntaxKind[ +SyntaxKind.JsxOpeningElement.value ];
+SyntaxKind.JsxClosingElement = wrapped( 'JsxClosingElement', 254 );
+SyntaxKind[ +SyntaxKind.JsxClosingElement.value ] = typeof SyntaxKind[ +SyntaxKind.JsxClosingElement.value ] !== 'number' ? named( 'JsxClosingElement' ) : SyntaxKind[ +SyntaxKind.JsxClosingElement.value ];
+SyntaxKind.JsxFragment = wrapped( 'JsxFragment', 255 );
+SyntaxKind[ +SyntaxKind.JsxFragment.value ] = typeof SyntaxKind[ +SyntaxKind.JsxFragment.value ] !== 'number' ? named( 'JsxFragment' ) : SyntaxKind[ +SyntaxKind.JsxFragment.value ];
+SyntaxKind.JsxOpeningFragment = wrapped( 'JsxOpeningFragment', 256 );
+SyntaxKind[ +SyntaxKind.JsxOpeningFragment.value ] = typeof SyntaxKind[ +SyntaxKind.JsxOpeningFragment.value ] !== 'number' ? named( 'JsxOpeningFragment' ) : SyntaxKind[ +SyntaxKind.JsxOpeningFragment.value ];
+SyntaxKind.JsxClosingFragment = wrapped( 'JsxClosingFragment', 257 );
+SyntaxKind[ +SyntaxKind.JsxClosingFragment.value ] = typeof SyntaxKind[ +SyntaxKind.JsxClosingFragment.value ] !== 'number' ? named( 'JsxClosingFragment' ) : SyntaxKind[ +SyntaxKind.JsxClosingFragment.value ];
+SyntaxKind.JsxAttribute = wrapped( 'JsxAttribute', 258 );
+SyntaxKind[ +SyntaxKind.JsxAttribute.value ] = typeof SyntaxKind[ +SyntaxKind.JsxAttribute.value ] !== 'number' ? named( 'JsxAttribute' ) : SyntaxKind[ +SyntaxKind.JsxAttribute.value ];
+SyntaxKind.JsxAttributes = wrapped( 'JsxAttributes', 259 );
+SyntaxKind[ +SyntaxKind.JsxAttributes.value ] = typeof SyntaxKind[ +SyntaxKind.JsxAttributes.value ] !== 'number' ? named( 'JsxAttributes' ) : SyntaxKind[ +SyntaxKind.JsxAttributes.value ];
+SyntaxKind.JsxSpreadAttribute = wrapped( 'JsxSpreadAttribute', 260 );
+SyntaxKind[ +SyntaxKind.JsxSpreadAttribute.value ] = typeof SyntaxKind[ +SyntaxKind.JsxSpreadAttribute.value ] !== 'number' ? named( 'JsxSpreadAttribute' ) : SyntaxKind[ +SyntaxKind.JsxSpreadAttribute.value ];
+SyntaxKind.JsxExpression = wrapped( 'JsxExpression', 261 );
+SyntaxKind[ +SyntaxKind.JsxExpression.value ] = typeof SyntaxKind[ +SyntaxKind.JsxExpression.value ] !== 'number' ? named( 'JsxExpression' ) : SyntaxKind[ +SyntaxKind.JsxExpression.value ];
+SyntaxKind.CaseClause = wrapped( 'CaseClause', 262 );
+SyntaxKind[ +SyntaxKind.CaseClause.value ] = typeof SyntaxKind[ +SyntaxKind.CaseClause.value ] !== 'number' ? named( 'CaseClause' ) : SyntaxKind[ +SyntaxKind.CaseClause.value ];
+SyntaxKind.DefaultClause = wrapped( 'DefaultClause', 263 );
+SyntaxKind[ +SyntaxKind.DefaultClause.value ] = typeof SyntaxKind[ +SyntaxKind.DefaultClause.value ] !== 'number' ? named( 'DefaultClause' ) : SyntaxKind[ +SyntaxKind.DefaultClause.value ];
+SyntaxKind.HeritageClause = wrapped( 'HeritageClause', 264 );
+SyntaxKind[ +SyntaxKind.HeritageClause.value ] = typeof SyntaxKind[ +SyntaxKind.HeritageClause.value ] !== 'number' ? named( 'HeritageClause' ) : SyntaxKind[ +SyntaxKind.HeritageClause.value ];
+SyntaxKind.CatchClause = wrapped( 'CatchClause', 265 );
+SyntaxKind[ +SyntaxKind.CatchClause.value ] = typeof SyntaxKind[ +SyntaxKind.CatchClause.value ] !== 'number' ? named( 'CatchClause' ) : SyntaxKind[ +SyntaxKind.CatchClause.value ];
+SyntaxKind.PropertyAssignment = wrapped( 'PropertyAssignment', 266 );
+SyntaxKind[ +SyntaxKind.PropertyAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.PropertyAssignment.value ] !== 'number' ? named( 'PropertyAssignment' ) : SyntaxKind[ +SyntaxKind.PropertyAssignment.value ];
+SyntaxKind.ShorthandPropertyAssignment = wrapped( 'ShorthandPropertyAssignment', 267 );
+SyntaxKind[ +SyntaxKind.ShorthandPropertyAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.ShorthandPropertyAssignment.value ] !== 'number' ? named( 'ShorthandPropertyAssignment' ) : SyntaxKind[ +SyntaxKind.ShorthandPropertyAssignment.value ];
+SyntaxKind.SpreadAssignment = wrapped( 'SpreadAssignment', 268 );
+SyntaxKind[ +SyntaxKind.SpreadAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.SpreadAssignment.value ] !== 'number' ? named( 'SpreadAssignment' ) : SyntaxKind[ +SyntaxKind.SpreadAssignment.value ];
+SyntaxKind.EnumMember = wrapped( 'EnumMember', 269 );
+SyntaxKind[ +SyntaxKind.EnumMember.value ] = typeof SyntaxKind[ +SyntaxKind.EnumMember.value ] !== 'number' ? named( 'EnumMember' ) : SyntaxKind[ +SyntaxKind.EnumMember.value ];
+SyntaxKind.SourceFile = wrapped( 'SourceFile', 270 );
+SyntaxKind[ +SyntaxKind.SourceFile.value ] = typeof SyntaxKind[ +SyntaxKind.SourceFile.value ] !== 'number' ? named( 'SourceFile' ) : SyntaxKind[ +SyntaxKind.SourceFile.value ];
+SyntaxKind.Bundle = wrapped( 'Bundle', 271 );
+SyntaxKind[ +SyntaxKind.Bundle.value ] = typeof SyntaxKind[ +SyntaxKind.Bundle.value ] !== 'number' ? named( 'Bundle' ) : SyntaxKind[ +SyntaxKind.Bundle.value ];
+SyntaxKind.JSDocTypeExpression = wrapped( 'JSDocTypeExpression', 272 );
+SyntaxKind[ +SyntaxKind.JSDocTypeExpression.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTypeExpression.value ] !== 'number' ? named( 'JSDocTypeExpression' ) : SyntaxKind[ +SyntaxKind.JSDocTypeExpression.value ];
+SyntaxKind.JSDocAllType = wrapped( 'JSDocAllType', 273 );
+SyntaxKind[ +SyntaxKind.JSDocAllType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocAllType.value ] !== 'number' ? named( 'JSDocAllType' ) : SyntaxKind[ +SyntaxKind.JSDocAllType.value ];
+SyntaxKind.JSDocUnknownType = wrapped( 'JSDocUnknownType', 274 );
+SyntaxKind[ +SyntaxKind.JSDocUnknownType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocUnknownType.value ] !== 'number' ? named( 'JSDocUnknownType' ) : SyntaxKind[ +SyntaxKind.JSDocUnknownType.value ];
+SyntaxKind.JSDocNullableType = wrapped( 'JSDocNullableType', 275 );
+SyntaxKind[ +SyntaxKind.JSDocNullableType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocNullableType.value ] !== 'number' ? named( 'JSDocNullableType' ) : SyntaxKind[ +SyntaxKind.JSDocNullableType.value ];
+SyntaxKind.JSDocNonNullableType = wrapped( 'JSDocNonNullableType', 276 );
+SyntaxKind[ +SyntaxKind.JSDocNonNullableType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocNonNullableType.value ] !== 'number' ? named( 'JSDocNonNullableType' ) : SyntaxKind[ +SyntaxKind.JSDocNonNullableType.value ];
+SyntaxKind.JSDocOptionalType = wrapped( 'JSDocOptionalType', 277 );
+SyntaxKind[ +SyntaxKind.JSDocOptionalType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocOptionalType.value ] !== 'number' ? named( 'JSDocOptionalType' ) : SyntaxKind[ +SyntaxKind.JSDocOptionalType.value ];
+SyntaxKind.JSDocFunctionType = wrapped( 'JSDocFunctionType', 278 );
+SyntaxKind[ +SyntaxKind.JSDocFunctionType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocFunctionType.value ] !== 'number' ? named( 'JSDocFunctionType' ) : SyntaxKind[ +SyntaxKind.JSDocFunctionType.value ];
+SyntaxKind.JSDocVariadicType = wrapped( 'JSDocVariadicType', 279 );
+SyntaxKind[ +SyntaxKind.JSDocVariadicType.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocVariadicType.value ] !== 'number' ? named( 'JSDocVariadicType' ) : SyntaxKind[ +SyntaxKind.JSDocVariadicType.value ];
+SyntaxKind.JSDocComment = wrapped( 'JSDocComment', 280 );
+SyntaxKind[ +SyntaxKind.JSDocComment.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocComment.value ] !== 'number' ? named( 'JSDocComment' ) : SyntaxKind[ +SyntaxKind.JSDocComment.value ];
+SyntaxKind.JSDocTypeLiteral = wrapped( 'JSDocTypeLiteral', 281 );
+SyntaxKind[ +SyntaxKind.JSDocTypeLiteral.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTypeLiteral.value ] !== 'number' ? named( 'JSDocTypeLiteral' ) : SyntaxKind[ +SyntaxKind.JSDocTypeLiteral.value ];
+SyntaxKind.JSDocTag = wrapped( 'JSDocTag', 282 );
+SyntaxKind[ +SyntaxKind.JSDocTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTag.value ] !== 'number' ? named( 'JSDocTag' ) : SyntaxKind[ +SyntaxKind.JSDocTag.value ];
+SyntaxKind.JSDocAugmentsTag = wrapped( 'JSDocAugmentsTag', 283 );
+SyntaxKind[ +SyntaxKind.JSDocAugmentsTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocAugmentsTag.value ] !== 'number' ? named( 'JSDocAugmentsTag' ) : SyntaxKind[ +SyntaxKind.JSDocAugmentsTag.value ];
+SyntaxKind.JSDocClassTag = wrapped( 'JSDocClassTag', 284 );
+SyntaxKind[ +SyntaxKind.JSDocClassTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocClassTag.value ] !== 'number' ? named( 'JSDocClassTag' ) : SyntaxKind[ +SyntaxKind.JSDocClassTag.value ];
+SyntaxKind.JSDocParameterTag = wrapped( 'JSDocParameterTag', 285 );
+SyntaxKind[ +SyntaxKind.JSDocParameterTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocParameterTag.value ] !== 'number' ? named( 'JSDocParameterTag' ) : SyntaxKind[ +SyntaxKind.JSDocParameterTag.value ];
+SyntaxKind.JSDocReturnTag = wrapped( 'JSDocReturnTag', 286 );
+SyntaxKind[ +SyntaxKind.JSDocReturnTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocReturnTag.value ] !== 'number' ? named( 'JSDocReturnTag' ) : SyntaxKind[ +SyntaxKind.JSDocReturnTag.value ];
+SyntaxKind.JSDocTypeTag = wrapped( 'JSDocTypeTag', 287 );
+SyntaxKind[ +SyntaxKind.JSDocTypeTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTypeTag.value ] !== 'number' ? named( 'JSDocTypeTag' ) : SyntaxKind[ +SyntaxKind.JSDocTypeTag.value ];
+SyntaxKind.JSDocTemplateTag = wrapped( 'JSDocTemplateTag', 288 );
+SyntaxKind[ +SyntaxKind.JSDocTemplateTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTemplateTag.value ] !== 'number' ? named( 'JSDocTemplateTag' ) : SyntaxKind[ +SyntaxKind.JSDocTemplateTag.value ];
+SyntaxKind.JSDocTypedefTag = wrapped( 'JSDocTypedefTag', 289 );
+SyntaxKind[ +SyntaxKind.JSDocTypedefTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocTypedefTag.value ] !== 'number' ? named( 'JSDocTypedefTag' ) : SyntaxKind[ +SyntaxKind.JSDocTypedefTag.value ];
+SyntaxKind.JSDocPropertyTag = wrapped( 'JSDocPropertyTag', 290 );
+SyntaxKind[ +SyntaxKind.JSDocPropertyTag.value ] = typeof SyntaxKind[ +SyntaxKind.JSDocPropertyTag.value ] !== 'number' ? named( 'JSDocPropertyTag' ) : SyntaxKind[ +SyntaxKind.JSDocPropertyTag.value ];
+SyntaxKind.SyntaxList = wrapped( 'SyntaxList', 291 );
+SyntaxKind[ +SyntaxKind.SyntaxList.value ] = typeof SyntaxKind[ +SyntaxKind.SyntaxList.value ] !== 'number' ? named( 'SyntaxList' ) : SyntaxKind[ +SyntaxKind.SyntaxList.value ];
+SyntaxKind.NotEmittedStatement = wrapped( 'NotEmittedStatement', 292 );
+SyntaxKind[ +SyntaxKind.NotEmittedStatement.value ] = typeof SyntaxKind[ +SyntaxKind.NotEmittedStatement.value ] !== 'number' ? named( 'NotEmittedStatement' ) : SyntaxKind[ +SyntaxKind.NotEmittedStatement.value ];
+SyntaxKind.PartiallyEmittedExpression = wrapped( 'PartiallyEmittedExpression', 293 );
+SyntaxKind[ +SyntaxKind.PartiallyEmittedExpression.value ] = typeof SyntaxKind[ +SyntaxKind.PartiallyEmittedExpression.value ] !== 'number' ? named( 'PartiallyEmittedExpression' ) : SyntaxKind[ +SyntaxKind.PartiallyEmittedExpression.value ];
+SyntaxKind.CommaListExpression = wrapped( 'CommaListExpression', 294 );
+SyntaxKind[ +SyntaxKind.CommaListExpression.value ] = typeof SyntaxKind[ +SyntaxKind.CommaListExpression.value ] !== 'number' ? named( 'CommaListExpression' ) : SyntaxKind[ +SyntaxKind.CommaListExpression.value ];
+SyntaxKind.MergeDeclarationMarker = wrapped( 'MergeDeclarationMarker', 295 );
+SyntaxKind[ +SyntaxKind.MergeDeclarationMarker.value ] = typeof SyntaxKind[ +SyntaxKind.MergeDeclarationMarker.value ] !== 'number' ? named( 'MergeDeclarationMarker' ) : SyntaxKind[ +SyntaxKind.MergeDeclarationMarker.value ];
+SyntaxKind.EndOfDeclarationMarker = wrapped( 'EndOfDeclarationMarker', 296 );
+SyntaxKind[ +SyntaxKind.EndOfDeclarationMarker.value ] = typeof SyntaxKind[ +SyntaxKind.EndOfDeclarationMarker.value ] !== 'number' ? named( 'EndOfDeclarationMarker' ) : SyntaxKind[ +SyntaxKind.EndOfDeclarationMarker.value ];
+SyntaxKind.Count = wrapped( 'Count', 297 );
+SyntaxKind[ +SyntaxKind.Count.value ] = typeof SyntaxKind[ +SyntaxKind.Count.value ] !== 'number' ? named( 'Count' ) : SyntaxKind[ +SyntaxKind.Count.value ];
+SyntaxKind.FirstAssignment = wrapped( 'FirstAssignment', +SyntaxKind.EqualsToken );
+SyntaxKind[ +SyntaxKind.FirstAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.FirstAssignment.value ] !== 'number' ? named( 'FirstAssignment' ) : SyntaxKind[ +SyntaxKind.FirstAssignment.value ];
+SyntaxKind.LastAssignment = wrapped( 'LastAssignment', +SyntaxKind.CaretEqualsToken );
+SyntaxKind[ +SyntaxKind.LastAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.LastAssignment.value ] !== 'number' ? named( 'LastAssignment' ) : SyntaxKind[ +SyntaxKind.LastAssignment.value ];
+SyntaxKind.FirstCompoundAssignment = wrapped( 'FirstCompoundAssignment', +SyntaxKind.PlusEqualsToken );
+SyntaxKind[ +SyntaxKind.FirstCompoundAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.FirstCompoundAssignment.value ] !== 'number' ? named( 'FirstCompoundAssignment' ) : SyntaxKind[ +SyntaxKind.FirstCompoundAssignment.value ];
+SyntaxKind.LastCompoundAssignment = wrapped( 'LastCompoundAssignment', +SyntaxKind.CaretEqualsToken );
+SyntaxKind[ +SyntaxKind.LastCompoundAssignment.value ] = typeof SyntaxKind[ +SyntaxKind.LastCompoundAssignment.value ] !== 'number' ? named( 'LastCompoundAssignment' ) : SyntaxKind[ +SyntaxKind.LastCompoundAssignment.value ];
+SyntaxKind.FirstReservedWord = wrapped( 'FirstReservedWord', +SyntaxKind.BreakKeyword );
+SyntaxKind[ +SyntaxKind.FirstReservedWord.value ] = typeof SyntaxKind[ +SyntaxKind.FirstReservedWord.value ] !== 'number' ? named( 'FirstReservedWord' ) : SyntaxKind[ +SyntaxKind.FirstReservedWord.value ];
+SyntaxKind.LastReservedWord = wrapped( 'LastReservedWord', +SyntaxKind.WithKeyword );
+SyntaxKind[ +SyntaxKind.LastReservedWord.value ] = typeof SyntaxKind[ +SyntaxKind.LastReservedWord.value ] !== 'number' ? named( 'LastReservedWord' ) : SyntaxKind[ +SyntaxKind.LastReservedWord.value ];
+SyntaxKind.FirstKeyword = wrapped( 'FirstKeyword', +SyntaxKind.BreakKeyword );
+SyntaxKind[ +SyntaxKind.FirstKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.FirstKeyword.value ] !== 'number' ? named( 'FirstKeyword' ) : SyntaxKind[ +SyntaxKind.FirstKeyword.value ];
+SyntaxKind.LastKeyword = wrapped( 'LastKeyword', +SyntaxKind.OfKeyword );
+SyntaxKind[ +SyntaxKind.LastKeyword.value ] = typeof SyntaxKind[ +SyntaxKind.LastKeyword.value ] !== 'number' ? named( 'LastKeyword' ) : SyntaxKind[ +SyntaxKind.LastKeyword.value ];
+SyntaxKind.FirstFutureReservedWord = wrapped( 'FirstFutureReservedWord', +SyntaxKind.ImplementsKeyword );
+SyntaxKind[ +SyntaxKind.FirstFutureReservedWord.value ] = typeof SyntaxKind[ +SyntaxKind.FirstFutureReservedWord.value ] !== 'number' ? named( 'FirstFutureReservedWord' ) : SyntaxKind[ +SyntaxKind.FirstFutureReservedWord.value ];
+SyntaxKind.LastFutureReservedWord = wrapped( 'LastFutureReservedWord', +SyntaxKind.YieldKeyword );
+SyntaxKind[ +SyntaxKind.LastFutureReservedWord.value ] = typeof SyntaxKind[ +SyntaxKind.LastFutureReservedWord.value ] !== 'number' ? named( 'LastFutureReservedWord' ) : SyntaxKind[ +SyntaxKind.LastFutureReservedWord.value ];
+SyntaxKind.FirstTypeNode = wrapped( 'FirstTypeNode', +SyntaxKind.TypePredicate );
+SyntaxKind[ +SyntaxKind.FirstTypeNode.value ] = typeof SyntaxKind[ +SyntaxKind.FirstTypeNode.value ] !== 'number' ? named( 'FirstTypeNode' ) : SyntaxKind[ +SyntaxKind.FirstTypeNode.value ];
+SyntaxKind.LastTypeNode = wrapped( 'LastTypeNode', +SyntaxKind.LiteralType );
+SyntaxKind[ +SyntaxKind.LastTypeNode.value ] = typeof SyntaxKind[ +SyntaxKind.LastTypeNode.value ] !== 'number' ? named( 'LastTypeNode' ) : SyntaxKind[ +SyntaxKind.LastTypeNode.value ];
+SyntaxKind.FirstPunctuation = wrapped( 'FirstPunctuation', +SyntaxKind.OpenBraceToken );
+SyntaxKind[ +SyntaxKind.FirstPunctuation.value ] = typeof SyntaxKind[ +SyntaxKind.FirstPunctuation.value ] !== 'number' ? named( 'FirstPunctuation' ) : SyntaxKind[ +SyntaxKind.FirstPunctuation.value ];
+SyntaxKind.LastPunctuation = wrapped( 'LastPunctuation', +SyntaxKind.CaretEqualsToken );
+SyntaxKind[ +SyntaxKind.LastPunctuation.value ] = typeof SyntaxKind[ +SyntaxKind.LastPunctuation.value ] !== 'number' ? named( 'LastPunctuation' ) : SyntaxKind[ +SyntaxKind.LastPunctuation.value ];
+SyntaxKind.FirstToken = wrapped( 'FirstToken', +SyntaxKind.Unknown );
+SyntaxKind[ +SyntaxKind.FirstToken.value ] = typeof SyntaxKind[ +SyntaxKind.FirstToken.value ] !== 'number' ? named( 'FirstToken' ) : SyntaxKind[ +SyntaxKind.FirstToken.value ];
+SyntaxKind.LastToken = wrapped( 'LastToken', +SyntaxKind.LastKeyword );
+SyntaxKind[ +SyntaxKind.LastToken.value ] = typeof SyntaxKind[ +SyntaxKind.LastToken.value ] !== 'number' ? named( 'LastToken' ) : SyntaxKind[ +SyntaxKind.LastToken.value ];
+SyntaxKind.FirstTriviaToken = wrapped( 'FirstTriviaToken', +SyntaxKind.SingleLineCommentTrivia );
+SyntaxKind[ +SyntaxKind.FirstTriviaToken.value ] = typeof SyntaxKind[ +SyntaxKind.FirstTriviaToken.value ] !== 'number' ? named( 'FirstTriviaToken' ) : SyntaxKind[ +SyntaxKind.FirstTriviaToken.value ];
+SyntaxKind.LastTriviaToken = wrapped( 'LastTriviaToken', +SyntaxKind.ConflictMarkerTrivia );
+SyntaxKind[ +SyntaxKind.LastTriviaToken.value ] = typeof SyntaxKind[ +SyntaxKind.LastTriviaToken.value ] !== 'number' ? named( 'LastTriviaToken' ) : SyntaxKind[ +SyntaxKind.LastTriviaToken.value ];
+SyntaxKind.FirstLiteralToken = wrapped( 'FirstLiteralToken', +SyntaxKind.NumericLiteral );
+SyntaxKind[ +SyntaxKind.FirstLiteralToken.value ] = typeof SyntaxKind[ +SyntaxKind.FirstLiteralToken.value ] !== 'number' ? named( 'FirstLiteralToken' ) : SyntaxKind[ +SyntaxKind.FirstLiteralToken.value ];
+SyntaxKind.LastLiteralToken = wrapped( 'LastLiteralToken', +SyntaxKind.NoSubstitutionTemplateLiteral );
+SyntaxKind[ +SyntaxKind.LastLiteralToken.value ] = typeof SyntaxKind[ +SyntaxKind.LastLiteralToken.value ] !== 'number' ? named( 'LastLiteralToken' ) : SyntaxKind[ +SyntaxKind.LastLiteralToken.value ];
+SyntaxKind.FirstTemplateToken = wrapped( 'FirstTemplateToken', +SyntaxKind.NoSubstitutionTemplateLiteral );
+SyntaxKind[ +SyntaxKind.FirstTemplateToken.value ] = typeof SyntaxKind[ +SyntaxKind.FirstTemplateToken.value ] !== 'number' ? named( 'FirstTemplateToken' ) : SyntaxKind[ +SyntaxKind.FirstTemplateToken.value ];
+SyntaxKind.LastTemplateToken = wrapped( 'LastTemplateToken', +SyntaxKind.TemplateTail );
+SyntaxKind[ +SyntaxKind.LastTemplateToken.value ] = typeof SyntaxKind[ +SyntaxKind.LastTemplateToken.value ] !== 'number' ? named( 'LastTemplateToken' ) : SyntaxKind[ +SyntaxKind.LastTemplateToken.value ];
+SyntaxKind.FirstBinaryOperator = wrapped( 'FirstBinaryOperator', +SyntaxKind.LessThanToken );
+SyntaxKind[ +SyntaxKind.FirstBinaryOperator.value ] = typeof SyntaxKind[ +SyntaxKind.FirstBinaryOperator.value ] !== 'number' ? named( 'FirstBinaryOperator' ) : SyntaxKind[ +SyntaxKind.FirstBinaryOperator.value ];
+SyntaxKind.LastBinaryOperator = wrapped( 'LastBinaryOperator', +SyntaxKind.CaretEqualsToken );
+SyntaxKind[ +SyntaxKind.LastBinaryOperator.value ] = typeof SyntaxKind[ +SyntaxKind.LastBinaryOperator.value ] !== 'number' ? named( 'LastBinaryOperator' ) : SyntaxKind[ +SyntaxKind.LastBinaryOperator.value ];
+SyntaxKind.FirstNode = wrapped( 'FirstNode', +SyntaxKind.QualifiedName );
+SyntaxKind[ +SyntaxKind.FirstNode.value ] = typeof SyntaxKind[ +SyntaxKind.FirstNode.value ] !== 'number' ? named( 'FirstNode' ) : SyntaxKind[ +SyntaxKind.FirstNode.value ];
+SyntaxKind.FirstJSDocNode = wrapped( 'FirstJSDocNode', +SyntaxKind.JSDocTypeExpression );
+SyntaxKind[ +SyntaxKind.FirstJSDocNode.value ] = typeof SyntaxKind[ +SyntaxKind.FirstJSDocNode.value ] !== 'number' ? named( 'FirstJSDocNode' ) : SyntaxKind[ +SyntaxKind.FirstJSDocNode.value ];
+SyntaxKind.LastJSDocNode = wrapped( 'LastJSDocNode', +SyntaxKind.JSDocPropertyTag );
+SyntaxKind[ +SyntaxKind.LastJSDocNode.value ] = typeof SyntaxKind[ +SyntaxKind.LastJSDocNode.value ] !== 'number' ? named( 'LastJSDocNode' ) : SyntaxKind[ +SyntaxKind.LastJSDocNode.value ];
+SyntaxKind.FirstJSDocTagNode = wrapped( 'FirstJSDocTagNode', +SyntaxKind.JSDocTag );
+SyntaxKind[ +SyntaxKind.FirstJSDocTagNode.value ] = typeof SyntaxKind[ +SyntaxKind.FirstJSDocTagNode.value ] !== 'number' ? named( 'FirstJSDocTagNode' ) : SyntaxKind[ +SyntaxKind.FirstJSDocTagNode.value ];
+SyntaxKind.LastJSDocTagNode = wrapped( 'LastJSDocTagNode', +SyntaxKind.JSDocPropertyTag );
+SyntaxKind[ +SyntaxKind.LastJSDocTagNode.value ] = typeof SyntaxKind[ +SyntaxKind.LastJSDocTagNode.value ] !== 'number' ? named( 'LastJSDocTagNode' ) : SyntaxKind[ +SyntaxKind.LastJSDocTagNode.value ];
+
+SyntaxKind = Object.create( templ(), SyntaxKind );
+Object.getPrototypeOf( SyntaxKind ).asString = asString( SyntaxKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name NodeFlags
  ************************************************************************************************************************/
-let NodeFlags = {};
+let NodeFlags = {}; // Object.create( ( () => new ( function NodeFlags() {} )() )(), {} );
 NodeFlags.None = wrapped( 'None', 0 );
 NodeFlags[ +NodeFlags.None.value ] = typeof NodeFlags[ +NodeFlags.None.value ] !== 'number' ? named( 'None' ) : NodeFlags[ +NodeFlags.None.value ];
 NodeFlags.Let = wrapped( 'Let', 1 << 0 );
@@ -113,10 +776,6 @@ NodeFlags.PossiblyContainsDynamicImport = wrapped( 'PossiblyContainsDynamicImpor
 NodeFlags[ +NodeFlags.PossiblyContainsDynamicImport.value ] = typeof NodeFlags[ +NodeFlags.PossiblyContainsDynamicImport.value ] !== 'number' ? named( 'PossiblyContainsDynamicImport' ) : NodeFlags[ +NodeFlags.PossiblyContainsDynamicImport.value ];
 NodeFlags.JSDoc = wrapped( 'JSDoc', 1 << 20 );
 NodeFlags[ +NodeFlags.JSDoc.value ] = typeof NodeFlags[ +NodeFlags.JSDoc.value ] !== 'number' ? named( 'JSDoc' ) : NodeFlags[ +NodeFlags.JSDoc.value ];
-NodeFlags.Ambient = wrapped( 'Ambient', 1 << 21 );
-NodeFlags[ +NodeFlags.Ambient.value ] = typeof NodeFlags[ +NodeFlags.Ambient.value ] !== 'number' ? named( 'Ambient' ) : NodeFlags[ +NodeFlags.Ambient.value ];
-NodeFlags.InWithStatement = wrapped( 'InWithStatement', 1 << 22 );
-NodeFlags[ +NodeFlags.InWithStatement.value ] = typeof NodeFlags[ +NodeFlags.InWithStatement.value ] !== 'number' ? named( 'InWithStatement' ) : NodeFlags[ +NodeFlags.InWithStatement.value ];
 NodeFlags.BlockScoped = wrapped( 'BlockScoped', NodeFlags.Let | NodeFlags.Const );
 NodeFlags[ +NodeFlags.BlockScoped.value ] = typeof NodeFlags[ +NodeFlags.BlockScoped.value ] !== 'number' ? named( 'BlockScoped' ) : NodeFlags[ +NodeFlags.BlockScoped.value ];
 NodeFlags.ReachabilityCheckFlags = wrapped( 'ReachabilityCheckFlags', NodeFlags.HasImplicitReturn | NodeFlags.HasExplicitReturn );
@@ -128,14 +787,14 @@ NodeFlags[ +NodeFlags.ContextFlags.value ] = typeof NodeFlags[ +NodeFlags.Contex
 NodeFlags.TypeExcludesFlags = wrapped( 'TypeExcludesFlags', NodeFlags.YieldContext | NodeFlags.AwaitContext );
 NodeFlags[ +NodeFlags.TypeExcludesFlags.value ] = typeof NodeFlags[ +NodeFlags.TypeExcludesFlags.value ] !== 'number' ? named( 'TypeExcludesFlags' ) : NodeFlags[ +NodeFlags.TypeExcludesFlags.value ];
 
-NodeFlags = Object.create( tmp = templ(), NodeFlags );
-tmp.asString = asString( NodeFlags );
+NodeFlags = Object.create( templ(), NodeFlags );
+Object.getPrototypeOf( NodeFlags ).asString = asString( NodeFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ModifierFlags
  ************************************************************************************************************************/
-let ModifierFlags = {};
+let ModifierFlags = {}; // Object.create( ( () => new ( function ModifierFlags() {} )() )(), {} );
 ModifierFlags.None = wrapped( 'None', 0 );
 ModifierFlags[ +ModifierFlags.None.value ] = typeof ModifierFlags[ +ModifierFlags.None.value ] !== 'number' ? named( 'None' ) : ModifierFlags[ +ModifierFlags.None.value ];
 ModifierFlags.Export = wrapped( 'Export', 1 << 0 );
@@ -172,17 +831,15 @@ ModifierFlags.TypeScriptModifier = wrapped( 'TypeScriptModifier', ModifierFlags.
 ModifierFlags[ +ModifierFlags.TypeScriptModifier.value ] = typeof ModifierFlags[ +ModifierFlags.TypeScriptModifier.value ] !== 'number' ? named( 'TypeScriptModifier' ) : ModifierFlags[ +ModifierFlags.TypeScriptModifier.value ];
 ModifierFlags.ExportDefault = wrapped( 'ExportDefault', ModifierFlags.Export | ModifierFlags.Default );
 ModifierFlags[ +ModifierFlags.ExportDefault.value ] = typeof ModifierFlags[ +ModifierFlags.ExportDefault.value ] !== 'number' ? named( 'ExportDefault' ) : ModifierFlags[ +ModifierFlags.ExportDefault.value ];
-ModifierFlags.All = wrapped( 'All', ModifierFlags.Export | ModifierFlags.Ambient | ModifierFlags.Public | ModifierFlags.Private | ModifierFlags.Protected | ModifierFlags.Static | ModifierFlags.Readonly | ModifierFlags.Abstract | ModifierFlags.Async | ModifierFlags.Default | ModifierFlags.Const );
-ModifierFlags[ +ModifierFlags.All.value ] = typeof ModifierFlags[ +ModifierFlags.All.value ] !== 'number' ? named( 'All' ) : ModifierFlags[ +ModifierFlags.All.value ];
 
-ModifierFlags = Object.create( tmp = templ(), ModifierFlags );
-tmp.asString = asString( ModifierFlags );
+ModifierFlags = Object.create( templ(), ModifierFlags );
+Object.getPrototypeOf( ModifierFlags ).asString = asString( ModifierFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name JsxFlags
  ************************************************************************************************************************/
-let JsxFlags = {};
+let JsxFlags = {}; // Object.create( ( () => new ( function JsxFlags() {} )() )(), {} );
 JsxFlags.None = wrapped( 'None', 0 );
 JsxFlags[ +JsxFlags.None.value ] = typeof JsxFlags[ +JsxFlags.None.value ] !== 'number' ? named( 'None' ) : JsxFlags[ +JsxFlags.None.value ];
 JsxFlags.IntrinsicNamedElement = wrapped( 'IntrinsicNamedElement', 1 << 0 );
@@ -192,14 +849,14 @@ JsxFlags[ +JsxFlags.IntrinsicIndexedElement.value ] = typeof JsxFlags[ +JsxFlags
 JsxFlags.IntrinsicElement = wrapped( 'IntrinsicElement', JsxFlags.IntrinsicNamedElement | JsxFlags.IntrinsicIndexedElement );
 JsxFlags[ +JsxFlags.IntrinsicElement.value ] = typeof JsxFlags[ +JsxFlags.IntrinsicElement.value ] !== 'number' ? named( 'IntrinsicElement' ) : JsxFlags[ +JsxFlags.IntrinsicElement.value ];
 
-JsxFlags = Object.create( tmp = templ(), JsxFlags );
-tmp.asString = asString( JsxFlags );
+JsxFlags = Object.create( templ(), JsxFlags );
+Object.getPrototypeOf( JsxFlags ).asString = asString( JsxFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name RelationComparisonResult
  ************************************************************************************************************************/
-let RelationComparisonResult = {};
+let RelationComparisonResult = {}; // Object.create( ( () => new ( function RelationComparisonResult() {} )() )(), {} );
 RelationComparisonResult.Succeeded = wrapped( 'Succeeded', 1 );
 RelationComparisonResult[ +RelationComparisonResult.Succeeded.value ] = typeof RelationComparisonResult[ +RelationComparisonResult.Succeeded.value ] !== 'number' ? named( 'Succeeded' ) : RelationComparisonResult[ +RelationComparisonResult.Succeeded.value ];
 RelationComparisonResult.Failed = wrapped( 'Failed', 2 );
@@ -207,41 +864,33 @@ RelationComparisonResult[ +RelationComparisonResult.Failed.value ] = typeof Rela
 RelationComparisonResult.FailedAndReported = wrapped( 'FailedAndReported', 3 );
 RelationComparisonResult[ +RelationComparisonResult.FailedAndReported.value ] = typeof RelationComparisonResult[ +RelationComparisonResult.FailedAndReported.value ] !== 'number' ? named( 'FailedAndReported' ) : RelationComparisonResult[ +RelationComparisonResult.FailedAndReported.value ];
 
-RelationComparisonResult = Object.create( tmp = templ(), RelationComparisonResult );
-tmp.asString = asString( RelationComparisonResult );
+RelationComparisonResult = Object.create( templ(), RelationComparisonResult );
+Object.getPrototypeOf( RelationComparisonResult ).asString = asString( RelationComparisonResult );
 
 /** *********************************************************************************************************************
  * @enum
- * @name GeneratedIdentifierFlags
+ * @name GeneratedIdentifierKind
  ************************************************************************************************************************/
-let GeneratedIdentifierFlags = {};
-GeneratedIdentifierFlags.None = wrapped( 'None', 0 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.None.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.None.value ] !== 'number' ? named( 'None' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.None.value ];
-GeneratedIdentifierFlags.Auto = wrapped( 'Auto', 1 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Auto.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Auto.value ] !== 'number' ? named( 'Auto' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Auto.value ];
-GeneratedIdentifierFlags.Loop = wrapped( 'Loop', 2 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Loop.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Loop.value ] !== 'number' ? named( 'Loop' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Loop.value ];
-GeneratedIdentifierFlags.Unique = wrapped( 'Unique', 3 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Unique.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Unique.value ] !== 'number' ? named( 'Unique' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Unique.value ];
-GeneratedIdentifierFlags.Node = wrapped( 'Node', 4 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Node.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Node.value ] !== 'number' ? named( 'Node' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.Node.value ];
-GeneratedIdentifierFlags.OptimisticUnique = wrapped( 'OptimisticUnique', 5 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.OptimisticUnique.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.OptimisticUnique.value ] !== 'number' ? named( 'OptimisticUnique' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.OptimisticUnique.value ];
-GeneratedIdentifierFlags.KindMask = wrapped( 'KindMask', 7 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.KindMask.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.KindMask.value ] !== 'number' ? named( 'KindMask' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.KindMask.value ];
-GeneratedIdentifierFlags.SkipNameGenerationScope = wrapped( 'SkipNameGenerationScope', 1 << 3 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.SkipNameGenerationScope.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.SkipNameGenerationScope.value ] !== 'number' ? named( 'SkipNameGenerationScope' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.SkipNameGenerationScope.value ];
-GeneratedIdentifierFlags.ReservedInNestedScopes = wrapped( 'ReservedInNestedScopes', 1 << 4 );
-GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.ReservedInNestedScopes.value ] = typeof GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.ReservedInNestedScopes.value ] !== 'number' ? named( 'ReservedInNestedScopes' ) : GeneratedIdentifierFlags[ +GeneratedIdentifierFlags.ReservedInNestedScopes.value ];
+let GeneratedIdentifierKind = {}; // Object.create( ( () => new ( function GeneratedIdentifierKind() {} )() )(), {} );
+GeneratedIdentifierKind.None = wrapped( 'None', 1 );
+GeneratedIdentifierKind[ +GeneratedIdentifierKind.None.value ] = typeof GeneratedIdentifierKind[ +GeneratedIdentifierKind.None.value ] !== 'number' ? named( 'None' ) : GeneratedIdentifierKind[ +GeneratedIdentifierKind.None.value ];
+GeneratedIdentifierKind.Auto = wrapped( 'Auto', 2 );
+GeneratedIdentifierKind[ +GeneratedIdentifierKind.Auto.value ] = typeof GeneratedIdentifierKind[ +GeneratedIdentifierKind.Auto.value ] !== 'number' ? named( 'Auto' ) : GeneratedIdentifierKind[ +GeneratedIdentifierKind.Auto.value ];
+GeneratedIdentifierKind.Loop = wrapped( 'Loop', 3 );
+GeneratedIdentifierKind[ +GeneratedIdentifierKind.Loop.value ] = typeof GeneratedIdentifierKind[ +GeneratedIdentifierKind.Loop.value ] !== 'number' ? named( 'Loop' ) : GeneratedIdentifierKind[ +GeneratedIdentifierKind.Loop.value ];
+GeneratedIdentifierKind.Unique = wrapped( 'Unique', 4 );
+GeneratedIdentifierKind[ +GeneratedIdentifierKind.Unique.value ] = typeof GeneratedIdentifierKind[ +GeneratedIdentifierKind.Unique.value ] !== 'number' ? named( 'Unique' ) : GeneratedIdentifierKind[ +GeneratedIdentifierKind.Unique.value ];
+GeneratedIdentifierKind.Node = wrapped( 'Node', 5 );
+GeneratedIdentifierKind[ +GeneratedIdentifierKind.Node.value ] = typeof GeneratedIdentifierKind[ +GeneratedIdentifierKind.Node.value ] !== 'number' ? named( 'Node' ) : GeneratedIdentifierKind[ +GeneratedIdentifierKind.Node.value ];
 
-GeneratedIdentifierFlags = Object.create( tmp = templ(), GeneratedIdentifierFlags );
-tmp.asString = asString( GeneratedIdentifierFlags );
+GeneratedIdentifierKind = Object.create( templ(), GeneratedIdentifierKind );
+Object.getPrototypeOf( GeneratedIdentifierKind ).asString = asString( GeneratedIdentifierKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TokenFlags
  ************************************************************************************************************************/
-let TokenFlags = {};
+let TokenFlags = {}; // Object.create( ( () => new ( function TokenFlags() {} )() )(), {} );
 TokenFlags.None = wrapped( 'None', 0 );
 TokenFlags[ +TokenFlags.None.value ] = typeof TokenFlags[ +TokenFlags.None.value ] !== 'number' ? named( 'None' ) : TokenFlags[ +TokenFlags.None.value ];
 TokenFlags.PrecedingLineBreak = wrapped( 'PrecedingLineBreak', 1 << 0 );
@@ -269,14 +918,14 @@ TokenFlags[ +TokenFlags.BinaryOrOctalSpecifier.value ] = typeof TokenFlags[ +Tok
 TokenFlags.NumericLiteralFlags = wrapped( 'NumericLiteralFlags', TokenFlags.Scientific | TokenFlags.Octal | TokenFlags.HexSpecifier | TokenFlags.BinarySpecifier | TokenFlags.OctalSpecifier | TokenFlags.ContainsSeparator );
 TokenFlags[ +TokenFlags.NumericLiteralFlags.value ] = typeof TokenFlags[ +TokenFlags.NumericLiteralFlags.value ] !== 'number' ? named( 'NumericLiteralFlags' ) : TokenFlags[ +TokenFlags.NumericLiteralFlags.value ];
 
-TokenFlags = Object.create( tmp = templ(), TokenFlags );
-tmp.asString = asString( TokenFlags );
+TokenFlags = Object.create( templ(), TokenFlags );
+Object.getPrototypeOf( TokenFlags ).asString = asString( TokenFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name FlowFlags
  ************************************************************************************************************************/
-let FlowFlags = {};
+let FlowFlags = {}; // Object.create( ( () => new ( function FlowFlags() {} )() )(), {} );
 FlowFlags.Unreachable = wrapped( 'Unreachable', 1 << 0 );
 FlowFlags[ +FlowFlags.Unreachable.value ] = typeof FlowFlags[ +FlowFlags.Unreachable.value ] !== 'number' ? named( 'Unreachable' ) : FlowFlags[ +FlowFlags.Unreachable.value ];
 FlowFlags.Start = wrapped( 'Start', 1 << 1 );
@@ -308,14 +957,14 @@ FlowFlags[ +FlowFlags.Label.value ] = typeof FlowFlags[ +FlowFlags.Label.value ]
 FlowFlags.Condition = wrapped( 'Condition', FlowFlags.TrueCondition | FlowFlags.FalseCondition );
 FlowFlags[ +FlowFlags.Condition.value ] = typeof FlowFlags[ +FlowFlags.Condition.value ] !== 'number' ? named( 'Condition' ) : FlowFlags[ +FlowFlags.Condition.value ];
 
-FlowFlags = Object.create( tmp = templ(), FlowFlags );
-tmp.asString = asString( FlowFlags );
+FlowFlags = Object.create( templ(), FlowFlags );
+Object.getPrototypeOf( FlowFlags ).asString = asString( FlowFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name StructureIsReused
  ************************************************************************************************************************/
-let StructureIsReused = {};
+let StructureIsReused = {}; // Object.create( ( () => new ( function StructureIsReused() {} )() )(), {} );
 StructureIsReused.Not = wrapped( 'Not', 0 );
 StructureIsReused[ +StructureIsReused.Not.value ] = typeof StructureIsReused[ +StructureIsReused.Not.value ] !== 'number' ? named( 'Not' ) : StructureIsReused[ +StructureIsReused.Not.value ];
 StructureIsReused.SafeModules = wrapped( 'SafeModules', 1 << 0 );
@@ -323,14 +972,14 @@ StructureIsReused[ +StructureIsReused.SafeModules.value ] = typeof StructureIsRe
 StructureIsReused.Completely = wrapped( 'Completely', 1 << 1 );
 StructureIsReused[ +StructureIsReused.Completely.value ] = typeof StructureIsReused[ +StructureIsReused.Completely.value ] !== 'number' ? named( 'Completely' ) : StructureIsReused[ +StructureIsReused.Completely.value ];
 
-StructureIsReused = Object.create( tmp = templ(), StructureIsReused );
-tmp.asString = asString( StructureIsReused );
+StructureIsReused = Object.create( templ(), StructureIsReused );
+Object.getPrototypeOf( StructureIsReused ).asString = asString( StructureIsReused );
 
 /** *********************************************************************************************************************
  * @enum
  * @name UnionReduction
  ************************************************************************************************************************/
-let UnionReduction = {};
+let UnionReduction = {}; // Object.create( ( () => new ( function UnionReduction() {} )() )(), {} );
 UnionReduction.None = wrapped( 'None', 0 );
 UnionReduction[ +UnionReduction.None.value ] = typeof UnionReduction[ +UnionReduction.None.value ] !== 'number' ? named( 'None' ) : UnionReduction[ +UnionReduction.None.value ];
 UnionReduction.Literal = wrapped( 'Literal', 1 );
@@ -338,109 +987,68 @@ UnionReduction[ +UnionReduction.Literal.value ] = typeof UnionReduction[ +UnionR
 UnionReduction.Subtype = wrapped( 'Subtype', 2 );
 UnionReduction[ +UnionReduction.Subtype.value ] = typeof UnionReduction[ +UnionReduction.Subtype.value ] !== 'number' ? named( 'Subtype' ) : UnionReduction[ +UnionReduction.Subtype.value ];
 
-UnionReduction = Object.create( tmp = templ(), UnionReduction );
-tmp.asString = asString( UnionReduction );
-
-/** *********************************************************************************************************************
- * @enum
- * @name NodeBuilderFlags
- ************************************************************************************************************************/
-let NodeBuilderFlags = {};
-NodeBuilderFlags.None = wrapped( 'None', 0 );
-NodeBuilderFlags[ +NodeBuilderFlags.None.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.None.value ] !== 'number' ? named( 'None' ) : NodeBuilderFlags[ +NodeBuilderFlags.None.value ];
-NodeBuilderFlags.NoTruncation = wrapped( 'NoTruncation', 1 << 0 );
-NodeBuilderFlags[ +NodeBuilderFlags.NoTruncation.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.NoTruncation.value ] !== 'number' ? named( 'NoTruncation' ) : NodeBuilderFlags[ +NodeBuilderFlags.NoTruncation.value ];
-NodeBuilderFlags.WriteArrayAsGenericType = wrapped( 'WriteArrayAsGenericType', 1 << 1 );
-NodeBuilderFlags[ +NodeBuilderFlags.WriteArrayAsGenericType.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.WriteArrayAsGenericType.value ] !== 'number' ? named( 'WriteArrayAsGenericType' ) : NodeBuilderFlags[ +NodeBuilderFlags.WriteArrayAsGenericType.value ];
-NodeBuilderFlags.UseStructuralFallback = wrapped( 'UseStructuralFallback', 1 << 3 );
-NodeBuilderFlags[ +NodeBuilderFlags.UseStructuralFallback.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.UseStructuralFallback.value ] !== 'number' ? named( 'UseStructuralFallback' ) : NodeBuilderFlags[ +NodeBuilderFlags.UseStructuralFallback.value ];
-NodeBuilderFlags.WriteTypeArgumentsOfSignature = wrapped( 'WriteTypeArgumentsOfSignature', 1 << 5 );
-NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeArgumentsOfSignature.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeArgumentsOfSignature.value ] !== 'number' ? named( 'WriteTypeArgumentsOfSignature' ) : NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeArgumentsOfSignature.value ];
-NodeBuilderFlags.UseFullyQualifiedType = wrapped( 'UseFullyQualifiedType', 1 << 6 );
-NodeBuilderFlags[ +NodeBuilderFlags.UseFullyQualifiedType.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.UseFullyQualifiedType.value ] !== 'number' ? named( 'UseFullyQualifiedType' ) : NodeBuilderFlags[ +NodeBuilderFlags.UseFullyQualifiedType.value ];
-NodeBuilderFlags.UseOnlyExternalAliasing = wrapped( 'UseOnlyExternalAliasing', 1 << 7 );
-NodeBuilderFlags[ +NodeBuilderFlags.UseOnlyExternalAliasing.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.UseOnlyExternalAliasing.value ] !== 'number' ? named( 'UseOnlyExternalAliasing' ) : NodeBuilderFlags[ +NodeBuilderFlags.UseOnlyExternalAliasing.value ];
-NodeBuilderFlags.SuppressAnyReturnType = wrapped( 'SuppressAnyReturnType', 1 << 8 );
-NodeBuilderFlags[ +NodeBuilderFlags.SuppressAnyReturnType.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.SuppressAnyReturnType.value ] !== 'number' ? named( 'SuppressAnyReturnType' ) : NodeBuilderFlags[ +NodeBuilderFlags.SuppressAnyReturnType.value ];
-NodeBuilderFlags.WriteTypeParametersInQualifiedName = wrapped( 'WriteTypeParametersInQualifiedName', 1 << 9 );
-NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeParametersInQualifiedName.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeParametersInQualifiedName.value ] !== 'number' ? named( 'WriteTypeParametersInQualifiedName' ) : NodeBuilderFlags[ +NodeBuilderFlags.WriteTypeParametersInQualifiedName.value ];
-NodeBuilderFlags.MultilineObjectLiterals = wrapped( 'MultilineObjectLiterals', 1 << 10 );
-NodeBuilderFlags[ +NodeBuilderFlags.MultilineObjectLiterals.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.MultilineObjectLiterals.value ] !== 'number' ? named( 'MultilineObjectLiterals' ) : NodeBuilderFlags[ +NodeBuilderFlags.MultilineObjectLiterals.value ];
-NodeBuilderFlags.WriteClassExpressionAsTypeLiteral = wrapped( 'WriteClassExpressionAsTypeLiteral', 1 << 11 );
-NodeBuilderFlags[ +NodeBuilderFlags.WriteClassExpressionAsTypeLiteral.value ] = typeof NodeBuilderFlags[ +NodeBuilderFlags.WriteClassExpressionAsTypeLiteral.value ] !== 'number' ? named( 'WriteClassExpressionAsTypeLiteral' ) : NodeBuilderFlags[ +NodeBuilderFlags.WriteClassExpressionAsTypeLiteral.value ];
-
-NodeBuilderFlags = Object.create( tmp = templ(), NodeBuilderFlags );
-tmp.asString = asString( NodeBuilderFlags );
+UnionReduction = Object.create( templ(), UnionReduction );
+Object.getPrototypeOf( UnionReduction ).asString = asString( UnionReduction );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TypeFormatFlags
  ************************************************************************************************************************/
-let TypeFormatFlags = {};
+let TypeFormatFlags = {}; // Object.create( ( () => new ( function TypeFormatFlags() {} )() )(), {} );
 TypeFormatFlags.None = wrapped( 'None', 0 );
 TypeFormatFlags[ +TypeFormatFlags.None.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.None.value ] !== 'number' ? named( 'None' ) : TypeFormatFlags[ +TypeFormatFlags.None.value ];
-TypeFormatFlags.NoTruncation = wrapped( 'NoTruncation', 1 << 0 );
-TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ] !== 'number' ? named( 'NoTruncation' ) : TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ];
-TypeFormatFlags.WriteArrayAsGenericType = wrapped( 'WriteArrayAsGenericType', 1 << 1 );
+TypeFormatFlags.WriteArrayAsGenericType = wrapped( 'WriteArrayAsGenericType', 1 << 0 );
 TypeFormatFlags[ +TypeFormatFlags.WriteArrayAsGenericType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteArrayAsGenericType.value ] !== 'number' ? named( 'WriteArrayAsGenericType' ) : TypeFormatFlags[ +TypeFormatFlags.WriteArrayAsGenericType.value ];
-TypeFormatFlags.UseStructuralFallback = wrapped( 'UseStructuralFallback', 1 << 3 );
-TypeFormatFlags[ +TypeFormatFlags.UseStructuralFallback.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseStructuralFallback.value ] !== 'number' ? named( 'UseStructuralFallback' ) : TypeFormatFlags[ +TypeFormatFlags.UseStructuralFallback.value ];
-TypeFormatFlags.WriteTypeArgumentsOfSignature = wrapped( 'WriteTypeArgumentsOfSignature', 1 << 5 );
-TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ] !== 'number' ? named( 'WriteTypeArgumentsOfSignature' ) : TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ];
-TypeFormatFlags.UseFullyQualifiedType = wrapped( 'UseFullyQualifiedType', 1 << 6 );
-TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ] !== 'number' ? named( 'UseFullyQualifiedType' ) : TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ];
-TypeFormatFlags.SuppressAnyReturnType = wrapped( 'SuppressAnyReturnType', 1 << 8 );
-TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ] !== 'number' ? named( 'SuppressAnyReturnType' ) : TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ];
-TypeFormatFlags.MultilineObjectLiterals = wrapped( 'MultilineObjectLiterals', 1 << 10 );
-TypeFormatFlags[ +TypeFormatFlags.MultilineObjectLiterals.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.MultilineObjectLiterals.value ] !== 'number' ? named( 'MultilineObjectLiterals' ) : TypeFormatFlags[ +TypeFormatFlags.MultilineObjectLiterals.value ];
-TypeFormatFlags.WriteClassExpressionAsTypeLiteral = wrapped( 'WriteClassExpressionAsTypeLiteral', 1 << 11 );
-TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ] !== 'number' ? named( 'WriteClassExpressionAsTypeLiteral' ) : TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ];
-TypeFormatFlags.UseTypeOfFunction = wrapped( 'UseTypeOfFunction', 1 << 12 );
+TypeFormatFlags.UseTypeOfFunction = wrapped( 'UseTypeOfFunction', 1 << 2 );
 TypeFormatFlags[ +TypeFormatFlags.UseTypeOfFunction.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseTypeOfFunction.value ] !== 'number' ? named( 'UseTypeOfFunction' ) : TypeFormatFlags[ +TypeFormatFlags.UseTypeOfFunction.value ];
-TypeFormatFlags.OmitParameterModifiers = wrapped( 'OmitParameterModifiers', 1 << 13 );
-TypeFormatFlags[ +TypeFormatFlags.OmitParameterModifiers.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.OmitParameterModifiers.value ] !== 'number' ? named( 'OmitParameterModifiers' ) : TypeFormatFlags[ +TypeFormatFlags.OmitParameterModifiers.value ];
-TypeFormatFlags.UseAliasDefinedOutsideCurrentScope = wrapped( 'UseAliasDefinedOutsideCurrentScope', 1 << 14 );
-TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ] !== 'number' ? named( 'UseAliasDefinedOutsideCurrentScope' ) : TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ];
-TypeFormatFlags.AllowUniqueESSymbolType = wrapped( 'AllowUniqueESSymbolType', 1 << 20 );
-TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ] !== 'number' ? named( 'AllowUniqueESSymbolType' ) : TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ];
-TypeFormatFlags.AddUndefined = wrapped( 'AddUndefined', 1 << 17 );
-TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ] !== 'number' ? named( 'AddUndefined' ) : TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ];
-TypeFormatFlags.WriteArrowStyleSignature = wrapped( 'WriteArrowStyleSignature', 1 << 18 );
+TypeFormatFlags.NoTruncation = wrapped( 'NoTruncation', 1 << 3 );
+TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ] !== 'number' ? named( 'NoTruncation' ) : TypeFormatFlags[ +TypeFormatFlags.NoTruncation.value ];
+TypeFormatFlags.WriteArrowStyleSignature = wrapped( 'WriteArrowStyleSignature', 1 << 4 );
 TypeFormatFlags[ +TypeFormatFlags.WriteArrowStyleSignature.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteArrowStyleSignature.value ] !== 'number' ? named( 'WriteArrowStyleSignature' ) : TypeFormatFlags[ +TypeFormatFlags.WriteArrowStyleSignature.value ];
-TypeFormatFlags.InArrayType = wrapped( 'InArrayType', 1 << 19 );
-TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ] !== 'number' ? named( 'InArrayType' ) : TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ];
-TypeFormatFlags.InElementType = wrapped( 'InElementType', 1 << 21 );
-TypeFormatFlags[ +TypeFormatFlags.InElementType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InElementType.value ] !== 'number' ? named( 'InElementType' ) : TypeFormatFlags[ +TypeFormatFlags.InElementType.value ];
-TypeFormatFlags.InFirstTypeArgument = wrapped( 'InFirstTypeArgument', 1 << 22 );
-TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ] !== 'number' ? named( 'InFirstTypeArgument' ) : TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ];
-TypeFormatFlags.InTypeAlias = wrapped( 'InTypeAlias', 1 << 23 );
-TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ] !== 'number' ? named( 'InTypeAlias' ) : TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ];
-TypeFormatFlags.WriteOwnNameForAnyLike = wrapped( 'WriteOwnNameForAnyLike', 0 );
+TypeFormatFlags.WriteOwnNameForAnyLike = wrapped( 'WriteOwnNameForAnyLike', 1 << 5 );
 TypeFormatFlags[ +TypeFormatFlags.WriteOwnNameForAnyLike.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteOwnNameForAnyLike.value ] !== 'number' ? named( 'WriteOwnNameForAnyLike' ) : TypeFormatFlags[ +TypeFormatFlags.WriteOwnNameForAnyLike.value ];
-TypeFormatFlags.NodeBuilderFlagsMask = wrapped( 'NodeBuilderFlagsMask', TypeFormatFlags.NoTruncation | TypeFormatFlags.WriteArrayAsGenericType | TypeFormatFlags.UseStructuralFallback | TypeFormatFlags.WriteTypeArgumentsOfSignature |
-            TypeFormatFlags.UseFullyQualifiedType | TypeFormatFlags.SuppressAnyReturnType | TypeFormatFlags.MultilineObjectLiterals | TypeFormatFlags.WriteClassExpressionAsTypeLiteral |
-            TypeFormatFlags.UseTypeOfFunction | TypeFormatFlags.OmitParameterModifiers | TypeFormatFlags.UseAliasDefinedOutsideCurrentScope | TypeFormatFlags.AllowUniqueESSymbolType | TypeFormatFlags.InTypeAlias );
-TypeFormatFlags[ +TypeFormatFlags.NodeBuilderFlagsMask.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.NodeBuilderFlagsMask.value ] !== 'number' ? named( 'NodeBuilderFlagsMask' ) : TypeFormatFlags[ +TypeFormatFlags.NodeBuilderFlagsMask.value ];
+TypeFormatFlags.WriteTypeArgumentsOfSignature = wrapped( 'WriteTypeArgumentsOfSignature', 1 << 6 );
+TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ] !== 'number' ? named( 'WriteTypeArgumentsOfSignature' ) : TypeFormatFlags[ +TypeFormatFlags.WriteTypeArgumentsOfSignature.value ];
+TypeFormatFlags.InElementType = wrapped( 'InElementType', 1 << 7 );
+TypeFormatFlags[ +TypeFormatFlags.InElementType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InElementType.value ] !== 'number' ? named( 'InElementType' ) : TypeFormatFlags[ +TypeFormatFlags.InElementType.value ];
+TypeFormatFlags.UseFullyQualifiedType = wrapped( 'UseFullyQualifiedType', 1 << 8 );
+TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ] !== 'number' ? named( 'UseFullyQualifiedType' ) : TypeFormatFlags[ +TypeFormatFlags.UseFullyQualifiedType.value ];
+TypeFormatFlags.InFirstTypeArgument = wrapped( 'InFirstTypeArgument', 1 << 9 );
+TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ] !== 'number' ? named( 'InFirstTypeArgument' ) : TypeFormatFlags[ +TypeFormatFlags.InFirstTypeArgument.value ];
+TypeFormatFlags.InTypeAlias = wrapped( 'InTypeAlias', 1 << 10 );
+TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ] !== 'number' ? named( 'InTypeAlias' ) : TypeFormatFlags[ +TypeFormatFlags.InTypeAlias.value ];
+TypeFormatFlags.SuppressAnyReturnType = wrapped( 'SuppressAnyReturnType', 1 << 12 );
+TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ] !== 'number' ? named( 'SuppressAnyReturnType' ) : TypeFormatFlags[ +TypeFormatFlags.SuppressAnyReturnType.value ];
+TypeFormatFlags.AddUndefined = wrapped( 'AddUndefined', 1 << 13 );
+TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ] !== 'number' ? named( 'AddUndefined' ) : TypeFormatFlags[ +TypeFormatFlags.AddUndefined.value ];
+TypeFormatFlags.WriteClassExpressionAsTypeLiteral = wrapped( 'WriteClassExpressionAsTypeLiteral', 1 << 14 );
+TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ] !== 'number' ? named( 'WriteClassExpressionAsTypeLiteral' ) : TypeFormatFlags[ +TypeFormatFlags.WriteClassExpressionAsTypeLiteral.value ];
+TypeFormatFlags.InArrayType = wrapped( 'InArrayType', 1 << 15 );
+TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ] !== 'number' ? named( 'InArrayType' ) : TypeFormatFlags[ +TypeFormatFlags.InArrayType.value ];
+TypeFormatFlags.UseAliasDefinedOutsideCurrentScope = wrapped( 'UseAliasDefinedOutsideCurrentScope', 1 << 16 );
+TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ] !== 'number' ? named( 'UseAliasDefinedOutsideCurrentScope' ) : TypeFormatFlags[ +TypeFormatFlags.UseAliasDefinedOutsideCurrentScope.value ];
+TypeFormatFlags.AllowUniqueESSymbolType = wrapped( 'AllowUniqueESSymbolType', 1 << 17 );
+TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ] = typeof TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ] !== 'number' ? named( 'AllowUniqueESSymbolType' ) : TypeFormatFlags[ +TypeFormatFlags.AllowUniqueESSymbolType.value ];
 
-TypeFormatFlags = Object.create( tmp = templ(), TypeFormatFlags );
-tmp.asString = asString( TypeFormatFlags );
+TypeFormatFlags = Object.create( templ(), TypeFormatFlags );
+Object.getPrototypeOf( TypeFormatFlags ).asString = asString( TypeFormatFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SymbolFormatFlags
  ************************************************************************************************************************/
-let SymbolFormatFlags = {};
+let SymbolFormatFlags = {}; // Object.create( ( () => new ( function SymbolFormatFlags() {} )() )(), {} );
 SymbolFormatFlags.None = wrapped( 'None', 0x00000000 );
 SymbolFormatFlags[ +SymbolFormatFlags.None.value ] = typeof SymbolFormatFlags[ +SymbolFormatFlags.None.value ] !== 'number' ? named( 'None' ) : SymbolFormatFlags[ +SymbolFormatFlags.None.value ];
 
-SymbolFormatFlags = Object.create( tmp = templ(), SymbolFormatFlags );
-tmp.asString = asString( SymbolFormatFlags );
+SymbolFormatFlags = Object.create( templ(), SymbolFormatFlags );
+Object.getPrototypeOf( SymbolFormatFlags ).asString = asString( SymbolFormatFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SymbolAccessibility
  ************************************************************************************************************************/
-let SymbolAccessibility = {};
+let SymbolAccessibility = {}; // Object.create( ( () => new ( function SymbolAccessibility() {} )() )(), {} );
 SymbolAccessibility.Accessible = wrapped( 'Accessible', 1 );
 SymbolAccessibility[ +SymbolAccessibility.Accessible.value ] = typeof SymbolAccessibility[ +SymbolAccessibility.Accessible.value ] !== 'number' ? named( 'Accessible' ) : SymbolAccessibility[ +SymbolAccessibility.Accessible.value ];
 SymbolAccessibility.NotAccessible = wrapped( 'NotAccessible', 2 );
@@ -448,40 +1056,40 @@ SymbolAccessibility[ +SymbolAccessibility.NotAccessible.value ] = typeof SymbolA
 SymbolAccessibility.CannotBeNamed = wrapped( 'CannotBeNamed', 3 );
 SymbolAccessibility[ +SymbolAccessibility.CannotBeNamed.value ] = typeof SymbolAccessibility[ +SymbolAccessibility.CannotBeNamed.value ] !== 'number' ? named( 'CannotBeNamed' ) : SymbolAccessibility[ +SymbolAccessibility.CannotBeNamed.value ];
 
-SymbolAccessibility = Object.create( tmp = templ(), SymbolAccessibility );
-tmp.asString = asString( SymbolAccessibility );
+SymbolAccessibility = Object.create( templ(), SymbolAccessibility );
+Object.getPrototypeOf( SymbolAccessibility ).asString = asString( SymbolAccessibility );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SyntheticSymbolKind
  ************************************************************************************************************************/
-let SyntheticSymbolKind = {};
+let SyntheticSymbolKind = {}; // Object.create( ( () => new ( function SyntheticSymbolKind() {} )() )(), {} );
 SyntheticSymbolKind.UnionOrIntersection = wrapped( 'UnionOrIntersection', 1 );
 SyntheticSymbolKind[ +SyntheticSymbolKind.UnionOrIntersection.value ] = typeof SyntheticSymbolKind[ +SyntheticSymbolKind.UnionOrIntersection.value ] !== 'number' ? named( 'UnionOrIntersection' ) : SyntheticSymbolKind[ +SyntheticSymbolKind.UnionOrIntersection.value ];
 SyntheticSymbolKind.Spread = wrapped( 'Spread', 2 );
 SyntheticSymbolKind[ +SyntheticSymbolKind.Spread.value ] = typeof SyntheticSymbolKind[ +SyntheticSymbolKind.Spread.value ] !== 'number' ? named( 'Spread' ) : SyntheticSymbolKind[ +SyntheticSymbolKind.Spread.value ];
 
-SyntheticSymbolKind = Object.create( tmp = templ(), SyntheticSymbolKind );
-tmp.asString = asString( SyntheticSymbolKind );
+SyntheticSymbolKind = Object.create( templ(), SyntheticSymbolKind );
+Object.getPrototypeOf( SyntheticSymbolKind ).asString = asString( SyntheticSymbolKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TypePredicateKind
  ************************************************************************************************************************/
-let TypePredicateKind = {};
+let TypePredicateKind = {}; // Object.create( ( () => new ( function TypePredicateKind() {} )() )(), {} );
 TypePredicateKind.This = wrapped( 'This', 1 );
 TypePredicateKind[ +TypePredicateKind.This.value ] = typeof TypePredicateKind[ +TypePredicateKind.This.value ] !== 'number' ? named( 'This' ) : TypePredicateKind[ +TypePredicateKind.This.value ];
 TypePredicateKind.Identifier = wrapped( 'Identifier', 2 );
 TypePredicateKind[ +TypePredicateKind.Identifier.value ] = typeof TypePredicateKind[ +TypePredicateKind.Identifier.value ] !== 'number' ? named( 'Identifier' ) : TypePredicateKind[ +TypePredicateKind.Identifier.value ];
 
-TypePredicateKind = Object.create( tmp = templ(), TypePredicateKind );
-tmp.asString = asString( TypePredicateKind );
+TypePredicateKind = Object.create( templ(), TypePredicateKind );
+Object.getPrototypeOf( TypePredicateKind ).asString = asString( TypePredicateKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SymbolFlags
  ************************************************************************************************************************/
-let SymbolFlags = {};
+let SymbolFlags = {}; // Object.create( ( () => new ( function SymbolFlags() {} )() )(), {} );
 SymbolFlags.None = wrapped( 'None', 0 );
 SymbolFlags[ +SymbolFlags.None.value ] = typeof SymbolFlags[ +SymbolFlags.None.value ] !== 'number' ? named( 'None' ) : SymbolFlags[ +SymbolFlags.None.value ];
 SymbolFlags.FunctionScopedVariable = wrapped( 'FunctionScopedVariable', 1 << 0 );
@@ -545,9 +1153,9 @@ SymbolFlags.Enum = wrapped( 'Enum', SymbolFlags.RegularEnum | SymbolFlags.ConstE
 SymbolFlags[ +SymbolFlags.Enum.value ] = typeof SymbolFlags[ +SymbolFlags.Enum.value ] !== 'number' ? named( 'Enum' ) : SymbolFlags[ +SymbolFlags.Enum.value ];
 SymbolFlags.Variable = wrapped( 'Variable', SymbolFlags.FunctionScopedVariable | SymbolFlags.BlockScopedVariable );
 SymbolFlags[ +SymbolFlags.Variable.value ] = typeof SymbolFlags[ +SymbolFlags.Variable.value ] !== 'number' ? named( 'Variable' ) : SymbolFlags[ +SymbolFlags.Variable.value ];
-SymbolFlags.Value = wrapped( 'Value', SymbolFlags.Variable | SymbolFlags.Property | SymbolFlags.EnumMember | SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule | SymbolFlags.Method | SymbolFlags.GetAccessor | SymbolFlags.SetAccessor | SymbolFlags.JSContainer );
+SymbolFlags.Value = wrapped( 'Value', SymbolFlags.Variable | SymbolFlags.Property | SymbolFlags.EnumMember | SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.Enum | SymbolFlags.ValueModule | SymbolFlags.Method | SymbolFlags.GetAccessor | SymbolFlags.SetAccessor );
 SymbolFlags[ +SymbolFlags.Value.value ] = typeof SymbolFlags[ +SymbolFlags.Value.value ] !== 'number' ? named( 'Value' ) : SymbolFlags[ +SymbolFlags.Value.value ];
-SymbolFlags.Type = wrapped( 'Type', SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.Enum | SymbolFlags.EnumMember | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral | SymbolFlags.TypeParameter | SymbolFlags.TypeAlias | SymbolFlags.JSContainer );
+SymbolFlags.Type = wrapped( 'Type', SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.Enum | SymbolFlags.EnumMember | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral | SymbolFlags.TypeParameter | SymbolFlags.TypeAlias );
 SymbolFlags[ +SymbolFlags.Type.value ] = typeof SymbolFlags[ +SymbolFlags.Type.value ] !== 'number' ? named( 'Type' ) : SymbolFlags[ +SymbolFlags.Type.value ];
 SymbolFlags.Namespace = wrapped( 'Namespace', SymbolFlags.ValueModule | SymbolFlags.NamespaceModule | SymbolFlags.Enum );
 SymbolFlags[ +SymbolFlags.Namespace.value ] = typeof SymbolFlags[ +SymbolFlags.Namespace.value ] !== 'number' ? named( 'Namespace' ) : SymbolFlags[ +SymbolFlags.Namespace.value ];
@@ -565,17 +1173,17 @@ SymbolFlags.PropertyExcludes = wrapped( 'PropertyExcludes', +SymbolFlags.None );
 SymbolFlags[ +SymbolFlags.PropertyExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.PropertyExcludes.value ] !== 'number' ? named( 'PropertyExcludes' ) : SymbolFlags[ +SymbolFlags.PropertyExcludes.value ];
 SymbolFlags.EnumMemberExcludes = wrapped( 'EnumMemberExcludes', SymbolFlags.Value | SymbolFlags.Type );
 SymbolFlags[ +SymbolFlags.EnumMemberExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.EnumMemberExcludes.value ] !== 'number' ? named( 'EnumMemberExcludes' ) : SymbolFlags[ +SymbolFlags.EnumMemberExcludes.value ];
-SymbolFlags.FunctionExcludes = wrapped( 'FunctionExcludes', SymbolFlags.Value & ~( SymbolFlags.Function | SymbolFlags.ValueModule ) );
+SymbolFlags.FunctionExcludes = wrapped( 'FunctionExcludes', SymbolFlags.Value & ~(SymbolFlags.Function | SymbolFlags.ValueModule) );
 SymbolFlags[ +SymbolFlags.FunctionExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.FunctionExcludes.value ] !== 'number' ? named( 'FunctionExcludes' ) : SymbolFlags[ +SymbolFlags.FunctionExcludes.value ];
-SymbolFlags.ClassExcludes = wrapped( 'ClassExcludes', ( SymbolFlags.Value | SymbolFlags.Type ) & ~( SymbolFlags.ValueModule | SymbolFlags.Interface ) );
+SymbolFlags.ClassExcludes = wrapped( 'ClassExcludes', (SymbolFlags.Value | SymbolFlags.Type) & ~(SymbolFlags.ValueModule | SymbolFlags.Interface) );
 SymbolFlags[ +SymbolFlags.ClassExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.ClassExcludes.value ] !== 'number' ? named( 'ClassExcludes' ) : SymbolFlags[ +SymbolFlags.ClassExcludes.value ];
-SymbolFlags.InterfaceExcludes = wrapped( 'InterfaceExcludes', SymbolFlags.Type & ~( SymbolFlags.Interface | SymbolFlags.Class ) );
+SymbolFlags.InterfaceExcludes = wrapped( 'InterfaceExcludes', SymbolFlags.Type & ~(SymbolFlags.Interface | SymbolFlags.Class) );
 SymbolFlags[ +SymbolFlags.InterfaceExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.InterfaceExcludes.value ] !== 'number' ? named( 'InterfaceExcludes' ) : SymbolFlags[ +SymbolFlags.InterfaceExcludes.value ];
-SymbolFlags.RegularEnumExcludes = wrapped( 'RegularEnumExcludes', ( SymbolFlags.Value | SymbolFlags.Type ) & ~( SymbolFlags.RegularEnum | SymbolFlags.ValueModule ) );
+SymbolFlags.RegularEnumExcludes = wrapped( 'RegularEnumExcludes', (SymbolFlags.Value | SymbolFlags.Type) & ~(SymbolFlags.RegularEnum | SymbolFlags.ValueModule) );
 SymbolFlags[ +SymbolFlags.RegularEnumExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.RegularEnumExcludes.value ] !== 'number' ? named( 'RegularEnumExcludes' ) : SymbolFlags[ +SymbolFlags.RegularEnumExcludes.value ];
-SymbolFlags.ConstEnumExcludes = wrapped( 'ConstEnumExcludes', ( SymbolFlags.Value | SymbolFlags.Type ) & ~SymbolFlags.ConstEnum );
+SymbolFlags.ConstEnumExcludes = wrapped( 'ConstEnumExcludes', (SymbolFlags.Value | SymbolFlags.Type) & ~SymbolFlags.ConstEnum );
 SymbolFlags[ +SymbolFlags.ConstEnumExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.ConstEnumExcludes.value ] !== 'number' ? named( 'ConstEnumExcludes' ) : SymbolFlags[ +SymbolFlags.ConstEnumExcludes.value ];
-SymbolFlags.ValueModuleExcludes = wrapped( 'ValueModuleExcludes', SymbolFlags.Value & ~( SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.RegularEnum | SymbolFlags.ValueModule ) );
+SymbolFlags.ValueModuleExcludes = wrapped( 'ValueModuleExcludes', SymbolFlags.Value & ~(SymbolFlags.Function | SymbolFlags.Class | SymbolFlags.RegularEnum | SymbolFlags.ValueModule) );
 SymbolFlags[ +SymbolFlags.ValueModuleExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.ValueModuleExcludes.value ] !== 'number' ? named( 'ValueModuleExcludes' ) : SymbolFlags[ +SymbolFlags.ValueModuleExcludes.value ];
 SymbolFlags.NamespaceModuleExcludes = wrapped( 'NamespaceModuleExcludes', 0 );
 SymbolFlags[ +SymbolFlags.NamespaceModuleExcludes.value ] = typeof SymbolFlags[ +SymbolFlags.NamespaceModuleExcludes.value ] !== 'number' ? named( 'NamespaceModuleExcludes' ) : SymbolFlags[ +SymbolFlags.NamespaceModuleExcludes.value ];
@@ -610,25 +1218,32 @@ SymbolFlags[ +SymbolFlags.Classifiable.value ] = typeof SymbolFlags[ +SymbolFlag
 SymbolFlags.LateBindingContainer = wrapped( 'LateBindingContainer', SymbolFlags.Class | SymbolFlags.Interface | SymbolFlags.TypeLiteral | SymbolFlags.ObjectLiteral );
 SymbolFlags[ +SymbolFlags.LateBindingContainer.value ] = typeof SymbolFlags[ +SymbolFlags.LateBindingContainer.value ] !== 'number' ? named( 'LateBindingContainer' ) : SymbolFlags[ +SymbolFlags.LateBindingContainer.value ];
 
+let tmp;
 SymbolFlags = Object.create( tmp = templ(), SymbolFlags );
-tmp.asString = asString( SymbolFlags );
+Object.getPrototypeOf( SymbolFlags ).asString = asString( SymbolFlags );
+tmp.create = val => {
+    const c = Object.create( tmp, SymbolFlags );
+    c[ VALUE ] = +val;
+    return c;
+};
+
 
 /** *********************************************************************************************************************
  * @enum
  * @name EnumKind
  ************************************************************************************************************************/
-let EnumKind = {};
+let EnumKind = {}; // Object.create( ( () => new ( function EnumKind() {} )() )(), {} );
 EnumKind.Numeric = wrapped( 'Numeric', 1 );
 EnumKind[ +EnumKind.Numeric.value ] = typeof EnumKind[ +EnumKind.Numeric.value ] !== 'number' ? named( 'Numeric' ) : EnumKind[ +EnumKind.Numeric.value ];
 
-EnumKind = Object.create( tmp = templ(), EnumKind );
-tmp.asString = asString( EnumKind );
+EnumKind = Object.create( templ(), EnumKind );
+Object.getPrototypeOf( EnumKind ).asString = asString( EnumKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name CheckFlags
  ************************************************************************************************************************/
-let CheckFlags = {};
+let CheckFlags = {}; // Object.create( ( () => new ( function CheckFlags() {} )() )(), {} );
 CheckFlags.Instantiated = wrapped( 'Instantiated', 1 << 0 );
 CheckFlags[ +CheckFlags.Instantiated.value ] = typeof CheckFlags[ +CheckFlags.Instantiated.value ] !== 'number' ? named( 'Instantiated' ) : CheckFlags[ +CheckFlags.Instantiated.value ];
 CheckFlags.SyntheticProperty = wrapped( 'SyntheticProperty', 1 << 1 );
@@ -656,14 +1271,14 @@ CheckFlags[ +CheckFlags.ReverseMapped.value ] = typeof CheckFlags[ +CheckFlags.R
 CheckFlags.Synthetic = wrapped( 'Synthetic', CheckFlags.SyntheticProperty | CheckFlags.SyntheticMethod );
 CheckFlags[ +CheckFlags.Synthetic.value ] = typeof CheckFlags[ +CheckFlags.Synthetic.value ] !== 'number' ? named( 'Synthetic' ) : CheckFlags[ +CheckFlags.Synthetic.value ];
 
-CheckFlags = Object.create( tmp = templ(), CheckFlags );
-tmp.asString = asString( CheckFlags );
+CheckFlags = Object.create( templ(), CheckFlags );
+Object.getPrototypeOf( CheckFlags ).asString = asString( CheckFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name InternalSymbolName
  ************************************************************************************************************************/
-let InternalSymbolName = {};
+let InternalSymbolName = {}; // Object.create( ( () => new ( function InternalSymbolName() {} )() )(), {} );
 InternalSymbolName.Call = wrapped( 'Call', "__call" );
 InternalSymbolName[ +InternalSymbolName.Call.value ] = typeof InternalSymbolName[ +InternalSymbolName.Call.value ] !== 'number' ? named( 'Call' ) : InternalSymbolName[ +InternalSymbolName.Call.value ];
 InternalSymbolName.Constructor = wrapped( 'Constructor', "__constructor" );
@@ -697,14 +1312,14 @@ InternalSymbolName[ +InternalSymbolName.ExportEquals.value ] = typeof InternalSy
 InternalSymbolName.Default = wrapped( 'Default', "default" );
 InternalSymbolName[ +InternalSymbolName.Default.value ] = typeof InternalSymbolName[ +InternalSymbolName.Default.value ] !== 'number' ? named( 'Default' ) : InternalSymbolName[ +InternalSymbolName.Default.value ];
 
-InternalSymbolName = Object.create( tmp = templ(), InternalSymbolName );
-tmp.asString = asString( InternalSymbolName );
+InternalSymbolName = Object.create( templ(), InternalSymbolName );
+Object.getPrototypeOf( InternalSymbolName ).asString = asString( InternalSymbolName );
 
 /** *********************************************************************************************************************
  * @enum
  * @name NodeCheckFlags
  ************************************************************************************************************************/
-let NodeCheckFlags = {};
+let NodeCheckFlags = {}; // Object.create( ( () => new ( function NodeCheckFlags() {} )() )(), {} );
 NodeCheckFlags.TypeChecked = wrapped( 'TypeChecked', 0x00000001 );
 NodeCheckFlags[ +NodeCheckFlags.TypeChecked.value ] = typeof NodeCheckFlags[ +NodeCheckFlags.TypeChecked.value ] !== 'number' ? named( 'TypeChecked' ) : NodeCheckFlags[ +NodeCheckFlags.TypeChecked.value ];
 NodeCheckFlags.LexicalThis = wrapped( 'LexicalThis', 0x00000002 );
@@ -748,14 +1363,14 @@ NodeCheckFlags[ +NodeCheckFlags.ClassWithConstructorReference.value ] = typeof N
 NodeCheckFlags.ConstructorReferenceInClass = wrapped( 'ConstructorReferenceInClass', 0x01000000 );
 NodeCheckFlags[ +NodeCheckFlags.ConstructorReferenceInClass.value ] = typeof NodeCheckFlags[ +NodeCheckFlags.ConstructorReferenceInClass.value ] !== 'number' ? named( 'ConstructorReferenceInClass' ) : NodeCheckFlags[ +NodeCheckFlags.ConstructorReferenceInClass.value ];
 
-NodeCheckFlags = Object.create( tmp = templ(), NodeCheckFlags );
-tmp.asString = asString( NodeCheckFlags );
+NodeCheckFlags = Object.create( templ(), NodeCheckFlags );
+Object.getPrototypeOf( NodeCheckFlags ).asString = asString( NodeCheckFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TypeFlags
  ************************************************************************************************************************/
-let TypeFlags = {};
+let TypeFlags = {}; // Object.create( ( () => new ( function TypeFlags() {} )() )(), {} );
 TypeFlags.Any = wrapped( 'Any', 1 << 0 );
 TypeFlags[ +TypeFlags.Any.value ] = typeof TypeFlags[ +TypeFlags.Any.value ] !== 'number' ? named( 'Any' ) : TypeFlags[ +TypeFlags.Any.value ];
 TypeFlags.String = wrapped( 'String', 1 << 1 );
@@ -798,22 +1413,20 @@ TypeFlags.Index = wrapped( 'Index', 1 << 19 );
 TypeFlags[ +TypeFlags.Index.value ] = typeof TypeFlags[ +TypeFlags.Index.value ] !== 'number' ? named( 'Index' ) : TypeFlags[ +TypeFlags.Index.value ];
 TypeFlags.IndexedAccess = wrapped( 'IndexedAccess', 1 << 20 );
 TypeFlags[ +TypeFlags.IndexedAccess.value ] = typeof TypeFlags[ +TypeFlags.IndexedAccess.value ] !== 'number' ? named( 'IndexedAccess' ) : TypeFlags[ +TypeFlags.IndexedAccess.value ];
-TypeFlags.Conditional = wrapped( 'Conditional', 1 << 21 );
-TypeFlags[ +TypeFlags.Conditional.value ] = typeof TypeFlags[ +TypeFlags.Conditional.value ] !== 'number' ? named( 'Conditional' ) : TypeFlags[ +TypeFlags.Conditional.value ];
-TypeFlags.Substitution = wrapped( 'Substitution', 1 << 22 );
-TypeFlags[ +TypeFlags.Substitution.value ] = typeof TypeFlags[ +TypeFlags.Substitution.value ] !== 'number' ? named( 'Substitution' ) : TypeFlags[ +TypeFlags.Substitution.value ];
-TypeFlags.FreshLiteral = wrapped( 'FreshLiteral', 1 << 23 );
+TypeFlags.FreshLiteral = wrapped( 'FreshLiteral', 1 << 21 );
 TypeFlags[ +TypeFlags.FreshLiteral.value ] = typeof TypeFlags[ +TypeFlags.FreshLiteral.value ] !== 'number' ? named( 'FreshLiteral' ) : TypeFlags[ +TypeFlags.FreshLiteral.value ];
-TypeFlags.ContainsWideningType = wrapped( 'ContainsWideningType', 1 << 24 );
+TypeFlags.ContainsWideningType = wrapped( 'ContainsWideningType', 1 << 22 );
 TypeFlags[ +TypeFlags.ContainsWideningType.value ] = typeof TypeFlags[ +TypeFlags.ContainsWideningType.value ] !== 'number' ? named( 'ContainsWideningType' ) : TypeFlags[ +TypeFlags.ContainsWideningType.value ];
-TypeFlags.ContainsObjectLiteral = wrapped( 'ContainsObjectLiteral', 1 << 25 );
+TypeFlags.ContainsObjectLiteral = wrapped( 'ContainsObjectLiteral', 1 << 23 );
 TypeFlags[ +TypeFlags.ContainsObjectLiteral.value ] = typeof TypeFlags[ +TypeFlags.ContainsObjectLiteral.value ] !== 'number' ? named( 'ContainsObjectLiteral' ) : TypeFlags[ +TypeFlags.ContainsObjectLiteral.value ];
-TypeFlags.ContainsAnyFunctionType = wrapped( 'ContainsAnyFunctionType', 1 << 26 );
+TypeFlags.ContainsAnyFunctionType = wrapped( 'ContainsAnyFunctionType', 1 << 24 );
 TypeFlags[ +TypeFlags.ContainsAnyFunctionType.value ] = typeof TypeFlags[ +TypeFlags.ContainsAnyFunctionType.value ] !== 'number' ? named( 'ContainsAnyFunctionType' ) : TypeFlags[ +TypeFlags.ContainsAnyFunctionType.value ];
-TypeFlags.NonPrimitive = wrapped( 'NonPrimitive', 1 << 27 );
+TypeFlags.NonPrimitive = wrapped( 'NonPrimitive', 1 << 25 );
 TypeFlags[ +TypeFlags.NonPrimitive.value ] = typeof TypeFlags[ +TypeFlags.NonPrimitive.value ] !== 'number' ? named( 'NonPrimitive' ) : TypeFlags[ +TypeFlags.NonPrimitive.value ];
-TypeFlags.GenericMappedType = wrapped( 'GenericMappedType', 1 << 29 );
-TypeFlags[ +TypeFlags.GenericMappedType.value ] = typeof TypeFlags[ +TypeFlags.GenericMappedType.value ] !== 'number' ? named( 'GenericMappedType' ) : TypeFlags[ +TypeFlags.GenericMappedType.value ];
+TypeFlags.JsxAttributes = wrapped( 'JsxAttributes', 1 << 26 );
+TypeFlags[ +TypeFlags.JsxAttributes.value ] = typeof TypeFlags[ +TypeFlags.JsxAttributes.value ] !== 'number' ? named( 'JsxAttributes' ) : TypeFlags[ +TypeFlags.JsxAttributes.value ];
+TypeFlags.MarkerType = wrapped( 'MarkerType', 1 << 27 );
+TypeFlags[ +TypeFlags.MarkerType.value ] = typeof TypeFlags[ +TypeFlags.MarkerType.value ] !== 'number' ? named( 'MarkerType' ) : TypeFlags[ +TypeFlags.MarkerType.value ];
 TypeFlags.Nullable = wrapped( 'Nullable', TypeFlags.Undefined | TypeFlags.Null );
 TypeFlags[ +TypeFlags.Nullable.value ] = typeof TypeFlags[ +TypeFlags.Nullable.value ] !== 'number' ? named( 'Nullable' ) : TypeFlags[ +TypeFlags.Nullable.value ];
 TypeFlags.Literal = wrapped( 'Literal', TypeFlags.StringLiteral | TypeFlags.NumberLiteral | TypeFlags.BooleanLiteral );
@@ -846,17 +1459,11 @@ TypeFlags.UnionOrIntersection = wrapped( 'UnionOrIntersection', TypeFlags.Union 
 TypeFlags[ +TypeFlags.UnionOrIntersection.value ] = typeof TypeFlags[ +TypeFlags.UnionOrIntersection.value ] !== 'number' ? named( 'UnionOrIntersection' ) : TypeFlags[ +TypeFlags.UnionOrIntersection.value ];
 TypeFlags.StructuredType = wrapped( 'StructuredType', TypeFlags.Object | TypeFlags.Union | TypeFlags.Intersection );
 TypeFlags[ +TypeFlags.StructuredType.value ] = typeof TypeFlags[ +TypeFlags.StructuredType.value ] !== 'number' ? named( 'StructuredType' ) : TypeFlags[ +TypeFlags.StructuredType.value ];
+TypeFlags.StructuredOrTypeVariable = wrapped( 'StructuredOrTypeVariable', TypeFlags.StructuredType | TypeFlags.TypeParameter | TypeFlags.Index | TypeFlags.IndexedAccess );
+TypeFlags[ +TypeFlags.StructuredOrTypeVariable.value ] = typeof TypeFlags[ +TypeFlags.StructuredOrTypeVariable.value ] !== 'number' ? named( 'StructuredOrTypeVariable' ) : TypeFlags[ +TypeFlags.StructuredOrTypeVariable.value ];
 TypeFlags.TypeVariable = wrapped( 'TypeVariable', TypeFlags.TypeParameter | TypeFlags.IndexedAccess );
 TypeFlags[ +TypeFlags.TypeVariable.value ] = typeof TypeFlags[ +TypeFlags.TypeVariable.value ] !== 'number' ? named( 'TypeVariable' ) : TypeFlags[ +TypeFlags.TypeVariable.value ];
-TypeFlags.InstantiableNonPrimitive = wrapped( 'InstantiableNonPrimitive', TypeFlags.TypeVariable | TypeFlags.Conditional | TypeFlags.Substitution );
-TypeFlags[ +TypeFlags.InstantiableNonPrimitive.value ] = typeof TypeFlags[ +TypeFlags.InstantiableNonPrimitive.value ] !== 'number' ? named( 'InstantiableNonPrimitive' ) : TypeFlags[ +TypeFlags.InstantiableNonPrimitive.value ];
-TypeFlags.InstantiablePrimitive = wrapped( 'InstantiablePrimitive', +TypeFlags.Index );
-TypeFlags[ +TypeFlags.InstantiablePrimitive.value ] = typeof TypeFlags[ +TypeFlags.InstantiablePrimitive.value ] !== 'number' ? named( 'InstantiablePrimitive' ) : TypeFlags[ +TypeFlags.InstantiablePrimitive.value ];
-TypeFlags.Instantiable = wrapped( 'Instantiable', TypeFlags.InstantiableNonPrimitive | TypeFlags.InstantiablePrimitive );
-TypeFlags[ +TypeFlags.Instantiable.value ] = typeof TypeFlags[ +TypeFlags.Instantiable.value ] !== 'number' ? named( 'Instantiable' ) : TypeFlags[ +TypeFlags.Instantiable.value ];
-TypeFlags.StructuredOrInstantiable = wrapped( 'StructuredOrInstantiable', TypeFlags.StructuredType | TypeFlags.Instantiable );
-TypeFlags[ +TypeFlags.StructuredOrInstantiable.value ] = typeof TypeFlags[ +TypeFlags.StructuredOrInstantiable.value ] !== 'number' ? named( 'StructuredOrInstantiable' ) : TypeFlags[ +TypeFlags.StructuredOrInstantiable.value ];
-TypeFlags.Narrowable = wrapped( 'Narrowable', TypeFlags.Any | TypeFlags.StructuredOrInstantiable | TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.BooleanLike | TypeFlags.ESSymbol | TypeFlags.UniqueESSymbol | TypeFlags.NonPrimitive );
+TypeFlags.Narrowable = wrapped( 'Narrowable', TypeFlags.Any | TypeFlags.StructuredType | TypeFlags.TypeParameter | TypeFlags.Index | TypeFlags.IndexedAccess | TypeFlags.StringLike | TypeFlags.NumberLike | TypeFlags.BooleanLike | TypeFlags.ESSymbol | TypeFlags.UniqueESSymbol | TypeFlags.NonPrimitive );
 TypeFlags[ +TypeFlags.Narrowable.value ] = typeof TypeFlags[ +TypeFlags.Narrowable.value ] !== 'number' ? named( 'Narrowable' ) : TypeFlags[ +TypeFlags.Narrowable.value ];
 TypeFlags.NotUnionOrUnit = wrapped( 'NotUnionOrUnit', TypeFlags.Any | TypeFlags.ESSymbol | TypeFlags.Object | TypeFlags.NonPrimitive );
 TypeFlags[ +TypeFlags.NotUnionOrUnit.value ] = typeof TypeFlags[ +TypeFlags.NotUnionOrUnit.value ] !== 'number' ? named( 'NotUnionOrUnit' ) : TypeFlags[ +TypeFlags.NotUnionOrUnit.value ];
@@ -865,14 +1472,14 @@ TypeFlags[ +TypeFlags.RequiresWidening.value ] = typeof TypeFlags[ +TypeFlags.Re
 TypeFlags.PropagatingFlags = wrapped( 'PropagatingFlags', TypeFlags.ContainsWideningType | TypeFlags.ContainsObjectLiteral | TypeFlags.ContainsAnyFunctionType );
 TypeFlags[ +TypeFlags.PropagatingFlags.value ] = typeof TypeFlags[ +TypeFlags.PropagatingFlags.value ] !== 'number' ? named( 'PropagatingFlags' ) : TypeFlags[ +TypeFlags.PropagatingFlags.value ];
 
-TypeFlags = Object.create( tmp = templ(), TypeFlags );
-tmp.asString = asString( TypeFlags );
+TypeFlags = Object.create( templ(), TypeFlags );
+Object.getPrototypeOf( TypeFlags ).asString = asString( TypeFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ObjectFlags
  ************************************************************************************************************************/
-let ObjectFlags = {};
+let ObjectFlags = {}; // Object.create( ( () => new ( function ObjectFlags() {} )() )(), {} );
 ObjectFlags.Class = wrapped( 'Class', 1 << 0 );
 ObjectFlags[ +ObjectFlags.Class.value ] = typeof ObjectFlags[ +ObjectFlags.Class.value ] !== 'number' ? named( 'Class' ) : ObjectFlags[ +ObjectFlags.Class.value ];
 ObjectFlags.Interface = wrapped( 'Interface', 1 << 1 );
@@ -897,21 +1504,17 @@ ObjectFlags.ContainsSpread = wrapped( 'ContainsSpread', 1 << 10 );
 ObjectFlags[ +ObjectFlags.ContainsSpread.value ] = typeof ObjectFlags[ +ObjectFlags.ContainsSpread.value ] !== 'number' ? named( 'ContainsSpread' ) : ObjectFlags[ +ObjectFlags.ContainsSpread.value ];
 ObjectFlags.ReverseMapped = wrapped( 'ReverseMapped', 1 << 11 );
 ObjectFlags[ +ObjectFlags.ReverseMapped.value ] = typeof ObjectFlags[ +ObjectFlags.ReverseMapped.value ] !== 'number' ? named( 'ReverseMapped' ) : ObjectFlags[ +ObjectFlags.ReverseMapped.value ];
-ObjectFlags.JsxAttributes = wrapped( 'JsxAttributes', 1 << 12 );
-ObjectFlags[ +ObjectFlags.JsxAttributes.value ] = typeof ObjectFlags[ +ObjectFlags.JsxAttributes.value ] !== 'number' ? named( 'JsxAttributes' ) : ObjectFlags[ +ObjectFlags.JsxAttributes.value ];
-ObjectFlags.MarkerType = wrapped( 'MarkerType', 1 << 13 );
-ObjectFlags[ +ObjectFlags.MarkerType.value ] = typeof ObjectFlags[ +ObjectFlags.MarkerType.value ] !== 'number' ? named( 'MarkerType' ) : ObjectFlags[ +ObjectFlags.MarkerType.value ];
 ObjectFlags.ClassOrInterface = wrapped( 'ClassOrInterface', ObjectFlags.Class | ObjectFlags.Interface );
 ObjectFlags[ +ObjectFlags.ClassOrInterface.value ] = typeof ObjectFlags[ +ObjectFlags.ClassOrInterface.value ] !== 'number' ? named( 'ClassOrInterface' ) : ObjectFlags[ +ObjectFlags.ClassOrInterface.value ];
 
-ObjectFlags = Object.create( tmp = templ(), ObjectFlags );
-tmp.asString = asString( ObjectFlags );
+ObjectFlags = Object.create( templ(), ObjectFlags );
+Object.getPrototypeOf( ObjectFlags ).asString = asString( ObjectFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Variance
  ************************************************************************************************************************/
-let Variance = {};
+let Variance = {}; // Object.create( ( () => new ( function Variance() {} )() )(), {} );
 Variance.Invariant = wrapped( 'Invariant', 0 );
 Variance[ +Variance.Invariant.value ] = typeof Variance[ +Variance.Invariant.value ] !== 'number' ? named( 'Invariant' ) : Variance[ +Variance.Invariant.value ];
 Variance.Covariant = wrapped( 'Covariant', 1 );
@@ -923,65 +1526,59 @@ Variance[ +Variance.Bivariant.value ] = typeof Variance[ +Variance.Bivariant.val
 Variance.Independent = wrapped( 'Independent', 4 );
 Variance[ +Variance.Independent.value ] = typeof Variance[ +Variance.Independent.value ] !== 'number' ? named( 'Independent' ) : Variance[ +Variance.Independent.value ];
 
-Variance = Object.create( tmp = templ(), Variance );
-tmp.asString = asString( Variance );
+Variance = Object.create( templ(), Variance );
+Object.getPrototypeOf( Variance ).asString = asString( Variance );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SignatureKind
  ************************************************************************************************************************/
-let SignatureKind = {};
+let SignatureKind = {}; // Object.create( ( () => new ( function SignatureKind() {} )() )(), {} );
 SignatureKind.Call = wrapped( 'Call', 1 );
 SignatureKind[ +SignatureKind.Call.value ] = typeof SignatureKind[ +SignatureKind.Call.value ] !== 'number' ? named( 'Call' ) : SignatureKind[ +SignatureKind.Call.value ];
 SignatureKind.Construct = wrapped( 'Construct', 2 );
 SignatureKind[ +SignatureKind.Construct.value ] = typeof SignatureKind[ +SignatureKind.Construct.value ] !== 'number' ? named( 'Construct' ) : SignatureKind[ +SignatureKind.Construct.value ];
 
-SignatureKind = Object.create( tmp = templ(), SignatureKind );
-tmp.asString = asString( SignatureKind );
+SignatureKind = Object.create( templ(), SignatureKind );
+Object.getPrototypeOf( SignatureKind ).asString = asString( SignatureKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name IndexKind
  ************************************************************************************************************************/
-let IndexKind = {};
+let IndexKind = {}; // Object.create( ( () => new ( function IndexKind() {} )() )(), {} );
 IndexKind.String = wrapped( 'String', 1 );
 IndexKind[ +IndexKind.String.value ] = typeof IndexKind[ +IndexKind.String.value ] !== 'number' ? named( 'String' ) : IndexKind[ +IndexKind.String.value ];
 IndexKind.Number = wrapped( 'Number', 2 );
 IndexKind[ +IndexKind.Number.value ] = typeof IndexKind[ +IndexKind.Number.value ] !== 'number' ? named( 'Number' ) : IndexKind[ +IndexKind.Number.value ];
 
-IndexKind = Object.create( tmp = templ(), IndexKind );
-tmp.asString = asString( IndexKind );
+IndexKind = Object.create( templ(), IndexKind );
+Object.getPrototypeOf( IndexKind ).asString = asString( IndexKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name InferencePriority
  ************************************************************************************************************************/
-let InferencePriority = {};
-InferencePriority.NakedTypeVariable = wrapped( 'NakedTypeVariable', 1 << 0 );
+let InferencePriority = {}; // Object.create( ( () => new ( function InferencePriority() {} )() )(), {} );
+InferencePriority.Contravariant = wrapped( 'Contravariant', 1 << 0 );
+InferencePriority[ +InferencePriority.Contravariant.value ] = typeof InferencePriority[ +InferencePriority.Contravariant.value ] !== 'number' ? named( 'Contravariant' ) : InferencePriority[ +InferencePriority.Contravariant.value ];
+InferencePriority.NakedTypeVariable = wrapped( 'NakedTypeVariable', 1 << 1 );
 InferencePriority[ +InferencePriority.NakedTypeVariable.value ] = typeof InferencePriority[ +InferencePriority.NakedTypeVariable.value ] !== 'number' ? named( 'NakedTypeVariable' ) : InferencePriority[ +InferencePriority.NakedTypeVariable.value ];
-InferencePriority.HomomorphicMappedType = wrapped( 'HomomorphicMappedType', 1 << 1 );
-InferencePriority[ +InferencePriority.HomomorphicMappedType.value ] = typeof InferencePriority[ +InferencePriority.HomomorphicMappedType.value ] !== 'number' ? named( 'HomomorphicMappedType' ) : InferencePriority[ +InferencePriority.HomomorphicMappedType.value ];
-InferencePriority.MappedTypeConstraint = wrapped( 'MappedTypeConstraint', 1 << 2 );
-InferencePriority[ +InferencePriority.MappedTypeConstraint.value ] = typeof InferencePriority[ +InferencePriority.MappedTypeConstraint.value ] !== 'number' ? named( 'MappedTypeConstraint' ) : InferencePriority[ +InferencePriority.MappedTypeConstraint.value ];
+InferencePriority.MappedType = wrapped( 'MappedType', 1 << 2 );
+InferencePriority[ +InferencePriority.MappedType.value ] = typeof InferencePriority[ +InferencePriority.MappedType.value ] !== 'number' ? named( 'MappedType' ) : InferencePriority[ +InferencePriority.MappedType.value ];
 InferencePriority.ReturnType = wrapped( 'ReturnType', 1 << 3 );
 InferencePriority[ +InferencePriority.ReturnType.value ] = typeof InferencePriority[ +InferencePriority.ReturnType.value ] !== 'number' ? named( 'ReturnType' ) : InferencePriority[ +InferencePriority.ReturnType.value ];
-InferencePriority.NoConstraints = wrapped( 'NoConstraints', 1 << 4 );
-InferencePriority[ +InferencePriority.NoConstraints.value ] = typeof InferencePriority[ +InferencePriority.NoConstraints.value ] !== 'number' ? named( 'NoConstraints' ) : InferencePriority[ +InferencePriority.NoConstraints.value ];
-InferencePriority.AlwaysStrict = wrapped( 'AlwaysStrict', 1 << 5 );
-InferencePriority[ +InferencePriority.AlwaysStrict.value ] = typeof InferencePriority[ +InferencePriority.AlwaysStrict.value ] !== 'number' ? named( 'AlwaysStrict' ) : InferencePriority[ +InferencePriority.AlwaysStrict.value ];
-InferencePriority.PriorityImpliesUnion = wrapped( 'PriorityImpliesUnion', InferencePriority.ReturnType | InferencePriority.MappedTypeConstraint );
-InferencePriority[ +InferencePriority.PriorityImpliesUnion.value ] = typeof InferencePriority[ +InferencePriority.PriorityImpliesUnion.value ] !== 'number' ? named( 'PriorityImpliesUnion' ) : InferencePriority[ +InferencePriority.PriorityImpliesUnion.value ];
+InferencePriority.NeverType = wrapped( 'NeverType', 1 << 4 );
+InferencePriority[ +InferencePriority.NeverType.value ] = typeof InferencePriority[ +InferencePriority.NeverType.value ] !== 'number' ? named( 'NeverType' ) : InferencePriority[ +InferencePriority.NeverType.value ];
 
-InferencePriority = Object.create( tmp = templ(), InferencePriority );
-tmp.asString = asString( InferencePriority );
+InferencePriority = Object.create( templ(), InferencePriority );
+Object.getPrototypeOf( InferencePriority ).asString = asString( InferencePriority );
 
 /** *********************************************************************************************************************
  * @enum
  * @name InferenceFlags
  ************************************************************************************************************************/
-let InferenceFlags = {};
-InferenceFlags.None = wrapped( 'None', 0 );
-InferenceFlags[ +InferenceFlags.None.value ] = typeof InferenceFlags[ +InferenceFlags.None.value ] !== 'number' ? named( 'None' ) : InferenceFlags[ +InferenceFlags.None.value ];
+let InferenceFlags = {}; // Object.create( ( () => new ( function InferenceFlags() {} )() )(), {} );
 InferenceFlags.InferUnionTypes = wrapped( 'InferUnionTypes', 1 << 0 );
 InferenceFlags[ +InferenceFlags.InferUnionTypes.value ] = typeof InferenceFlags[ +InferenceFlags.InferUnionTypes.value ] !== 'number' ? named( 'InferUnionTypes' ) : InferenceFlags[ +InferenceFlags.InferUnionTypes.value ];
 InferenceFlags.NoDefault = wrapped( 'NoDefault', 1 << 1 );
@@ -989,14 +1586,14 @@ InferenceFlags[ +InferenceFlags.NoDefault.value ] = typeof InferenceFlags[ +Infe
 InferenceFlags.AnyDefault = wrapped( 'AnyDefault', 1 << 2 );
 InferenceFlags[ +InferenceFlags.AnyDefault.value ] = typeof InferenceFlags[ +InferenceFlags.AnyDefault.value ] !== 'number' ? named( 'AnyDefault' ) : InferenceFlags[ +InferenceFlags.AnyDefault.value ];
 
-InferenceFlags = Object.create( tmp = templ(), InferenceFlags );
-tmp.asString = asString( InferenceFlags );
+InferenceFlags = Object.create( templ(), InferenceFlags );
+Object.getPrototypeOf( InferenceFlags ).asString = asString( InferenceFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Ternary
  ************************************************************************************************************************/
-let Ternary = {};
+let Ternary = {}; // Object.create( ( () => new ( function Ternary() {} )() )(), {} );
 Ternary.False = wrapped( 'False', 0 );
 Ternary[ +Ternary.False.value ] = typeof Ternary[ +Ternary.False.value ] !== 'number' ? named( 'False' ) : Ternary[ +Ternary.False.value ];
 Ternary.Maybe = wrapped( 'Maybe', 1 );
@@ -1004,14 +1601,14 @@ Ternary[ +Ternary.Maybe.value ] = typeof Ternary[ +Ternary.Maybe.value ] !== 'nu
 Ternary.True = wrapped( 'True', -1 );
 Ternary[ +Ternary.True.value ] = typeof Ternary[ +Ternary.True.value ] !== 'number' ? named( 'True' ) : Ternary[ +Ternary.True.value ];
 
-Ternary = Object.create( tmp = templ(), Ternary );
-tmp.asString = asString( Ternary );
+Ternary = Object.create( templ(), Ternary );
+Object.getPrototypeOf( Ternary ).asString = asString( Ternary );
 
 /** *********************************************************************************************************************
  * @enum
  * @name SpecialPropertyAssignmentKind
  ************************************************************************************************************************/
-let SpecialPropertyAssignmentKind = {};
+let SpecialPropertyAssignmentKind = {}; // Object.create( ( () => new ( function SpecialPropertyAssignmentKind() {} )() )(), {} );
 SpecialPropertyAssignmentKind.None = wrapped( 'None', 1 );
 SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.None.value ] = typeof SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.None.value ] !== 'number' ? named( 'None' ) : SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.None.value ];
 SpecialPropertyAssignmentKind.ExportsProperty = wrapped( 'ExportsProperty', 2 );
@@ -1025,14 +1622,14 @@ SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.ThisProperty.value
 SpecialPropertyAssignmentKind.Property = wrapped( 'Property', 6 );
 SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.Property.value ] = typeof SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.Property.value ] !== 'number' ? named( 'Property' ) : SpecialPropertyAssignmentKind[ +SpecialPropertyAssignmentKind.Property.value ];
 
-SpecialPropertyAssignmentKind = Object.create( tmp = templ(), SpecialPropertyAssignmentKind );
-tmp.asString = asString( SpecialPropertyAssignmentKind );
+SpecialPropertyAssignmentKind = Object.create( templ(), SpecialPropertyAssignmentKind );
+Object.getPrototypeOf( SpecialPropertyAssignmentKind ).asString = asString( SpecialPropertyAssignmentKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name JsxEmit
  ************************************************************************************************************************/
-let JsxEmit = {};
+let JsxEmit = {}; // Object.create( ( () => new ( function JsxEmit() {} )() )(), {} );
 JsxEmit.None = wrapped( 'None', 0 );
 JsxEmit[ +JsxEmit.None.value ] = typeof JsxEmit[ +JsxEmit.None.value ] !== 'number' ? named( 'None' ) : JsxEmit[ +JsxEmit.None.value ];
 JsxEmit.Preserve = wrapped( 'Preserve', 1 );
@@ -1042,27 +1639,27 @@ JsxEmit[ +JsxEmit.React.value ] = typeof JsxEmit[ +JsxEmit.React.value ] !== 'nu
 JsxEmit.ReactNative = wrapped( 'ReactNative', 3 );
 JsxEmit[ +JsxEmit.ReactNative.value ] = typeof JsxEmit[ +JsxEmit.ReactNative.value ] !== 'number' ? named( 'ReactNative' ) : JsxEmit[ +JsxEmit.ReactNative.value ];
 
-JsxEmit = Object.create( tmp = templ(), JsxEmit );
-tmp.asString = asString( JsxEmit );
+JsxEmit = Object.create( templ(), JsxEmit );
+Object.getPrototypeOf( JsxEmit ).asString = asString( JsxEmit );
 
 /** *********************************************************************************************************************
  * @enum
  * @name NewLineKind
  ************************************************************************************************************************/
-let NewLineKind = {};
+let NewLineKind = {}; // Object.create( ( () => new ( function NewLineKind() {} )() )(), {} );
 NewLineKind.CarriageReturnLineFeed = wrapped( 'CarriageReturnLineFeed', 0 );
 NewLineKind[ +NewLineKind.CarriageReturnLineFeed.value ] = typeof NewLineKind[ +NewLineKind.CarriageReturnLineFeed.value ] !== 'number' ? named( 'CarriageReturnLineFeed' ) : NewLineKind[ +NewLineKind.CarriageReturnLineFeed.value ];
 NewLineKind.LineFeed = wrapped( 'LineFeed', 1 );
 NewLineKind[ +NewLineKind.LineFeed.value ] = typeof NewLineKind[ +NewLineKind.LineFeed.value ] !== 'number' ? named( 'LineFeed' ) : NewLineKind[ +NewLineKind.LineFeed.value ];
 
-NewLineKind = Object.create( tmp = templ(), NewLineKind );
-tmp.asString = asString( NewLineKind );
+NewLineKind = Object.create( templ(), NewLineKind );
+Object.getPrototypeOf( NewLineKind ).asString = asString( NewLineKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ScriptKind
  ************************************************************************************************************************/
-let ScriptKind = {};
+let ScriptKind = {}; // Object.create( ( () => new ( function ScriptKind() {} )() )(), {} );
 ScriptKind.Unknown = wrapped( 'Unknown', 0 );
 ScriptKind[ +ScriptKind.Unknown.value ] = typeof ScriptKind[ +ScriptKind.Unknown.value ] !== 'number' ? named( 'Unknown' ) : ScriptKind[ +ScriptKind.Unknown.value ];
 ScriptKind.JS = wrapped( 'JS', 1 );
@@ -1078,14 +1675,14 @@ ScriptKind[ +ScriptKind.External.value ] = typeof ScriptKind[ +ScriptKind.Extern
 ScriptKind.JSON = wrapped( 'JSON', 6 );
 ScriptKind[ +ScriptKind.JSON.value ] = typeof ScriptKind[ +ScriptKind.JSON.value ] !== 'number' ? named( 'JSON' ) : ScriptKind[ +ScriptKind.JSON.value ];
 
-ScriptKind = Object.create( tmp = templ(), ScriptKind );
-tmp.asString = asString( ScriptKind );
+ScriptKind = Object.create( templ(), ScriptKind );
+Object.getPrototypeOf( ScriptKind ).asString = asString( ScriptKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ScriptTarget
  ************************************************************************************************************************/
-let ScriptTarget = {};
+let ScriptTarget = {}; // Object.create( ( () => new ( function ScriptTarget() {} )() )(), {} );
 ScriptTarget.ES3 = wrapped( 'ES3', 0 );
 ScriptTarget[ +ScriptTarget.ES3.value ] = typeof ScriptTarget[ +ScriptTarget.ES3.value ] !== 'number' ? named( 'ES3' ) : ScriptTarget[ +ScriptTarget.ES3.value ];
 ScriptTarget.ES5 = wrapped( 'ES5', 1 );
@@ -1103,53 +1700,256 @@ ScriptTarget[ +ScriptTarget.ESNext.value ] = typeof ScriptTarget[ +ScriptTarget.
 ScriptTarget.Latest = wrapped( 'Latest', +ScriptTarget.ESNext );
 ScriptTarget[ +ScriptTarget.Latest.value ] = typeof ScriptTarget[ +ScriptTarget.Latest.value ] !== 'number' ? named( 'Latest' ) : ScriptTarget[ +ScriptTarget.Latest.value ];
 
-ScriptTarget = Object.create( tmp = templ(), ScriptTarget );
-tmp.asString = asString( ScriptTarget );
+ScriptTarget = Object.create( templ(), ScriptTarget );
+Object.getPrototypeOf( ScriptTarget ).asString = asString( ScriptTarget );
 
 /** *********************************************************************************************************************
  * @enum
  * @name LanguageVariant
  ************************************************************************************************************************/
-let LanguageVariant = {};
+let LanguageVariant = {}; // Object.create( ( () => new ( function LanguageVariant() {} )() )(), {} );
 LanguageVariant.Standard = wrapped( 'Standard', 1 );
 LanguageVariant[ +LanguageVariant.Standard.value ] = typeof LanguageVariant[ +LanguageVariant.Standard.value ] !== 'number' ? named( 'Standard' ) : LanguageVariant[ +LanguageVariant.Standard.value ];
 LanguageVariant.JSX = wrapped( 'JSX', 2 );
 LanguageVariant[ +LanguageVariant.JSX.value ] = typeof LanguageVariant[ +LanguageVariant.JSX.value ] !== 'number' ? named( 'JSX' ) : LanguageVariant[ +LanguageVariant.JSX.value ];
 
-LanguageVariant = Object.create( tmp = templ(), LanguageVariant );
-tmp.asString = asString( LanguageVariant );
+LanguageVariant = Object.create( templ(), LanguageVariant );
+Object.getPrototypeOf( LanguageVariant ).asString = asString( LanguageVariant );
 
 /** *********************************************************************************************************************
  * @enum
  * @name DiagnosticStyle
  ************************************************************************************************************************/
-let DiagnosticStyle = {};
+let DiagnosticStyle = {}; // Object.create( ( () => new ( function DiagnosticStyle() {} )() )(), {} );
 DiagnosticStyle.Simple = wrapped( 'Simple', 1 );
 DiagnosticStyle[ +DiagnosticStyle.Simple.value ] = typeof DiagnosticStyle[ +DiagnosticStyle.Simple.value ] !== 'number' ? named( 'Simple' ) : DiagnosticStyle[ +DiagnosticStyle.Simple.value ];
 DiagnosticStyle.Pretty = wrapped( 'Pretty', 2 );
 DiagnosticStyle[ +DiagnosticStyle.Pretty.value ] = typeof DiagnosticStyle[ +DiagnosticStyle.Pretty.value ] !== 'number' ? named( 'Pretty' ) : DiagnosticStyle[ +DiagnosticStyle.Pretty.value ];
 
-DiagnosticStyle = Object.create( tmp = templ(), DiagnosticStyle );
-tmp.asString = asString( DiagnosticStyle );
+DiagnosticStyle = Object.create( templ(), DiagnosticStyle );
+Object.getPrototypeOf( DiagnosticStyle ).asString = asString( DiagnosticStyle );
 
 /** *********************************************************************************************************************
  * @enum
  * @name WatchDirectoryFlags
  ************************************************************************************************************************/
-let WatchDirectoryFlags = {};
+let WatchDirectoryFlags = {}; // Object.create( ( () => new ( function WatchDirectoryFlags() {} )() )(), {} );
 WatchDirectoryFlags.None = wrapped( 'None', 0 );
 WatchDirectoryFlags[ +WatchDirectoryFlags.None.value ] = typeof WatchDirectoryFlags[ +WatchDirectoryFlags.None.value ] !== 'number' ? named( 'None' ) : WatchDirectoryFlags[ +WatchDirectoryFlags.None.value ];
 WatchDirectoryFlags.Recursive = wrapped( 'Recursive', 1 << 0 );
 WatchDirectoryFlags[ +WatchDirectoryFlags.Recursive.value ] = typeof WatchDirectoryFlags[ +WatchDirectoryFlags.Recursive.value ] !== 'number' ? named( 'Recursive' ) : WatchDirectoryFlags[ +WatchDirectoryFlags.Recursive.value ];
 
-WatchDirectoryFlags = Object.create( tmp = templ(), WatchDirectoryFlags );
-tmp.asString = asString( WatchDirectoryFlags );
+WatchDirectoryFlags = Object.create( templ(), WatchDirectoryFlags );
+Object.getPrototypeOf( WatchDirectoryFlags ).asString = asString( WatchDirectoryFlags );
+
+/** *********************************************************************************************************************
+ * @enum
+ * @name CharacterCodes
+ ************************************************************************************************************************/
+let CharacterCodes = {}; // Object.create( ( () => new ( function CharacterCodes() {} )() )(), {} );
+CharacterCodes.nullCharacter = wrapped( 'nullCharacter', 0 );
+CharacterCodes[ +CharacterCodes.nullCharacter.value ] = typeof CharacterCodes[ +CharacterCodes.nullCharacter.value ] !== 'number' ? named( 'nullCharacter' ) : CharacterCodes[ +CharacterCodes.nullCharacter.value ];
+CharacterCodes.maxAsciiCharacter = wrapped( 'maxAsciiCharacter', 0x7F );
+CharacterCodes[ +CharacterCodes.maxAsciiCharacter.value ] = typeof CharacterCodes[ +CharacterCodes.maxAsciiCharacter.value ] !== 'number' ? named( 'maxAsciiCharacter' ) : CharacterCodes[ +CharacterCodes.maxAsciiCharacter.value ];
+CharacterCodes.lineFeed = wrapped( 'lineFeed', 0x0A );
+CharacterCodes[ +CharacterCodes.lineFeed.value ] = typeof CharacterCodes[ +CharacterCodes.lineFeed.value ] !== 'number' ? named( 'lineFeed' ) : CharacterCodes[ +CharacterCodes.lineFeed.value ];
+CharacterCodes.carriageReturn = wrapped( 'carriageReturn', 0x0D );
+CharacterCodes[ +CharacterCodes.carriageReturn.value ] = typeof CharacterCodes[ +CharacterCodes.carriageReturn.value ] !== 'number' ? named( 'carriageReturn' ) : CharacterCodes[ +CharacterCodes.carriageReturn.value ];
+CharacterCodes.lineSeparator = wrapped( 'lineSeparator', 0x2028 );
+CharacterCodes[ +CharacterCodes.lineSeparator.value ] = typeof CharacterCodes[ +CharacterCodes.lineSeparator.value ] !== 'number' ? named( 'lineSeparator' ) : CharacterCodes[ +CharacterCodes.lineSeparator.value ];
+CharacterCodes.paragraphSeparator = wrapped( 'paragraphSeparator', 0x2029 );
+CharacterCodes[ +CharacterCodes.paragraphSeparator.value ] = typeof CharacterCodes[ +CharacterCodes.paragraphSeparator.value ] !== 'number' ? named( 'paragraphSeparator' ) : CharacterCodes[ +CharacterCodes.paragraphSeparator.value ];
+CharacterCodes.nextLine = wrapped( 'nextLine', 0x0085 );
+CharacterCodes[ +CharacterCodes.nextLine.value ] = typeof CharacterCodes[ +CharacterCodes.nextLine.value ] !== 'number' ? named( 'nextLine' ) : CharacterCodes[ +CharacterCodes.nextLine.value ];
+CharacterCodes.space = wrapped( 'space', 0x0020 );
+CharacterCodes[ +CharacterCodes.space.value ] = typeof CharacterCodes[ +CharacterCodes.space.value ] !== 'number' ? named( 'space' ) : CharacterCodes[ +CharacterCodes.space.value ];
+CharacterCodes.nonBreakingSpace = wrapped( 'nonBreakingSpace', 0x00A0 );
+CharacterCodes[ +CharacterCodes.nonBreakingSpace.value ] = typeof CharacterCodes[ +CharacterCodes.nonBreakingSpace.value ] !== 'number' ? named( 'nonBreakingSpace' ) : CharacterCodes[ +CharacterCodes.nonBreakingSpace.value ];
+CharacterCodes.enQuad = wrapped( 'enQuad', 0x2000 );
+CharacterCodes[ +CharacterCodes.enQuad.value ] = typeof CharacterCodes[ +CharacterCodes.enQuad.value ] !== 'number' ? named( 'enQuad' ) : CharacterCodes[ +CharacterCodes.enQuad.value ];
+CharacterCodes.emQuad = wrapped( 'emQuad', 0x2001 );
+CharacterCodes[ +CharacterCodes.emQuad.value ] = typeof CharacterCodes[ +CharacterCodes.emQuad.value ] !== 'number' ? named( 'emQuad' ) : CharacterCodes[ +CharacterCodes.emQuad.value ];
+CharacterCodes.enSpace = wrapped( 'enSpace', 0x2002 );
+CharacterCodes[ +CharacterCodes.enSpace.value ] = typeof CharacterCodes[ +CharacterCodes.enSpace.value ] !== 'number' ? named( 'enSpace' ) : CharacterCodes[ +CharacterCodes.enSpace.value ];
+CharacterCodes.emSpace = wrapped( 'emSpace', 0x2003 );
+CharacterCodes[ +CharacterCodes.emSpace.value ] = typeof CharacterCodes[ +CharacterCodes.emSpace.value ] !== 'number' ? named( 'emSpace' ) : CharacterCodes[ +CharacterCodes.emSpace.value ];
+CharacterCodes.threePerEmSpace = wrapped( 'threePerEmSpace', 0x2004 );
+CharacterCodes[ +CharacterCodes.threePerEmSpace.value ] = typeof CharacterCodes[ +CharacterCodes.threePerEmSpace.value ] !== 'number' ? named( 'threePerEmSpace' ) : CharacterCodes[ +CharacterCodes.threePerEmSpace.value ];
+CharacterCodes.fourPerEmSpace = wrapped( 'fourPerEmSpace', 0x2005 );
+CharacterCodes[ +CharacterCodes.fourPerEmSpace.value ] = typeof CharacterCodes[ +CharacterCodes.fourPerEmSpace.value ] !== 'number' ? named( 'fourPerEmSpace' ) : CharacterCodes[ +CharacterCodes.fourPerEmSpace.value ];
+CharacterCodes.sixPerEmSpace = wrapped( 'sixPerEmSpace', 0x2006 );
+CharacterCodes[ +CharacterCodes.sixPerEmSpace.value ] = typeof CharacterCodes[ +CharacterCodes.sixPerEmSpace.value ] !== 'number' ? named( 'sixPerEmSpace' ) : CharacterCodes[ +CharacterCodes.sixPerEmSpace.value ];
+CharacterCodes.figureSpace = wrapped( 'figureSpace', 0x2007 );
+CharacterCodes[ +CharacterCodes.figureSpace.value ] = typeof CharacterCodes[ +CharacterCodes.figureSpace.value ] !== 'number' ? named( 'figureSpace' ) : CharacterCodes[ +CharacterCodes.figureSpace.value ];
+CharacterCodes.punctuationSpace = wrapped( 'punctuationSpace', 0x2008 );
+CharacterCodes[ +CharacterCodes.punctuationSpace.value ] = typeof CharacterCodes[ +CharacterCodes.punctuationSpace.value ] !== 'number' ? named( 'punctuationSpace' ) : CharacterCodes[ +CharacterCodes.punctuationSpace.value ];
+CharacterCodes.thinSpace = wrapped( 'thinSpace', 0x2009 );
+CharacterCodes[ +CharacterCodes.thinSpace.value ] = typeof CharacterCodes[ +CharacterCodes.thinSpace.value ] !== 'number' ? named( 'thinSpace' ) : CharacterCodes[ +CharacterCodes.thinSpace.value ];
+CharacterCodes.hairSpace = wrapped( 'hairSpace', 0x200A );
+CharacterCodes[ +CharacterCodes.hairSpace.value ] = typeof CharacterCodes[ +CharacterCodes.hairSpace.value ] !== 'number' ? named( 'hairSpace' ) : CharacterCodes[ +CharacterCodes.hairSpace.value ];
+CharacterCodes.zeroWidthSpace = wrapped( 'zeroWidthSpace', 0x200B );
+CharacterCodes[ +CharacterCodes.zeroWidthSpace.value ] = typeof CharacterCodes[ +CharacterCodes.zeroWidthSpace.value ] !== 'number' ? named( 'zeroWidthSpace' ) : CharacterCodes[ +CharacterCodes.zeroWidthSpace.value ];
+CharacterCodes.narrowNoBreakSpace = wrapped( 'narrowNoBreakSpace', 0x202F );
+CharacterCodes[ +CharacterCodes.narrowNoBreakSpace.value ] = typeof CharacterCodes[ +CharacterCodes.narrowNoBreakSpace.value ] !== 'number' ? named( 'narrowNoBreakSpace' ) : CharacterCodes[ +CharacterCodes.narrowNoBreakSpace.value ];
+CharacterCodes.ideographicSpace = wrapped( 'ideographicSpace', 0x3000 );
+CharacterCodes[ +CharacterCodes.ideographicSpace.value ] = typeof CharacterCodes[ +CharacterCodes.ideographicSpace.value ] !== 'number' ? named( 'ideographicSpace' ) : CharacterCodes[ +CharacterCodes.ideographicSpace.value ];
+CharacterCodes.mathematicalSpace = wrapped( 'mathematicalSpace', 0x205F );
+CharacterCodes[ +CharacterCodes.mathematicalSpace.value ] = typeof CharacterCodes[ +CharacterCodes.mathematicalSpace.value ] !== 'number' ? named( 'mathematicalSpace' ) : CharacterCodes[ +CharacterCodes.mathematicalSpace.value ];
+CharacterCodes.ogham = wrapped( 'ogham', 0x1680 );
+CharacterCodes[ +CharacterCodes.ogham.value ] = typeof CharacterCodes[ +CharacterCodes.ogham.value ] !== 'number' ? named( 'ogham' ) : CharacterCodes[ +CharacterCodes.ogham.value ];
+CharacterCodes._ = wrapped( '_', 0x5F );
+CharacterCodes[ +CharacterCodes._.value ] = typeof CharacterCodes[ +CharacterCodes._.value ] !== 'number' ? named( '_' ) : CharacterCodes[ +CharacterCodes._.value ];
+CharacterCodes.$ = wrapped( '$', 0x24 );
+CharacterCodes[ +CharacterCodes.$.value ] = typeof CharacterCodes[ +CharacterCodes.$.value ] !== 'number' ? named( '$' ) : CharacterCodes[ +CharacterCodes.$.value ];
+CharacterCodes._0 = wrapped( '_0', 0x30 );
+CharacterCodes[ +CharacterCodes._0.value ] = typeof CharacterCodes[ +CharacterCodes._0.value ] !== 'number' ? named( '_0' ) : CharacterCodes[ +CharacterCodes._0.value ];
+CharacterCodes._1 = wrapped( '_1', 0x31 );
+CharacterCodes[ +CharacterCodes._1.value ] = typeof CharacterCodes[ +CharacterCodes._1.value ] !== 'number' ? named( '_1' ) : CharacterCodes[ +CharacterCodes._1.value ];
+CharacterCodes._2 = wrapped( '_2', 0x32 );
+CharacterCodes[ +CharacterCodes._2.value ] = typeof CharacterCodes[ +CharacterCodes._2.value ] !== 'number' ? named( '_2' ) : CharacterCodes[ +CharacterCodes._2.value ];
+CharacterCodes._3 = wrapped( '_3', 0x33 );
+CharacterCodes[ +CharacterCodes._3.value ] = typeof CharacterCodes[ +CharacterCodes._3.value ] !== 'number' ? named( '_3' ) : CharacterCodes[ +CharacterCodes._3.value ];
+CharacterCodes._4 = wrapped( '_4', 0x34 );
+CharacterCodes[ +CharacterCodes._4.value ] = typeof CharacterCodes[ +CharacterCodes._4.value ] !== 'number' ? named( '_4' ) : CharacterCodes[ +CharacterCodes._4.value ];
+CharacterCodes._5 = wrapped( '_5', 0x35 );
+CharacterCodes[ +CharacterCodes._5.value ] = typeof CharacterCodes[ +CharacterCodes._5.value ] !== 'number' ? named( '_5' ) : CharacterCodes[ +CharacterCodes._5.value ];
+CharacterCodes._6 = wrapped( '_6', 0x36 );
+CharacterCodes[ +CharacterCodes._6.value ] = typeof CharacterCodes[ +CharacterCodes._6.value ] !== 'number' ? named( '_6' ) : CharacterCodes[ +CharacterCodes._6.value ];
+CharacterCodes._7 = wrapped( '_7', 0x37 );
+CharacterCodes[ +CharacterCodes._7.value ] = typeof CharacterCodes[ +CharacterCodes._7.value ] !== 'number' ? named( '_7' ) : CharacterCodes[ +CharacterCodes._7.value ];
+CharacterCodes._8 = wrapped( '_8', 0x38 );
+CharacterCodes[ +CharacterCodes._8.value ] = typeof CharacterCodes[ +CharacterCodes._8.value ] !== 'number' ? named( '_8' ) : CharacterCodes[ +CharacterCodes._8.value ];
+CharacterCodes._9 = wrapped( '_9', 0x39 );
+CharacterCodes[ +CharacterCodes._9.value ] = typeof CharacterCodes[ +CharacterCodes._9.value ] !== 'number' ? named( '_9' ) : CharacterCodes[ +CharacterCodes._9.value ];
+CharacterCodes.a = wrapped( 'a', 0x61 );
+CharacterCodes[ +CharacterCodes.a.value ] = typeof CharacterCodes[ +CharacterCodes.a.value ] !== 'number' ? named( 'a' ) : CharacterCodes[ +CharacterCodes.a.value ];
+CharacterCodes.b = wrapped( 'b', 0x62 );
+CharacterCodes[ +CharacterCodes.b.value ] = typeof CharacterCodes[ +CharacterCodes.b.value ] !== 'number' ? named( 'b' ) : CharacterCodes[ +CharacterCodes.b.value ];
+CharacterCodes.c = wrapped( 'c', 0x63 );
+CharacterCodes[ +CharacterCodes.c.value ] = typeof CharacterCodes[ +CharacterCodes.c.value ] !== 'number' ? named( 'c' ) : CharacterCodes[ +CharacterCodes.c.value ];
+CharacterCodes.d = wrapped( 'd', 0x64 );
+CharacterCodes[ +CharacterCodes.d.value ] = typeof CharacterCodes[ +CharacterCodes.d.value ] !== 'number' ? named( 'd' ) : CharacterCodes[ +CharacterCodes.d.value ];
+CharacterCodes.e = wrapped( 'e', 0x65 );
+CharacterCodes[ +CharacterCodes.e.value ] = typeof CharacterCodes[ +CharacterCodes.e.value ] !== 'number' ? named( 'e' ) : CharacterCodes[ +CharacterCodes.e.value ];
+CharacterCodes.f = wrapped( 'f', 0x66 );
+CharacterCodes[ +CharacterCodes.f.value ] = typeof CharacterCodes[ +CharacterCodes.f.value ] !== 'number' ? named( 'f' ) : CharacterCodes[ +CharacterCodes.f.value ];
+CharacterCodes.g = wrapped( 'g', 0x67 );
+CharacterCodes[ +CharacterCodes.g.value ] = typeof CharacterCodes[ +CharacterCodes.g.value ] !== 'number' ? named( 'g' ) : CharacterCodes[ +CharacterCodes.g.value ];
+CharacterCodes.h = wrapped( 'h', 0x68 );
+CharacterCodes[ +CharacterCodes.h.value ] = typeof CharacterCodes[ +CharacterCodes.h.value ] !== 'number' ? named( 'h' ) : CharacterCodes[ +CharacterCodes.h.value ];
+CharacterCodes.i = wrapped( 'i', 0x69 );
+CharacterCodes[ +CharacterCodes.i.value ] = typeof CharacterCodes[ +CharacterCodes.i.value ] !== 'number' ? named( 'i' ) : CharacterCodes[ +CharacterCodes.i.value ];
+CharacterCodes.j = wrapped( 'j', 0x6A );
+CharacterCodes[ +CharacterCodes.j.value ] = typeof CharacterCodes[ +CharacterCodes.j.value ] !== 'number' ? named( 'j' ) : CharacterCodes[ +CharacterCodes.j.value ];
+CharacterCodes.k = wrapped( 'k', 0x6B );
+CharacterCodes[ +CharacterCodes.k.value ] = typeof CharacterCodes[ +CharacterCodes.k.value ] !== 'number' ? named( 'k' ) : CharacterCodes[ +CharacterCodes.k.value ];
+CharacterCodes.l = wrapped( 'l', 0x6C );
+CharacterCodes[ +CharacterCodes.l.value ] = typeof CharacterCodes[ +CharacterCodes.l.value ] !== 'number' ? named( 'l' ) : CharacterCodes[ +CharacterCodes.l.value ];
+CharacterCodes.m = wrapped( 'm', 0x6D );
+CharacterCodes[ +CharacterCodes.m.value ] = typeof CharacterCodes[ +CharacterCodes.m.value ] !== 'number' ? named( 'm' ) : CharacterCodes[ +CharacterCodes.m.value ];
+CharacterCodes.n = wrapped( 'n', 0x6E );
+CharacterCodes[ +CharacterCodes.n.value ] = typeof CharacterCodes[ +CharacterCodes.n.value ] !== 'number' ? named( 'n' ) : CharacterCodes[ +CharacterCodes.n.value ];
+CharacterCodes.o = wrapped( 'o', 0x6F );
+CharacterCodes[ +CharacterCodes.o.value ] = typeof CharacterCodes[ +CharacterCodes.o.value ] !== 'number' ? named( 'o' ) : CharacterCodes[ +CharacterCodes.o.value ];
+CharacterCodes.p = wrapped( 'p', 0x70 );
+CharacterCodes[ +CharacterCodes.p.value ] = typeof CharacterCodes[ +CharacterCodes.p.value ] !== 'number' ? named( 'p' ) : CharacterCodes[ +CharacterCodes.p.value ];
+CharacterCodes.q = wrapped( 'q', 0x71 );
+CharacterCodes[ +CharacterCodes.q.value ] = typeof CharacterCodes[ +CharacterCodes.q.value ] !== 'number' ? named( 'q' ) : CharacterCodes[ +CharacterCodes.q.value ];
+CharacterCodes.r = wrapped( 'r', 0x72 );
+CharacterCodes[ +CharacterCodes.r.value ] = typeof CharacterCodes[ +CharacterCodes.r.value ] !== 'number' ? named( 'r' ) : CharacterCodes[ +CharacterCodes.r.value ];
+CharacterCodes.s = wrapped( 's', 0x73 );
+CharacterCodes[ +CharacterCodes.s.value ] = typeof CharacterCodes[ +CharacterCodes.s.value ] !== 'number' ? named( 's' ) : CharacterCodes[ +CharacterCodes.s.value ];
+CharacterCodes.t = wrapped( 't', 0x74 );
+CharacterCodes[ +CharacterCodes.t.value ] = typeof CharacterCodes[ +CharacterCodes.t.value ] !== 'number' ? named( 't' ) : CharacterCodes[ +CharacterCodes.t.value ];
+CharacterCodes.u = wrapped( 'u', 0x75 );
+CharacterCodes[ +CharacterCodes.u.value ] = typeof CharacterCodes[ +CharacterCodes.u.value ] !== 'number' ? named( 'u' ) : CharacterCodes[ +CharacterCodes.u.value ];
+CharacterCodes.v = wrapped( 'v', 0x76 );
+CharacterCodes[ +CharacterCodes.v.value ] = typeof CharacterCodes[ +CharacterCodes.v.value ] !== 'number' ? named( 'v' ) : CharacterCodes[ +CharacterCodes.v.value ];
+CharacterCodes.w = wrapped( 'w', 0x77 );
+CharacterCodes[ +CharacterCodes.w.value ] = typeof CharacterCodes[ +CharacterCodes.w.value ] !== 'number' ? named( 'w' ) : CharacterCodes[ +CharacterCodes.w.value ];
+CharacterCodes.x = wrapped( 'x', 0x78 );
+CharacterCodes[ +CharacterCodes.x.value ] = typeof CharacterCodes[ +CharacterCodes.x.value ] !== 'number' ? named( 'x' ) : CharacterCodes[ +CharacterCodes.x.value ];
+CharacterCodes.y = wrapped( 'y', 0x79 );
+CharacterCodes[ +CharacterCodes.y.value ] = typeof CharacterCodes[ +CharacterCodes.y.value ] !== 'number' ? named( 'y' ) : CharacterCodes[ +CharacterCodes.y.value ];
+CharacterCodes.z = wrapped( 'z', 0x7A );
+CharacterCodes[ +CharacterCodes.z.value ] = typeof CharacterCodes[ +CharacterCodes.z.value ] !== 'number' ? named( 'z' ) : CharacterCodes[ +CharacterCodes.z.value ];
+CharacterCodes.A = wrapped( 'A', 0x41 );
+CharacterCodes[ +CharacterCodes.A.value ] = typeof CharacterCodes[ +CharacterCodes.A.value ] !== 'number' ? named( 'A' ) : CharacterCodes[ +CharacterCodes.A.value ];
+CharacterCodes.B = wrapped( 'B', 0x42 );
+CharacterCodes[ +CharacterCodes.B.value ] = typeof CharacterCodes[ +CharacterCodes.B.value ] !== 'number' ? named( 'B' ) : CharacterCodes[ +CharacterCodes.B.value ];
+CharacterCodes.C = wrapped( 'C', 0x43 );
+CharacterCodes[ +CharacterCodes.C.value ] = typeof CharacterCodes[ +CharacterCodes.C.value ] !== 'number' ? named( 'C' ) : CharacterCodes[ +CharacterCodes.C.value ];
+CharacterCodes.D = wrapped( 'D', 0x44 );
+CharacterCodes[ +CharacterCodes.D.value ] = typeof CharacterCodes[ +CharacterCodes.D.value ] !== 'number' ? named( 'D' ) : CharacterCodes[ +CharacterCodes.D.value ];
+CharacterCodes.E = wrapped( 'E', 0x45 );
+CharacterCodes[ +CharacterCodes.E.value ] = typeof CharacterCodes[ +CharacterCodes.E.value ] !== 'number' ? named( 'E' ) : CharacterCodes[ +CharacterCodes.E.value ];
+CharacterCodes.F = wrapped( 'F', 0x46 );
+CharacterCodes[ +CharacterCodes.F.value ] = typeof CharacterCodes[ +CharacterCodes.F.value ] !== 'number' ? named( 'F' ) : CharacterCodes[ +CharacterCodes.F.value ];
+CharacterCodes.G = wrapped( 'G', 0x47 );
+CharacterCodes[ +CharacterCodes.G.value ] = typeof CharacterCodes[ +CharacterCodes.G.value ] !== 'number' ? named( 'G' ) : CharacterCodes[ +CharacterCodes.G.value ];
+CharacterCodes.H = wrapped( 'H', 0x48 );
+CharacterCodes[ +CharacterCodes.H.value ] = typeof CharacterCodes[ +CharacterCodes.H.value ] !== 'number' ? named( 'H' ) : CharacterCodes[ +CharacterCodes.H.value ];
+CharacterCodes.I = wrapped( 'I', 0x49 );
+CharacterCodes[ +CharacterCodes.I.value ] = typeof CharacterCodes[ +CharacterCodes.I.value ] !== 'number' ? named( 'I' ) : CharacterCodes[ +CharacterCodes.I.value ];
+CharacterCodes.J = wrapped( 'J', 0x4A );
+CharacterCodes[ +CharacterCodes.J.value ] = typeof CharacterCodes[ +CharacterCodes.J.value ] !== 'number' ? named( 'J' ) : CharacterCodes[ +CharacterCodes.J.value ];
+CharacterCodes.K = wrapped( 'K', 0x4B );
+CharacterCodes[ +CharacterCodes.K.value ] = typeof CharacterCodes[ +CharacterCodes.K.value ] !== 'number' ? named( 'K' ) : CharacterCodes[ +CharacterCodes.K.value ];
+CharacterCodes.L = wrapped( 'L', 0x4C );
+CharacterCodes[ +CharacterCodes.L.value ] = typeof CharacterCodes[ +CharacterCodes.L.value ] !== 'number' ? named( 'L' ) : CharacterCodes[ +CharacterCodes.L.value ];
+CharacterCodes.M = wrapped( 'M', 0x4D );
+CharacterCodes[ +CharacterCodes.M.value ] = typeof CharacterCodes[ +CharacterCodes.M.value ] !== 'number' ? named( 'M' ) : CharacterCodes[ +CharacterCodes.M.value ];
+CharacterCodes.N = wrapped( 'N', 0x4E );
+CharacterCodes[ +CharacterCodes.N.value ] = typeof CharacterCodes[ +CharacterCodes.N.value ] !== 'number' ? named( 'N' ) : CharacterCodes[ +CharacterCodes.N.value ];
+CharacterCodes.O = wrapped( 'O', 0x4F );
+CharacterCodes[ +CharacterCodes.O.value ] = typeof CharacterCodes[ +CharacterCodes.O.value ] !== 'number' ? named( 'O' ) : CharacterCodes[ +CharacterCodes.O.value ];
+CharacterCodes.P = wrapped( 'P', 0x50 );
+CharacterCodes[ +CharacterCodes.P.value ] = typeof CharacterCodes[ +CharacterCodes.P.value ] !== 'number' ? named( 'P' ) : CharacterCodes[ +CharacterCodes.P.value ];
+CharacterCodes.Q = wrapped( 'Q', 0x51 );
+CharacterCodes[ +CharacterCodes.Q.value ] = typeof CharacterCodes[ +CharacterCodes.Q.value ] !== 'number' ? named( 'Q' ) : CharacterCodes[ +CharacterCodes.Q.value ];
+CharacterCodes.R = wrapped( 'R', 0x52 );
+CharacterCodes[ +CharacterCodes.R.value ] = typeof CharacterCodes[ +CharacterCodes.R.value ] !== 'number' ? named( 'R' ) : CharacterCodes[ +CharacterCodes.R.value ];
+CharacterCodes.S = wrapped( 'S', 0x53 );
+CharacterCodes[ +CharacterCodes.S.value ] = typeof CharacterCodes[ +CharacterCodes.S.value ] !== 'number' ? named( 'S' ) : CharacterCodes[ +CharacterCodes.S.value ];
+CharacterCodes.T = wrapped( 'T', 0x54 );
+CharacterCodes[ +CharacterCodes.T.value ] = typeof CharacterCodes[ +CharacterCodes.T.value ] !== 'number' ? named( 'T' ) : CharacterCodes[ +CharacterCodes.T.value ];
+CharacterCodes.U = wrapped( 'U', 0x55 );
+CharacterCodes[ +CharacterCodes.U.value ] = typeof CharacterCodes[ +CharacterCodes.U.value ] !== 'number' ? named( 'U' ) : CharacterCodes[ +CharacterCodes.U.value ];
+CharacterCodes.V = wrapped( 'V', 0x56 );
+CharacterCodes[ +CharacterCodes.V.value ] = typeof CharacterCodes[ +CharacterCodes.V.value ] !== 'number' ? named( 'V' ) : CharacterCodes[ +CharacterCodes.V.value ];
+CharacterCodes.W = wrapped( 'W', 0x57 );
+CharacterCodes[ +CharacterCodes.W.value ] = typeof CharacterCodes[ +CharacterCodes.W.value ] !== 'number' ? named( 'W' ) : CharacterCodes[ +CharacterCodes.W.value ];
+CharacterCodes.X = wrapped( 'X', 0x58 );
+CharacterCodes[ +CharacterCodes.X.value ] = typeof CharacterCodes[ +CharacterCodes.X.value ] !== 'number' ? named( 'X' ) : CharacterCodes[ +CharacterCodes.X.value ];
+CharacterCodes.Y = wrapped( 'Y', 0x59 );
+CharacterCodes[ +CharacterCodes.Y.value ] = typeof CharacterCodes[ +CharacterCodes.Y.value ] !== 'number' ? named( 'Y' ) : CharacterCodes[ +CharacterCodes.Y.value ];
+CharacterCodes.Z = wrapped( 'Z', 0x5a );
+CharacterCodes[ +CharacterCodes.Z.value ] = typeof CharacterCodes[ +CharacterCodes.Z.value ] !== 'number' ? named( 'Z' ) : CharacterCodes[ +CharacterCodes.Z.value ];
+CharacterCodes.ampersand = wrapped( 'ampersand', 0x26 );
+CharacterCodes[ +CharacterCodes.ampersand.value ] = typeof CharacterCodes[ +CharacterCodes.ampersand.value ] !== 'number' ? named( 'ampersand' ) : CharacterCodes[ +CharacterCodes.ampersand.value ];
+CharacterCodes.asterisk = wrapped( 'asterisk', 0x2A );
+CharacterCodes[ +CharacterCodes.asterisk.value ] = typeof CharacterCodes[ +CharacterCodes.asterisk.value ] !== 'number' ? named( 'asterisk' ) : CharacterCodes[ +CharacterCodes.asterisk.value ];
+CharacterCodes.at = wrapped( 'at', 0x40 );
+CharacterCodes[ +CharacterCodes.at.value ] = typeof CharacterCodes[ +CharacterCodes.at.value ] !== 'number' ? named( 'at' ) : CharacterCodes[ +CharacterCodes.at.value ];
+CharacterCodes.backslash = wrapped( 'backslash', 0x5C );
+CharacterCodes[ +CharacterCodes.backslash.value ] = typeof CharacterCodes[ +CharacterCodes.backslash.value ] !== 'number' ? named( 'backslash' ) : CharacterCodes[ +CharacterCodes.backslash.value ];
+CharacterCodes.backtick = wrapped( 'backtick', 0x60 );
+CharacterCodes[ +CharacterCodes.backtick.value ] = typeof CharacterCodes[ +CharacterCodes.backtick.value ] !== 'number' ? named( 'backtick' ) : CharacterCodes[ +CharacterCodes.backtick.value ];
+CharacterCodes.bar = wrapped( 'bar', 0x7C );
+CharacterCodes[ +CharacterCodes.bar.value ] = typeof CharacterCodes[ +CharacterCodes.bar.value ] !== 'number' ? named( 'bar' ) : CharacterCodes[ +CharacterCodes.bar.value ];
+CharacterCodes.caret = wrapped( 'caret', 0x5E );
+CharacterCodes[ +CharacterCodes.caret.value ] = typeof CharacterCodes[ +CharacterCodes.caret.value ] !== 'number' ? named( 'caret' ) : CharacterCodes[ +CharacterCodes.caret.value ];
+CharacterCodes.closeBrace = wrapped( 'closeBrace', 0x7D );
+CharacterCodes[ +CharacterCodes.closeBrace.value ] = typeof CharacterCodes[ +CharacterCodes.closeBrace.value ] !== 'number' ? named( 'closeBrace' ) : CharacterCodes[ +CharacterCodes.closeBrace.value ];
+
+CharacterCodes = Object.create( templ(), CharacterCodes );
+Object.getPrototypeOf( CharacterCodes ).asString = asString( CharacterCodes );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Extension
  ************************************************************************************************************************/
-let Extension = {};
+let Extension = {}; // Object.create( ( () => new ( function Extension() {} )() )(), {} );
 Extension.Ts = wrapped( 'Ts', ".ts" );
 Extension[ +Extension.Ts.value ] = typeof Extension[ +Extension.Ts.value ] !== 'number' ? named( 'Ts' ) : Extension[ +Extension.Ts.value ];
 Extension.Tsx = wrapped( 'Tsx', ".tsx" );
@@ -1163,14 +1963,14 @@ Extension[ +Extension.Jsx.value ] = typeof Extension[ +Extension.Jsx.value ] !==
 Extension.Json = wrapped( 'Json', ".json" );
 Extension[ +Extension.Json.value ] = typeof Extension[ +Extension.Json.value ] !== 'number' ? named( 'Json' ) : Extension[ +Extension.Json.value ];
 
-Extension = Object.create( tmp = templ(), Extension );
-tmp.asString = asString( Extension );
+Extension = Object.create( templ(), Extension );
+Object.getPrototypeOf( Extension ).asString = asString( Extension );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TransformFlags
  ************************************************************************************************************************/
-let TransformFlags = {};
+let TransformFlags = {}; // Object.create( ( () => new ( function TransformFlags() {} )() )(), {} );
 TransformFlags.None = wrapped( 'None', 0 );
 TransformFlags[ +TransformFlags.None.value ] = typeof TransformFlags[ +TransformFlags.None.value ] !== 'number' ? named( 'None' ) : TransformFlags[ +TransformFlags.None.value ];
 TransformFlags.TypeScript = wrapped( 'TypeScript', 1 << 0 );
@@ -1231,10 +2031,6 @@ TransformFlags.ContainsHoistedDeclarationOrCompletion = wrapped( 'ContainsHoiste
 TransformFlags[ +TransformFlags.ContainsHoistedDeclarationOrCompletion.value ] = typeof TransformFlags[ +TransformFlags.ContainsHoistedDeclarationOrCompletion.value ] !== 'number' ? named( 'ContainsHoistedDeclarationOrCompletion' ) : TransformFlags[ +TransformFlags.ContainsHoistedDeclarationOrCompletion.value ];
 TransformFlags.ContainsDynamicImport = wrapped( 'ContainsDynamicImport', 1 << 26 );
 TransformFlags[ +TransformFlags.ContainsDynamicImport.value ] = typeof TransformFlags[ +TransformFlags.ContainsDynamicImport.value ] !== 'number' ? named( 'ContainsDynamicImport' ) : TransformFlags[ +TransformFlags.ContainsDynamicImport.value ];
-TransformFlags.Super = wrapped( 'Super', 1 << 27 );
-TransformFlags[ +TransformFlags.Super.value ] = typeof TransformFlags[ +TransformFlags.Super.value ] !== 'number' ? named( 'Super' ) : TransformFlags[ +TransformFlags.Super.value ];
-TransformFlags.ContainsSuper = wrapped( 'ContainsSuper', 1 << 28 );
-TransformFlags[ +TransformFlags.ContainsSuper.value ] = typeof TransformFlags[ +TransformFlags.ContainsSuper.value ] !== 'number' ? named( 'ContainsSuper' ) : TransformFlags[ +TransformFlags.ContainsSuper.value ];
 TransformFlags.HasComputedFlags = wrapped( 'HasComputedFlags', 1 << 29 );
 TransformFlags[ +TransformFlags.HasComputedFlags.value ] = typeof TransformFlags[ +TransformFlags.HasComputedFlags.value ] !== 'number' ? named( 'HasComputedFlags' ) : TransformFlags[ +TransformFlags.HasComputedFlags.value ];
 TransformFlags.AssertTypeScript = wrapped( 'AssertTypeScript', TransformFlags.TypeScript | TransformFlags.ContainsTypeScript );
@@ -1253,11 +2049,7 @@ TransformFlags.AssertGenerator = wrapped( 'AssertGenerator', TransformFlags.Gene
 TransformFlags[ +TransformFlags.AssertGenerator.value ] = typeof TransformFlags[ +TransformFlags.AssertGenerator.value ] !== 'number' ? named( 'AssertGenerator' ) : TransformFlags[ +TransformFlags.AssertGenerator.value ];
 TransformFlags.AssertDestructuringAssignment = wrapped( 'AssertDestructuringAssignment', TransformFlags.DestructuringAssignment | TransformFlags.ContainsDestructuringAssignment );
 TransformFlags[ +TransformFlags.AssertDestructuringAssignment.value ] = typeof TransformFlags[ +TransformFlags.AssertDestructuringAssignment.value ] !== 'number' ? named( 'AssertDestructuringAssignment' ) : TransformFlags[ +TransformFlags.AssertDestructuringAssignment.value ];
-TransformFlags.OuterExpressionExcludes = wrapped( 'OuterExpressionExcludes', TransformFlags.TypeScript | TransformFlags.ES2015 | TransformFlags.DestructuringAssignment | TransformFlags.Generator | TransformFlags.HasComputedFlags );
-TransformFlags[ +TransformFlags.OuterExpressionExcludes.value ] = typeof TransformFlags[ +TransformFlags.OuterExpressionExcludes.value ] !== 'number' ? named( 'OuterExpressionExcludes' ) : TransformFlags[ +TransformFlags.OuterExpressionExcludes.value ];
-TransformFlags.PropertyAccessExcludes = wrapped( 'PropertyAccessExcludes', TransformFlags.OuterExpressionExcludes | TransformFlags.Super );
-TransformFlags[ +TransformFlags.PropertyAccessExcludes.value ] = typeof TransformFlags[ +TransformFlags.PropertyAccessExcludes.value ] !== 'number' ? named( 'PropertyAccessExcludes' ) : TransformFlags[ +TransformFlags.PropertyAccessExcludes.value ];
-TransformFlags.NodeExcludes = wrapped( 'NodeExcludes', TransformFlags.PropertyAccessExcludes | TransformFlags.ContainsSuper );
+TransformFlags.NodeExcludes = wrapped( 'NodeExcludes', TransformFlags.TypeScript | TransformFlags.ES2015 | TransformFlags.DestructuringAssignment | TransformFlags.Generator | TransformFlags.HasComputedFlags );
 TransformFlags[ +TransformFlags.NodeExcludes.value ] = typeof TransformFlags[ +TransformFlags.NodeExcludes.value ] !== 'number' ? named( 'NodeExcludes' ) : TransformFlags[ +TransformFlags.NodeExcludes.value ];
 TransformFlags.ArrowFunctionExcludes = wrapped( 'ArrowFunctionExcludes', TransformFlags.NodeExcludes | TransformFlags.ContainsDecorators | TransformFlags.ContainsDefaultValueAssignments | TransformFlags.ContainsLexicalThis | TransformFlags.ContainsParameterPropertyAssignments | TransformFlags.ContainsBlockScopedBinding | TransformFlags.ContainsYield | TransformFlags.ContainsHoistedDeclarationOrCompletion | TransformFlags.ContainsBindingPattern | TransformFlags.ContainsObjectRest );
 TransformFlags[ +TransformFlags.ArrowFunctionExcludes.value ] = typeof TransformFlags[ +TransformFlags.ArrowFunctionExcludes.value ] !== 'number' ? named( 'ArrowFunctionExcludes' ) : TransformFlags[ +TransformFlags.ArrowFunctionExcludes.value ];
@@ -1290,14 +2082,14 @@ TransformFlags[ +TransformFlags.TypeScriptClassSyntaxMask.value ] = typeof Trans
 TransformFlags.ES2015FunctionSyntaxMask = wrapped( 'ES2015FunctionSyntaxMask', TransformFlags.ContainsCapturedLexicalThis | TransformFlags.ContainsDefaultValueAssignments );
 TransformFlags[ +TransformFlags.ES2015FunctionSyntaxMask.value ] = typeof TransformFlags[ +TransformFlags.ES2015FunctionSyntaxMask.value ] !== 'number' ? named( 'ES2015FunctionSyntaxMask' ) : TransformFlags[ +TransformFlags.ES2015FunctionSyntaxMask.value ];
 
-TransformFlags = Object.create( tmp = templ(), TransformFlags );
-tmp.asString = asString( TransformFlags );
+TransformFlags = Object.create( templ(), TransformFlags );
+Object.getPrototypeOf( TransformFlags ).asString = asString( TransformFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name EmitFlags
  ************************************************************************************************************************/
-let EmitFlags = {};
+let EmitFlags = {}; // Object.create( ( () => new ( function EmitFlags() {} )() )(), {} );
 EmitFlags.SingleLine = wrapped( 'SingleLine', 1 << 0 );
 EmitFlags[ +EmitFlags.SingleLine.value ] = typeof EmitFlags[ +EmitFlags.SingleLine.value ] !== 'number' ? named( 'SingleLine' ) : EmitFlags[ +EmitFlags.SingleLine.value ];
 EmitFlags.AdviseOnEmitNode = wrapped( 'AdviseOnEmitNode', 1 << 1 );
@@ -1354,19 +2146,15 @@ EmitFlags.Iterator = wrapped( 'Iterator', 1 << 23 );
 EmitFlags[ +EmitFlags.Iterator.value ] = typeof EmitFlags[ +EmitFlags.Iterator.value ] !== 'number' ? named( 'Iterator' ) : EmitFlags[ +EmitFlags.Iterator.value ];
 EmitFlags.NoAsciiEscaping = wrapped( 'NoAsciiEscaping', 1 << 24 );
 EmitFlags[ +EmitFlags.NoAsciiEscaping.value ] = typeof EmitFlags[ +EmitFlags.NoAsciiEscaping.value ] !== 'number' ? named( 'NoAsciiEscaping' ) : EmitFlags[ +EmitFlags.NoAsciiEscaping.value ];
-EmitFlags.TypeScriptClassWrapper = wrapped( 'TypeScriptClassWrapper', 1 << 25 );
-EmitFlags[ +EmitFlags.TypeScriptClassWrapper.value ] = typeof EmitFlags[ +EmitFlags.TypeScriptClassWrapper.value ] !== 'number' ? named( 'TypeScriptClassWrapper' ) : EmitFlags[ +EmitFlags.TypeScriptClassWrapper.value ];
-EmitFlags.NeverApplyImportHelper = wrapped( 'NeverApplyImportHelper', 1 << 26 );
-EmitFlags[ +EmitFlags.NeverApplyImportHelper.value ] = typeof EmitFlags[ +EmitFlags.NeverApplyImportHelper.value ] !== 'number' ? named( 'NeverApplyImportHelper' ) : EmitFlags[ +EmitFlags.NeverApplyImportHelper.value ];
 
-EmitFlags = Object.create( tmp = templ(), EmitFlags );
-tmp.asString = asString( EmitFlags );
+EmitFlags = Object.create( templ(), EmitFlags );
+Object.getPrototypeOf( EmitFlags ).asString = asString( EmitFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ExternalEmitHelpers
  ************************************************************************************************************************/
-let ExternalEmitHelpers = {};
+let ExternalEmitHelpers = {}; // Object.create( ( () => new ( function ExternalEmitHelpers() {} )() )(), {} );
 ExternalEmitHelpers.Extends = wrapped( 'Extends', 1 << 0 );
 ExternalEmitHelpers[ +ExternalEmitHelpers.Extends.value ] = typeof ExternalEmitHelpers[ +ExternalEmitHelpers.Extends.value ] !== 'number' ? named( 'Extends' ) : ExternalEmitHelpers[ +ExternalEmitHelpers.Extends.value ];
 ExternalEmitHelpers.Assign = wrapped( 'Assign', 1 << 1 );
@@ -1416,14 +2204,14 @@ ExternalEmitHelpers[ +ExternalEmitHelpers.AsyncDelegatorIncludes.value ] = typeo
 ExternalEmitHelpers.SpreadIncludes = wrapped( 'SpreadIncludes', ExternalEmitHelpers.Read | ExternalEmitHelpers.Spread );
 ExternalEmitHelpers[ +ExternalEmitHelpers.SpreadIncludes.value ] = typeof ExternalEmitHelpers[ +ExternalEmitHelpers.SpreadIncludes.value ] !== 'number' ? named( 'SpreadIncludes' ) : ExternalEmitHelpers[ +ExternalEmitHelpers.SpreadIncludes.value ];
 
-ExternalEmitHelpers = Object.create( tmp = templ(), ExternalEmitHelpers );
-tmp.asString = asString( ExternalEmitHelpers );
+ExternalEmitHelpers = Object.create( templ(), ExternalEmitHelpers );
+Object.getPrototypeOf( ExternalEmitHelpers ).asString = asString( ExternalEmitHelpers );
 
 /** *********************************************************************************************************************
  * @enum
  * @name EmitHint
  ************************************************************************************************************************/
-let EmitHint = {};
+let EmitHint = {}; // Object.create( ( () => new ( function EmitHint() {} )() )(), {} );
 EmitHint.SourceFile = wrapped( 'SourceFile', 1 );
 EmitHint[ +EmitHint.SourceFile.value ] = typeof EmitHint[ +EmitHint.SourceFile.value ] !== 'number' ? named( 'SourceFile' ) : EmitHint[ +EmitHint.SourceFile.value ];
 EmitHint.Expression = wrapped( 'Expression', 2 );
@@ -1435,68 +2223,8 @@ EmitHint[ +EmitHint.MappedTypeParameter.value ] = typeof EmitHint[ +EmitHint.Map
 EmitHint.Unspecified = wrapped( 'Unspecified', 5 );
 EmitHint[ +EmitHint.Unspecified.value ] = typeof EmitHint[ +EmitHint.Unspecified.value ] !== 'number' ? named( 'Unspecified' ) : EmitHint[ +EmitHint.Unspecified.value ];
 
-EmitHint = Object.create( tmp = templ(), EmitHint );
-tmp.asString = asString( EmitHint );
-
-/** *********************************************************************************************************************
- * @enum
- * @name ListFormat
- ************************************************************************************************************************/
-let ListFormat = {};
-ListFormat.None = wrapped( 'None', 0 );
-ListFormat[ +ListFormat.None.value ] = typeof ListFormat[ +ListFormat.None.value ] !== 'number' ? named( 'None' ) : ListFormat[ +ListFormat.None.value ];
-ListFormat.SingleLine = wrapped( 'SingleLine', 0 );
-ListFormat[ +ListFormat.SingleLine.value ] = typeof ListFormat[ +ListFormat.SingleLine.value ] !== 'number' ? named( 'SingleLine' ) : ListFormat[ +ListFormat.SingleLine.value ];
-ListFormat.MultiLine = wrapped( 'MultiLine', 1 << 0 );
-ListFormat[ +ListFormat.MultiLine.value ] = typeof ListFormat[ +ListFormat.MultiLine.value ] !== 'number' ? named( 'MultiLine' ) : ListFormat[ +ListFormat.MultiLine.value ];
-ListFormat.PreserveLines = wrapped( 'PreserveLines', 1 << 1 );
-ListFormat[ +ListFormat.PreserveLines.value ] = typeof ListFormat[ +ListFormat.PreserveLines.value ] !== 'number' ? named( 'PreserveLines' ) : ListFormat[ +ListFormat.PreserveLines.value ];
-ListFormat.LinesMask = wrapped( 'LinesMask', ListFormat.SingleLine | ListFormat.MultiLine | ListFormat.PreserveLines );
-ListFormat[ +ListFormat.LinesMask.value ] = typeof ListFormat[ +ListFormat.LinesMask.value ] !== 'number' ? named( 'LinesMask' ) : ListFormat[ +ListFormat.LinesMask.value ];
-ListFormat.NotDelimited = wrapped( 'NotDelimited', 0 );
-ListFormat[ +ListFormat.NotDelimited.value ] = typeof ListFormat[ +ListFormat.NotDelimited.value ] !== 'number' ? named( 'NotDelimited' ) : ListFormat[ +ListFormat.NotDelimited.value ];
-ListFormat.BarDelimited = wrapped( 'BarDelimited', 1 << 2 );
-ListFormat[ +ListFormat.BarDelimited.value ] = typeof ListFormat[ +ListFormat.BarDelimited.value ] !== 'number' ? named( 'BarDelimited' ) : ListFormat[ +ListFormat.BarDelimited.value ];
-ListFormat.AmpersandDelimited = wrapped( 'AmpersandDelimited', 1 << 3 );
-ListFormat[ +ListFormat.AmpersandDelimited.value ] = typeof ListFormat[ +ListFormat.AmpersandDelimited.value ] !== 'number' ? named( 'AmpersandDelimited' ) : ListFormat[ +ListFormat.AmpersandDelimited.value ];
-ListFormat.CommaDelimited = wrapped( 'CommaDelimited', 1 << 4 );
-ListFormat[ +ListFormat.CommaDelimited.value ] = typeof ListFormat[ +ListFormat.CommaDelimited.value ] !== 'number' ? named( 'CommaDelimited' ) : ListFormat[ +ListFormat.CommaDelimited.value ];
-ListFormat.DelimitersMask = wrapped( 'DelimitersMask', ListFormat.BarDelimited | ListFormat.AmpersandDelimited | ListFormat.CommaDelimited );
-ListFormat[ +ListFormat.DelimitersMask.value ] = typeof ListFormat[ +ListFormat.DelimitersMask.value ] !== 'number' ? named( 'DelimitersMask' ) : ListFormat[ +ListFormat.DelimitersMask.value ];
-ListFormat.AllowTrailingComma = wrapped( 'AllowTrailingComma', 1 << 5 );
-ListFormat[ +ListFormat.AllowTrailingComma.value ] = typeof ListFormat[ +ListFormat.AllowTrailingComma.value ] !== 'number' ? named( 'AllowTrailingComma' ) : ListFormat[ +ListFormat.AllowTrailingComma.value ];
-ListFormat.Indented = wrapped( 'Indented', 1 << 6 );
-ListFormat[ +ListFormat.Indented.value ] = typeof ListFormat[ +ListFormat.Indented.value ] !== 'number' ? named( 'Indented' ) : ListFormat[ +ListFormat.Indented.value ];
-ListFormat.SpaceBetweenBraces = wrapped( 'SpaceBetweenBraces', 1 << 7 );
-ListFormat[ +ListFormat.SpaceBetweenBraces.value ] = typeof ListFormat[ +ListFormat.SpaceBetweenBraces.value ] !== 'number' ? named( 'SpaceBetweenBraces' ) : ListFormat[ +ListFormat.SpaceBetweenBraces.value ];
-ListFormat.SpaceBetweenSiblings = wrapped( 'SpaceBetweenSiblings', 1 << 8 );
-ListFormat[ +ListFormat.SpaceBetweenSiblings.value ] = typeof ListFormat[ +ListFormat.SpaceBetweenSiblings.value ] !== 'number' ? named( 'SpaceBetweenSiblings' ) : ListFormat[ +ListFormat.SpaceBetweenSiblings.value ];
-ListFormat.Braces = wrapped( 'Braces', 1 << 9 );
-ListFormat[ +ListFormat.Braces.value ] = typeof ListFormat[ +ListFormat.Braces.value ] !== 'number' ? named( 'Braces' ) : ListFormat[ +ListFormat.Braces.value ];
-
-ListFormat = Object.create( tmp = templ(), ListFormat );
-tmp.asString = asString( ListFormat );
-
-/** *********************************************************************************************************************
- * @enum
- * @name PragmaKindFlags
- ************************************************************************************************************************/
-let PragmaKindFlags = {};
-PragmaKindFlags.None = wrapped( 'None', 0 );
-PragmaKindFlags[ +PragmaKindFlags.None.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.None.value ] !== 'number' ? named( 'None' ) : PragmaKindFlags[ +PragmaKindFlags.None.value ];
-PragmaKindFlags.TripleSlashXML = wrapped( 'TripleSlashXML', 1 << 0 );
-PragmaKindFlags[ +PragmaKindFlags.TripleSlashXML.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.TripleSlashXML.value ] !== 'number' ? named( 'TripleSlashXML' ) : PragmaKindFlags[ +PragmaKindFlags.TripleSlashXML.value ];
-PragmaKindFlags.SingleLine = wrapped( 'SingleLine', 1 << 1 );
-PragmaKindFlags[ +PragmaKindFlags.SingleLine.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.SingleLine.value ] !== 'number' ? named( 'SingleLine' ) : PragmaKindFlags[ +PragmaKindFlags.SingleLine.value ];
-PragmaKindFlags.MultiLine = wrapped( 'MultiLine', 1 << 2 );
-PragmaKindFlags[ +PragmaKindFlags.MultiLine.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.MultiLine.value ] !== 'number' ? named( 'MultiLine' ) : PragmaKindFlags[ +PragmaKindFlags.MultiLine.value ];
-PragmaKindFlags.All = wrapped( 'All', PragmaKindFlags.TripleSlashXML | PragmaKindFlags.SingleLine | PragmaKindFlags.MultiLine );
-PragmaKindFlags[ +PragmaKindFlags.All.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.All.value ] !== 'number' ? named( 'All' ) : PragmaKindFlags[ +PragmaKindFlags.All.value ];
-PragmaKindFlags.Default = wrapped( 'Default', +PragmaKindFlags.All );
-PragmaKindFlags[ +PragmaKindFlags.Default.value ] = typeof PragmaKindFlags[ +PragmaKindFlags.Default.value ] !== 'number' ? named( 'Default' ) : PragmaKindFlags[ +PragmaKindFlags.Default.value ];
-
-PragmaKindFlags = Object.create( tmp = templ(), PragmaKindFlags );
-tmp.asString = asString( PragmaKindFlags );
+EmitHint = Object.create( templ(), EmitHint );
+Object.getPrototypeOf( EmitHint ).asString = asString( EmitHint );
 
 /** *********************************************************************************************************************
  * Enums extracted from /mnt/e/code/typescript/src/compiler/checker.ts
@@ -1506,7 +2234,7 @@ tmp.asString = asString( PragmaKindFlags );
  * @enum
  * @name TypeFacts
  ************************************************************************************************************************/
-let TypeFacts = {};
+let TypeFacts = {}; // Object.create( ( () => new ( function TypeFacts() {} )() )(), {} );
 TypeFacts.None = wrapped( 'None', 0 );
 TypeFacts[ +TypeFacts.None.value ] = typeof TypeFacts[ +TypeFacts.None.value ] !== 'number' ? named( 'None' ) : TypeFacts[ +TypeFacts.None.value ];
 TypeFacts.TypeofEQString = wrapped( 'TypeofEQString', 1 << 0 );
@@ -1553,7 +2281,9 @@ TypeFacts.Truthy = wrapped( 'Truthy', 1 << 20 );
 TypeFacts[ +TypeFacts.Truthy.value ] = typeof TypeFacts[ +TypeFacts.Truthy.value ] !== 'number' ? named( 'Truthy' ) : TypeFacts[ +TypeFacts.Truthy.value ];
 TypeFacts.Falsy = wrapped( 'Falsy', 1 << 21 );
 TypeFacts[ +TypeFacts.Falsy.value ] = typeof TypeFacts[ +TypeFacts.Falsy.value ] !== 'number' ? named( 'Falsy' ) : TypeFacts[ +TypeFacts.Falsy.value ];
-TypeFacts.All = wrapped( 'All', ( 1 << 22 ) - 1 );
+TypeFacts.Discriminatable = wrapped( 'Discriminatable', 1 << 22 );
+TypeFacts[ +TypeFacts.Discriminatable.value ] = typeof TypeFacts[ +TypeFacts.Discriminatable.value ] !== 'number' ? named( 'Discriminatable' ) : TypeFacts[ +TypeFacts.Discriminatable.value ];
+TypeFacts.All = wrapped( 'All', (1 << 23) - 1 );
 TypeFacts[ +TypeFacts.All.value ] = typeof TypeFacts[ +TypeFacts.All.value ] !== 'number' ? named( 'All' ) : TypeFacts[ +TypeFacts.All.value ];
 TypeFacts.BaseStringStrictFacts = wrapped( 'BaseStringStrictFacts', TypeFacts.TypeofEQString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEObject | TypeFacts.TypeofNEFunction | TypeFacts.TypeofNEHostObject | TypeFacts.NEUndefined | TypeFacts.NENull | TypeFacts.NEUndefinedOrNull );
 TypeFacts[ +TypeFacts.BaseStringStrictFacts.value ] = typeof TypeFacts[ +TypeFacts.BaseStringStrictFacts.value ] !== 'number' ? named( 'BaseStringStrictFacts' ) : TypeFacts[ +TypeFacts.BaseStringStrictFacts.value ];
@@ -1607,11 +2337,11 @@ TypeFacts.SymbolStrictFacts = wrapped( 'SymbolStrictFacts', TypeFacts.TypeofEQSy
 TypeFacts[ +TypeFacts.SymbolStrictFacts.value ] = typeof TypeFacts[ +TypeFacts.SymbolStrictFacts.value ] !== 'number' ? named( 'SymbolStrictFacts' ) : TypeFacts[ +TypeFacts.SymbolStrictFacts.value ];
 TypeFacts.SymbolFacts = wrapped( 'SymbolFacts', TypeFacts.SymbolStrictFacts | TypeFacts.EQUndefined | TypeFacts.EQNull | TypeFacts.EQUndefinedOrNull | TypeFacts.Falsy );
 TypeFacts[ +TypeFacts.SymbolFacts.value ] = typeof TypeFacts[ +TypeFacts.SymbolFacts.value ] !== 'number' ? named( 'SymbolFacts' ) : TypeFacts[ +TypeFacts.SymbolFacts.value ];
-TypeFacts.ObjectStrictFacts = wrapped( 'ObjectStrictFacts', TypeFacts.TypeofEQObject | TypeFacts.TypeofEQHostObject | TypeFacts.TypeofNEString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEFunction | TypeFacts.NEUndefined | TypeFacts.NENull | TypeFacts.NEUndefinedOrNull | TypeFacts.Truthy );
+TypeFacts.ObjectStrictFacts = wrapped( 'ObjectStrictFacts', TypeFacts.TypeofEQObject | TypeFacts.TypeofEQHostObject | TypeFacts.TypeofNEString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEFunction | TypeFacts.NEUndefined | TypeFacts.NENull | TypeFacts.NEUndefinedOrNull | TypeFacts.Truthy | TypeFacts.Discriminatable );
 TypeFacts[ +TypeFacts.ObjectStrictFacts.value ] = typeof TypeFacts[ +TypeFacts.ObjectStrictFacts.value ] !== 'number' ? named( 'ObjectStrictFacts' ) : TypeFacts[ +TypeFacts.ObjectStrictFacts.value ];
 TypeFacts.ObjectFacts = wrapped( 'ObjectFacts', TypeFacts.ObjectStrictFacts | TypeFacts.EQUndefined | TypeFacts.EQNull | TypeFacts.EQUndefinedOrNull | TypeFacts.Falsy );
 TypeFacts[ +TypeFacts.ObjectFacts.value ] = typeof TypeFacts[ +TypeFacts.ObjectFacts.value ] !== 'number' ? named( 'ObjectFacts' ) : TypeFacts[ +TypeFacts.ObjectFacts.value ];
-TypeFacts.FunctionStrictFacts = wrapped( 'FunctionStrictFacts', TypeFacts.TypeofEQFunction | TypeFacts.TypeofEQHostObject | TypeFacts.TypeofNEString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEObject | TypeFacts.NEUndefined | TypeFacts.NENull | TypeFacts.NEUndefinedOrNull | TypeFacts.Truthy );
+TypeFacts.FunctionStrictFacts = wrapped( 'FunctionStrictFacts', TypeFacts.TypeofEQFunction | TypeFacts.TypeofEQHostObject | TypeFacts.TypeofNEString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEObject | TypeFacts.NEUndefined | TypeFacts.NENull | TypeFacts.NEUndefinedOrNull | TypeFacts.Truthy | TypeFacts.Discriminatable );
 TypeFacts[ +TypeFacts.FunctionStrictFacts.value ] = typeof TypeFacts[ +TypeFacts.FunctionStrictFacts.value ] !== 'number' ? named( 'FunctionStrictFacts' ) : TypeFacts[ +TypeFacts.FunctionStrictFacts.value ];
 TypeFacts.FunctionFacts = wrapped( 'FunctionFacts', TypeFacts.FunctionStrictFacts | TypeFacts.EQUndefined | TypeFacts.EQNull | TypeFacts.EQUndefinedOrNull | TypeFacts.Falsy );
 TypeFacts[ +TypeFacts.FunctionFacts.value ] = typeof TypeFacts[ +TypeFacts.FunctionFacts.value ] !== 'number' ? named( 'FunctionFacts' ) : TypeFacts[ +TypeFacts.FunctionFacts.value ];
@@ -1620,14 +2350,14 @@ TypeFacts[ +TypeFacts.UndefinedFacts.value ] = typeof TypeFacts[ +TypeFacts.Unde
 TypeFacts.NullFacts = wrapped( 'NullFacts', TypeFacts.TypeofEQObject | TypeFacts.TypeofNEString | TypeFacts.TypeofNENumber | TypeFacts.TypeofNEBoolean | TypeFacts.TypeofNESymbol | TypeFacts.TypeofNEFunction | TypeFacts.TypeofNEHostObject | TypeFacts.EQNull | TypeFacts.EQUndefinedOrNull | TypeFacts.NEUndefined | TypeFacts.Falsy );
 TypeFacts[ +TypeFacts.NullFacts.value ] = typeof TypeFacts[ +TypeFacts.NullFacts.value ] !== 'number' ? named( 'NullFacts' ) : TypeFacts[ +TypeFacts.NullFacts.value ];
 
-TypeFacts = Object.create( tmp = templ(), TypeFacts );
-tmp.asString = asString( TypeFacts );
+TypeFacts = Object.create( templ(), TypeFacts );
+Object.getPrototypeOf( TypeFacts ).asString = asString( TypeFacts );
 
 /** *********************************************************************************************************************
  * @enum
  * @name TypeSystemPropertyName
  ************************************************************************************************************************/
-let TypeSystemPropertyName = {};
+let TypeSystemPropertyName = {}; // Object.create( ( () => new ( function TypeSystemPropertyName() {} )() )(), {} );
 TypeSystemPropertyName.Type = wrapped( 'Type', 1 );
 TypeSystemPropertyName[ +TypeSystemPropertyName.Type.value ] = typeof TypeSystemPropertyName[ +TypeSystemPropertyName.Type.value ] !== 'number' ? named( 'Type' ) : TypeSystemPropertyName[ +TypeSystemPropertyName.Type.value ];
 TypeSystemPropertyName.ResolvedBaseConstructorType = wrapped( 'ResolvedBaseConstructorType', 2 );
@@ -1639,14 +2369,14 @@ TypeSystemPropertyName[ +TypeSystemPropertyName.ResolvedReturnType.value ] = typ
 TypeSystemPropertyName.ResolvedBaseConstraint = wrapped( 'ResolvedBaseConstraint', 5 );
 TypeSystemPropertyName[ +TypeSystemPropertyName.ResolvedBaseConstraint.value ] = typeof TypeSystemPropertyName[ +TypeSystemPropertyName.ResolvedBaseConstraint.value ] !== 'number' ? named( 'ResolvedBaseConstraint' ) : TypeSystemPropertyName[ +TypeSystemPropertyName.ResolvedBaseConstraint.value ];
 
-TypeSystemPropertyName = Object.create( tmp = templ(), TypeSystemPropertyName );
-tmp.asString = asString( TypeSystemPropertyName );
+TypeSystemPropertyName = Object.create( templ(), TypeSystemPropertyName );
+Object.getPrototypeOf( TypeSystemPropertyName ).asString = asString( TypeSystemPropertyName );
 
 /** *********************************************************************************************************************
  * @enum
  * @name CheckMode
  ************************************************************************************************************************/
-let CheckMode = {};
+let CheckMode = {}; // Object.create( ( () => new ( function CheckMode() {} )() )(), {} );
 CheckMode.Normal = wrapped( 'Normal', 0 );
 CheckMode[ +CheckMode.Normal.value ] = typeof CheckMode[ +CheckMode.Normal.value ] !== 'number' ? named( 'Normal' ) : CheckMode[ +CheckMode.Normal.value ];
 CheckMode.SkipContextSensitive = wrapped( 'SkipContextSensitive', 1 );
@@ -1656,14 +2386,14 @@ CheckMode[ +CheckMode.Inferential.value ] = typeof CheckMode[ +CheckMode.Inferen
 CheckMode.Contextual = wrapped( 'Contextual', 3 );
 CheckMode[ +CheckMode.Contextual.value ] = typeof CheckMode[ +CheckMode.Contextual.value ] !== 'number' ? named( 'Contextual' ) : CheckMode[ +CheckMode.Contextual.value ];
 
-CheckMode = Object.create( tmp = templ(), CheckMode );
-tmp.asString = asString( CheckMode );
+CheckMode = Object.create( templ(), CheckMode );
+Object.getPrototypeOf( CheckMode ).asString = asString( CheckMode );
 
 /** *********************************************************************************************************************
  * @enum
  * @name CallbackCheck
  ************************************************************************************************************************/
-let CallbackCheck = {};
+let CallbackCheck = {}; // Object.create( ( () => new ( function CallbackCheck() {} )() )(), {} );
 CallbackCheck.None = wrapped( 'None', 1 );
 CallbackCheck[ +CallbackCheck.None.value ] = typeof CallbackCheck[ +CallbackCheck.None.value ] !== 'number' ? named( 'None' ) : CallbackCheck[ +CallbackCheck.None.value ];
 CallbackCheck.Bivariant = wrapped( 'Bivariant', 2 );
@@ -1671,31 +2401,27 @@ CallbackCheck[ +CallbackCheck.Bivariant.value ] = typeof CallbackCheck[ +Callbac
 CallbackCheck.Strict = wrapped( 'Strict', 3 );
 CallbackCheck[ +CallbackCheck.Strict.value ] = typeof CallbackCheck[ +CallbackCheck.Strict.value ] !== 'number' ? named( 'Strict' ) : CallbackCheck[ +CallbackCheck.Strict.value ];
 
-CallbackCheck = Object.create( tmp = templ(), CallbackCheck );
-tmp.asString = asString( CallbackCheck );
+CallbackCheck = Object.create( templ(), CallbackCheck );
+Object.getPrototypeOf( CallbackCheck ).asString = asString( CallbackCheck );
 
 /** *********************************************************************************************************************
  * @enum
  * @name MappedTypeModifiers
  ************************************************************************************************************************/
-let MappedTypeModifiers = {};
-MappedTypeModifiers.IncludeReadonly = wrapped( 'IncludeReadonly', 1 << 0 );
-MappedTypeModifiers[ +MappedTypeModifiers.IncludeReadonly.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.IncludeReadonly.value ] !== 'number' ? named( 'IncludeReadonly' ) : MappedTypeModifiers[ +MappedTypeModifiers.IncludeReadonly.value ];
-MappedTypeModifiers.ExcludeReadonly = wrapped( 'ExcludeReadonly', 1 << 1 );
-MappedTypeModifiers[ +MappedTypeModifiers.ExcludeReadonly.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.ExcludeReadonly.value ] !== 'number' ? named( 'ExcludeReadonly' ) : MappedTypeModifiers[ +MappedTypeModifiers.ExcludeReadonly.value ];
-MappedTypeModifiers.IncludeOptional = wrapped( 'IncludeOptional', 1 << 2 );
-MappedTypeModifiers[ +MappedTypeModifiers.IncludeOptional.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.IncludeOptional.value ] !== 'number' ? named( 'IncludeOptional' ) : MappedTypeModifiers[ +MappedTypeModifiers.IncludeOptional.value ];
-MappedTypeModifiers.ExcludeOptional = wrapped( 'ExcludeOptional', 1 << 3 );
-MappedTypeModifiers[ +MappedTypeModifiers.ExcludeOptional.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.ExcludeOptional.value ] !== 'number' ? named( 'ExcludeOptional' ) : MappedTypeModifiers[ +MappedTypeModifiers.ExcludeOptional.value ];
+let MappedTypeModifiers = {}; // Object.create( ( () => new ( function MappedTypeModifiers() {} )() )(), {} );
+MappedTypeModifiers.Readonly = wrapped( 'Readonly', 1 << 0 );
+MappedTypeModifiers[ +MappedTypeModifiers.Readonly.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.Readonly.value ] !== 'number' ? named( 'Readonly' ) : MappedTypeModifiers[ +MappedTypeModifiers.Readonly.value ];
+MappedTypeModifiers.Optional = wrapped( 'Optional', 1 << 1 );
+MappedTypeModifiers[ +MappedTypeModifiers.Optional.value ] = typeof MappedTypeModifiers[ +MappedTypeModifiers.Optional.value ] !== 'number' ? named( 'Optional' ) : MappedTypeModifiers[ +MappedTypeModifiers.Optional.value ];
 
-MappedTypeModifiers = Object.create( tmp = templ(), MappedTypeModifiers );
-tmp.asString = asString( MappedTypeModifiers );
+MappedTypeModifiers = Object.create( templ(), MappedTypeModifiers );
+Object.getPrototypeOf( MappedTypeModifiers ).asString = asString( MappedTypeModifiers );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ExpandingFlags
  ************************************************************************************************************************/
-let ExpandingFlags = {};
+let ExpandingFlags = {}; // Object.create( ( () => new ( function ExpandingFlags() {} )() )(), {} );
 ExpandingFlags.None = wrapped( 'None', 0 );
 ExpandingFlags[ +ExpandingFlags.None.value ] = typeof ExpandingFlags[ +ExpandingFlags.None.value ] !== 'number' ? named( 'None' ) : ExpandingFlags[ +ExpandingFlags.None.value ];
 ExpandingFlags.Source = wrapped( 'Source', 1 );
@@ -1705,62 +2431,27 @@ ExpandingFlags[ +ExpandingFlags.Target.value ] = typeof ExpandingFlags[ +Expandi
 ExpandingFlags.Both = wrapped( 'Both', ExpandingFlags.Source | ExpandingFlags.Target );
 ExpandingFlags[ +ExpandingFlags.Both.value ] = typeof ExpandingFlags[ +ExpandingFlags.Both.value ] !== 'number' ? named( 'Both' ) : ExpandingFlags[ +ExpandingFlags.Both.value ];
 
-ExpandingFlags = Object.create( tmp = templ(), ExpandingFlags );
-tmp.asString = asString( ExpandingFlags );
-
-/** *********************************************************************************************************************
- * @enum
- * @name TypeIncludes
- ************************************************************************************************************************/
-let TypeIncludes = {};
-TypeIncludes.Any = wrapped( 'Any', 1 << 0 );
-TypeIncludes[ +TypeIncludes.Any.value ] = typeof TypeIncludes[ +TypeIncludes.Any.value ] !== 'number' ? named( 'Any' ) : TypeIncludes[ +TypeIncludes.Any.value ];
-TypeIncludes.Undefined = wrapped( 'Undefined', 1 << 1 );
-TypeIncludes[ +TypeIncludes.Undefined.value ] = typeof TypeIncludes[ +TypeIncludes.Undefined.value ] !== 'number' ? named( 'Undefined' ) : TypeIncludes[ +TypeIncludes.Undefined.value ];
-TypeIncludes.Null = wrapped( 'Null', 1 << 2 );
-TypeIncludes[ +TypeIncludes.Null.value ] = typeof TypeIncludes[ +TypeIncludes.Null.value ] !== 'number' ? named( 'Null' ) : TypeIncludes[ +TypeIncludes.Null.value ];
-TypeIncludes.Never = wrapped( 'Never', 1 << 3 );
-TypeIncludes[ +TypeIncludes.Never.value ] = typeof TypeIncludes[ +TypeIncludes.Never.value ] !== 'number' ? named( 'Never' ) : TypeIncludes[ +TypeIncludes.Never.value ];
-TypeIncludes.NonWideningType = wrapped( 'NonWideningType', 1 << 4 );
-TypeIncludes[ +TypeIncludes.NonWideningType.value ] = typeof TypeIncludes[ +TypeIncludes.NonWideningType.value ] !== 'number' ? named( 'NonWideningType' ) : TypeIncludes[ +TypeIncludes.NonWideningType.value ];
-TypeIncludes.String = wrapped( 'String', 1 << 5 );
-TypeIncludes[ +TypeIncludes.String.value ] = typeof TypeIncludes[ +TypeIncludes.String.value ] !== 'number' ? named( 'String' ) : TypeIncludes[ +TypeIncludes.String.value ];
-TypeIncludes.Number = wrapped( 'Number', 1 << 6 );
-TypeIncludes[ +TypeIncludes.Number.value ] = typeof TypeIncludes[ +TypeIncludes.Number.value ] !== 'number' ? named( 'Number' ) : TypeIncludes[ +TypeIncludes.Number.value ];
-TypeIncludes.ESSymbol = wrapped( 'ESSymbol', 1 << 7 );
-TypeIncludes[ +TypeIncludes.ESSymbol.value ] = typeof TypeIncludes[ +TypeIncludes.ESSymbol.value ] !== 'number' ? named( 'ESSymbol' ) : TypeIncludes[ +TypeIncludes.ESSymbol.value ];
-TypeIncludes.LiteralOrUniqueESSymbol = wrapped( 'LiteralOrUniqueESSymbol', 1 << 8 );
-TypeIncludes[ +TypeIncludes.LiteralOrUniqueESSymbol.value ] = typeof TypeIncludes[ +TypeIncludes.LiteralOrUniqueESSymbol.value ] !== 'number' ? named( 'LiteralOrUniqueESSymbol' ) : TypeIncludes[ +TypeIncludes.LiteralOrUniqueESSymbol.value ];
-TypeIncludes.ObjectType = wrapped( 'ObjectType', 1 << 9 );
-TypeIncludes[ +TypeIncludes.ObjectType.value ] = typeof TypeIncludes[ +TypeIncludes.ObjectType.value ] !== 'number' ? named( 'ObjectType' ) : TypeIncludes[ +TypeIncludes.ObjectType.value ];
-TypeIncludes.EmptyObject = wrapped( 'EmptyObject', 1 << 10 );
-TypeIncludes[ +TypeIncludes.EmptyObject.value ] = typeof TypeIncludes[ +TypeIncludes.EmptyObject.value ] !== 'number' ? named( 'EmptyObject' ) : TypeIncludes[ +TypeIncludes.EmptyObject.value ];
-TypeIncludes.Union = wrapped( 'Union', 1 << 11 );
-TypeIncludes[ +TypeIncludes.Union.value ] = typeof TypeIncludes[ +TypeIncludes.Union.value ] !== 'number' ? named( 'Union' ) : TypeIncludes[ +TypeIncludes.Union.value ];
-TypeIncludes.Wildcard = wrapped( 'Wildcard', 1 << 12 );
-TypeIncludes[ +TypeIncludes.Wildcard.value ] = typeof TypeIncludes[ +TypeIncludes.Wildcard.value ] !== 'number' ? named( 'Wildcard' ) : TypeIncludes[ +TypeIncludes.Wildcard.value ];
-
-TypeIncludes = Object.create( tmp = templ(), TypeIncludes );
-tmp.asString = asString( TypeIncludes );
+ExpandingFlags = Object.create( templ(), ExpandingFlags );
+Object.getPrototypeOf( ExpandingFlags ).asString = asString( ExpandingFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name MembersOrExportsResolutionKind
  ************************************************************************************************************************/
-let MembersOrExportsResolutionKind = {};
+let MembersOrExportsResolutionKind = {}; // Object.create( ( () => new ( function MembersOrExportsResolutionKind() {} )() )(), {} );
 MembersOrExportsResolutionKind.resolvedExports = wrapped( 'resolvedExports', "resolvedMembersOrExportsResolutionKind.Exports" );
 MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedExports.value ] = typeof MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedExports.value ] !== 'number' ? named( 'resolvedExports' ) : MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedExports.value ];
 MembersOrExportsResolutionKind.resolvedMembers = wrapped( 'resolvedMembers', "resolvedMembersOrExportsResolutionKind.Members" );
 MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedMembers.value ] = typeof MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedMembers.value ] !== 'number' ? named( 'resolvedMembers' ) : MembersOrExportsResolutionKind[ +MembersOrExportsResolutionKind.resolvedMembers.value ];
 
-MembersOrExportsResolutionKind = Object.create( tmp = templ(), MembersOrExportsResolutionKind );
-tmp.asString = asString( MembersOrExportsResolutionKind );
+MembersOrExportsResolutionKind = Object.create( templ(), MembersOrExportsResolutionKind );
+Object.getPrototypeOf( MembersOrExportsResolutionKind ).asString = asString( MembersOrExportsResolutionKind );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Declaration
  ************************************************************************************************************************/
-let Declaration = {};
+let Declaration = {}; // Object.create( ( () => new ( function Declaration() {} )() )(), {} );
 Declaration.Getter = wrapped( 'Getter', 1 );
 Declaration[ +Declaration.Getter.value ] = typeof Declaration[ +Declaration.Getter.value ] !== 'number' ? named( 'Getter' ) : Declaration[ +Declaration.Getter.value ];
 Declaration.Setter = wrapped( 'Setter', 2 );
@@ -1770,14 +2461,14 @@ Declaration[ +Declaration.Method.value ] = typeof Declaration[ +Declaration.Meth
 Declaration.Property = wrapped( 'Property', Declaration.Getter | Declaration.Setter );
 Declaration[ +Declaration.Property.value ] = typeof Declaration[ +Declaration.Property.value ] !== 'number' ? named( 'Property' ) : Declaration[ +Declaration.Property.value ];
 
-Declaration = Object.create( tmp = templ(), Declaration );
-tmp.asString = asString( Declaration );
+Declaration = Object.create( templ(), Declaration );
+Object.getPrototypeOf( Declaration ).asString = asString( Declaration );
 
 /** *********************************************************************************************************************
  * @enum
  * @name DeclarationSpaces
  ************************************************************************************************************************/
-let DeclarationSpaces = {};
+let DeclarationSpaces = {}; // Object.create( ( () => new ( function DeclarationSpaces() {} )() )(), {} );
 DeclarationSpaces.None = wrapped( 'None', 0 );
 DeclarationSpaces[ +DeclarationSpaces.None.value ] = typeof DeclarationSpaces[ +DeclarationSpaces.None.value ] !== 'number' ? named( 'None' ) : DeclarationSpaces[ +DeclarationSpaces.None.value ];
 DeclarationSpaces.ExportValue = wrapped( 'ExportValue', 1 << 0 );
@@ -1787,14 +2478,14 @@ DeclarationSpaces[ +DeclarationSpaces.ExportType.value ] = typeof DeclarationSpa
 DeclarationSpaces.ExportNamespace = wrapped( 'ExportNamespace', 1 << 2 );
 DeclarationSpaces[ +DeclarationSpaces.ExportNamespace.value ] = typeof DeclarationSpaces[ +DeclarationSpaces.ExportNamespace.value ] !== 'number' ? named( 'ExportNamespace' ) : DeclarationSpaces[ +DeclarationSpaces.ExportNamespace.value ];
 
-DeclarationSpaces = Object.create( tmp = templ(), DeclarationSpaces );
-tmp.asString = asString( DeclarationSpaces );
+DeclarationSpaces = Object.create( templ(), DeclarationSpaces );
+Object.getPrototypeOf( DeclarationSpaces ).asString = asString( DeclarationSpaces );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Flags
  ************************************************************************************************************************/
-let Flags = {};
+let Flags = {}; // Object.create( ( () => new ( function Flags() {} )() )(), {} );
 Flags.Property = wrapped( 'Property', 1 );
 Flags[ +Flags.Property.value ] = typeof Flags[ +Flags.Property.value ] !== 'number' ? named( 'Property' ) : Flags[ +Flags.Property.value ];
 Flags.GetAccessor = wrapped( 'GetAccessor', 2 );
@@ -1804,8 +2495,8 @@ Flags[ +Flags.SetAccessor.value ] = typeof Flags[ +Flags.SetAccessor.value ] !==
 Flags.GetOrSetAccessor = wrapped( 'GetOrSetAccessor', Flags.GetAccessor | Flags.SetAccessor );
 Flags[ +Flags.GetOrSetAccessor.value ] = typeof Flags[ +Flags.GetOrSetAccessor.value ] !== 'number' ? named( 'GetOrSetAccessor' ) : Flags[ +Flags.GetOrSetAccessor.value ];
 
-Flags = Object.create( tmp = templ(), Flags );
-tmp.asString = asString( Flags );
+Flags = Object.create( templ(), Flags );
+Object.getPrototypeOf( Flags ).asString = asString( Flags );
 
 /** *********************************************************************************************************************
  * Enums extracted from /mnt/e/code/typescript/src/compiler/binder.ts
@@ -1815,7 +2506,7 @@ tmp.asString = asString( Flags );
  * @enum
  * @name ModuleInstanceState
  ************************************************************************************************************************/
-let ModuleInstanceState = {};
+let ModuleInstanceState = {}; // Object.create( ( () => new ( function ModuleInstanceState() {} )() )(), {} );
 ModuleInstanceState.NonInstantiated = wrapped( 'NonInstantiated', 0 );
 ModuleInstanceState[ +ModuleInstanceState.NonInstantiated.value ] = typeof ModuleInstanceState[ +ModuleInstanceState.NonInstantiated.value ] !== 'number' ? named( 'NonInstantiated' ) : ModuleInstanceState[ +ModuleInstanceState.NonInstantiated.value ];
 ModuleInstanceState.Instantiated = wrapped( 'Instantiated', 1 );
@@ -1823,14 +2514,14 @@ ModuleInstanceState[ +ModuleInstanceState.Instantiated.value ] = typeof ModuleIn
 ModuleInstanceState.ConstEnumOnly = wrapped( 'ConstEnumOnly', 2 );
 ModuleInstanceState[ +ModuleInstanceState.ConstEnumOnly.value ] = typeof ModuleInstanceState[ +ModuleInstanceState.ConstEnumOnly.value ] !== 'number' ? named( 'ConstEnumOnly' ) : ModuleInstanceState[ +ModuleInstanceState.ConstEnumOnly.value ];
 
-ModuleInstanceState = Object.create( tmp = templ(), ModuleInstanceState );
-tmp.asString = asString( ModuleInstanceState );
+ModuleInstanceState = Object.create( templ(), ModuleInstanceState );
+Object.getPrototypeOf( ModuleInstanceState ).asString = asString( ModuleInstanceState );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ContainerFlags
  ************************************************************************************************************************/
-let ContainerFlags = {};
+let ContainerFlags = {}; // Object.create( ( () => new ( function ContainerFlags() {} )() )(), {} );
 ContainerFlags.None = wrapped( 'None', 0 );
 ContainerFlags[ +ContainerFlags.None.value ] = typeof ContainerFlags[ +ContainerFlags.None.value ] !== 'number' ? named( 'None' ) : ContainerFlags[ +ContainerFlags.None.value ];
 ContainerFlags.IsContainer = wrapped( 'IsContainer', 1 << 0 );
@@ -1849,24 +2540,22 @@ ContainerFlags.IsInterface = wrapped( 'IsInterface', 1 << 6 );
 ContainerFlags[ +ContainerFlags.IsInterface.value ] = typeof ContainerFlags[ +ContainerFlags.IsInterface.value ] !== 'number' ? named( 'IsInterface' ) : ContainerFlags[ +ContainerFlags.IsInterface.value ];
 ContainerFlags.IsObjectLiteralOrClassExpressionMethod = wrapped( 'IsObjectLiteralOrClassExpressionMethod', 1 << 7 );
 ContainerFlags[ +ContainerFlags.IsObjectLiteralOrClassExpressionMethod.value ] = typeof ContainerFlags[ +ContainerFlags.IsObjectLiteralOrClassExpressionMethod.value ] !== 'number' ? named( 'IsObjectLiteralOrClassExpressionMethod' ) : ContainerFlags[ +ContainerFlags.IsObjectLiteralOrClassExpressionMethod.value ];
-ContainerFlags.IsInferenceContainer = wrapped( 'IsInferenceContainer', 1 << 8 );
-ContainerFlags[ +ContainerFlags.IsInferenceContainer.value ] = typeof ContainerFlags[ +ContainerFlags.IsInferenceContainer.value ] !== 'number' ? named( 'IsInferenceContainer' ) : ContainerFlags[ +ContainerFlags.IsInferenceContainer.value ];
 
-ContainerFlags = Object.create( tmp = templ(), ContainerFlags );
-tmp.asString = asString( ContainerFlags );
+ContainerFlags = Object.create( templ(), ContainerFlags );
+Object.getPrototypeOf( ContainerFlags ).asString = asString( ContainerFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ElementKind
  ************************************************************************************************************************/
-let ElementKind = {};
+let ElementKind = {}; // Object.create( ( () => new ( function ElementKind() {} )() )(), {} );
 ElementKind.Property = wrapped( 'Property', 1 );
 ElementKind[ +ElementKind.Property.value ] = typeof ElementKind[ +ElementKind.Property.value ] !== 'number' ? named( 'Property' ) : ElementKind[ +ElementKind.Property.value ];
 ElementKind.Accessor = wrapped( 'Accessor', 2 );
 ElementKind[ +ElementKind.Accessor.value ] = typeof ElementKind[ +ElementKind.Accessor.value ] !== 'number' ? named( 'Accessor' ) : ElementKind[ +ElementKind.Accessor.value ];
 
-ElementKind = Object.create( tmp = templ(), ElementKind );
-tmp.asString = asString( ElementKind );
+ElementKind = Object.create( templ(), ElementKind );
+Object.getPrototypeOf( ElementKind ).asString = asString( ElementKind );
 
 /** *********************************************************************************************************************
  * Enums extracted from /mnt/e/code/typescript/src/compiler/parser.ts
@@ -1876,7 +2565,7 @@ tmp.asString = asString( ElementKind );
  * @enum
  * @name SignatureFlags
  ************************************************************************************************************************/
-let SignatureFlags = {};
+let SignatureFlags = {}; // Object.create( ( () => new ( function SignatureFlags() {} )() )(), {} );
 SignatureFlags.None = wrapped( 'None', 0 );
 SignatureFlags[ +SignatureFlags.None.value ] = typeof SignatureFlags[ +SignatureFlags.None.value ] !== 'number' ? named( 'None' ) : SignatureFlags[ +SignatureFlags.None.value ];
 SignatureFlags.Yield = wrapped( 'Yield', 1 << 0 );
@@ -1892,14 +2581,14 @@ SignatureFlags[ +SignatureFlags.IgnoreMissingOpenBrace.value ] = typeof Signatur
 SignatureFlags.JSDoc = wrapped( 'JSDoc', 1 << 5 );
 SignatureFlags[ +SignatureFlags.JSDoc.value ] = typeof SignatureFlags[ +SignatureFlags.JSDoc.value ] !== 'number' ? named( 'JSDoc' ) : SignatureFlags[ +SignatureFlags.JSDoc.value ];
 
-SignatureFlags = Object.create( tmp = templ(), SignatureFlags );
-tmp.asString = asString( SignatureFlags );
+SignatureFlags = Object.create( templ(), SignatureFlags );
+Object.getPrototypeOf( SignatureFlags ).asString = asString( SignatureFlags );
 
 /** *********************************************************************************************************************
  * @enum
  * @name ParsingContext
  ************************************************************************************************************************/
-let ParsingContext = {};
+let ParsingContext = {}; // Object.create( ( () => new ( function ParsingContext() {} )() )(), {} );
 ParsingContext.SourceElements = wrapped( 'SourceElements', 1 );
 ParsingContext[ +ParsingContext.SourceElements.value ] = typeof ParsingContext[ +ParsingContext.SourceElements.value ] !== 'number' ? named( 'SourceElements' ) : ParsingContext[ +ParsingContext.SourceElements.value ];
 ParsingContext.BlockStatements = wrapped( 'BlockStatements', 2 );
@@ -1947,14 +2636,14 @@ ParsingContext[ +ParsingContext.HeritageClauses.value ] = typeof ParsingContext[
 ParsingContext.ImportOrExportSpecifiers = wrapped( 'ImportOrExportSpecifiers', 23 );
 ParsingContext[ +ParsingContext.ImportOrExportSpecifiers.value ] = typeof ParsingContext[ +ParsingContext.ImportOrExportSpecifiers.value ] !== 'number' ? named( 'ImportOrExportSpecifiers' ) : ParsingContext[ +ParsingContext.ImportOrExportSpecifiers.value ];
 
-ParsingContext = Object.create( tmp = templ(), ParsingContext );
-tmp.asString = asString( ParsingContext );
+ParsingContext = Object.create( templ(), ParsingContext );
+Object.getPrototypeOf( ParsingContext ).asString = asString( ParsingContext );
 
 /** *********************************************************************************************************************
  * @enum
  * @name Tristate
  ************************************************************************************************************************/
-let Tristate = {};
+let Tristate = {}; // Object.create( ( () => new ( function Tristate() {} )() )(), {} );
 Tristate.False = wrapped( 'False', 1 );
 Tristate[ +Tristate.False.value ] = typeof Tristate[ +Tristate.False.value ] !== 'number' ? named( 'False' ) : Tristate[ +Tristate.False.value ];
 Tristate.True = wrapped( 'True', 2 );
@@ -1962,14 +2651,14 @@ Tristate[ +Tristate.True.value ] = typeof Tristate[ +Tristate.True.value ] !== '
 Tristate.Unknown = wrapped( 'Unknown', 3 );
 Tristate[ +Tristate.Unknown.value ] = typeof Tristate[ +Tristate.Unknown.value ] !== 'number' ? named( 'Unknown' ) : Tristate[ +Tristate.Unknown.value ];
 
-Tristate = Object.create( tmp = templ(), Tristate );
-tmp.asString = asString( Tristate );
+Tristate = Object.create( templ(), Tristate );
+Object.getPrototypeOf( Tristate ).asString = asString( Tristate );
 
 /** *********************************************************************************************************************
  * @enum
  * @name JSDocState
  ************************************************************************************************************************/
-let JSDocState = {};
+let JSDocState = {}; // Object.create( ( () => new ( function JSDocState() {} )() )(), {} );
 JSDocState.BeginningOfLine = wrapped( 'BeginningOfLine', 1 );
 JSDocState[ +JSDocState.BeginningOfLine.value ] = typeof JSDocState[ +JSDocState.BeginningOfLine.value ] !== 'number' ? named( 'BeginningOfLine' ) : JSDocState[ +JSDocState.BeginningOfLine.value ];
 JSDocState.SawAsterisk = wrapped( 'SawAsterisk', 2 );
@@ -1977,62 +2666,45 @@ JSDocState[ +JSDocState.SawAsterisk.value ] = typeof JSDocState[ +JSDocState.Saw
 JSDocState.SavingComments = wrapped( 'SavingComments', 3 );
 JSDocState[ +JSDocState.SavingComments.value ] = typeof JSDocState[ +JSDocState.SavingComments.value ] !== 'number' ? named( 'SavingComments' ) : JSDocState[ +JSDocState.SavingComments.value ];
 
-JSDocState = Object.create( tmp = templ(), JSDocState );
-tmp.asString = asString( JSDocState );
+JSDocState = Object.create( templ(), JSDocState );
+Object.getPrototypeOf( JSDocState ).asString = asString( JSDocState );
 
 /** *********************************************************************************************************************
  * @enum
  * @name PropertyLikeParse
  ************************************************************************************************************************/
-let PropertyLikeParse = {};
+let PropertyLikeParse = {}; // Object.create( ( () => new ( function PropertyLikeParse() {} )() )(), {} );
 PropertyLikeParse.Property = wrapped( 'Property', 1 );
 PropertyLikeParse[ +PropertyLikeParse.Property.value ] = typeof PropertyLikeParse[ +PropertyLikeParse.Property.value ] !== 'number' ? named( 'Property' ) : PropertyLikeParse[ +PropertyLikeParse.Property.value ];
 PropertyLikeParse.Parameter = wrapped( 'Parameter', 2 );
 PropertyLikeParse[ +PropertyLikeParse.Parameter.value ] = typeof PropertyLikeParse[ +PropertyLikeParse.Parameter.value ] !== 'number' ? named( 'Parameter' ) : PropertyLikeParse[ +PropertyLikeParse.Parameter.value ];
 
-PropertyLikeParse = Object.create( tmp = templ(), PropertyLikeParse );
-tmp.asString = asString( PropertyLikeParse );
+PropertyLikeParse = Object.create( templ(), PropertyLikeParse );
+Object.getPrototypeOf( PropertyLikeParse ).asString = asString( PropertyLikeParse );
 
 /** *********************************************************************************************************************
  * @enum
  * @name InvalidPosition
  ************************************************************************************************************************/
-let InvalidPosition = {};
+let InvalidPosition = {}; // Object.create( ( () => new ( function InvalidPosition() {} )() )(), {} );
 InvalidPosition.Value = wrapped( 'Value', -1 );
 InvalidPosition[ +InvalidPosition.Value.value ] = typeof InvalidPosition[ +InvalidPosition.Value.value ] !== 'number' ? named( 'Value' ) : InvalidPosition[ +InvalidPosition.Value.value ];
 
-InvalidPosition = Object.create( tmp = templ(), InvalidPosition );
-tmp.asString = asString( InvalidPosition );
-
-/** *********************************************************************************************************************
- * Enums extracted from /mnt/e/code/typescript/src/compiler/sys.ts
- ************************************************************************************************************************/
-
-/** *********************************************************************************************************************
- * @enum
- * @name FileSystemEntryKind
- ************************************************************************************************************************/
-let FileSystemEntryKind = {};
-FileSystemEntryKind.File = wrapped( 'File', 1 );
-FileSystemEntryKind[ +FileSystemEntryKind.File.value ] = typeof FileSystemEntryKind[ +FileSystemEntryKind.File.value ] !== 'number' ? named( 'File' ) : FileSystemEntryKind[ +FileSystemEntryKind.File.value ];
-FileSystemEntryKind.Directory = wrapped( 'Directory', 2 );
-FileSystemEntryKind[ +FileSystemEntryKind.Directory.value ] = typeof FileSystemEntryKind[ +FileSystemEntryKind.Directory.value ] !== 'number' ? named( 'Directory' ) : FileSystemEntryKind[ +FileSystemEntryKind.Directory.value ];
-
-FileSystemEntryKind = Object.create( tmp = templ(), FileSystemEntryKind );
-tmp.asString = asString( FileSystemEntryKind );
+InvalidPosition = Object.create( templ(), InvalidPosition );
+Object.getPrototypeOf( InvalidPosition ).asString = asString( InvalidPosition );
 
 export {
     Comparison,
+    SyntaxKind,
     NodeFlags,
     ModifierFlags,
     JsxFlags,
     RelationComparisonResult,
-    GeneratedIdentifierFlags,
+    GeneratedIdentifierKind,
     TokenFlags,
     FlowFlags,
     StructureIsReused,
     UnionReduction,
-    NodeBuilderFlags,
     TypeFormatFlags,
     SymbolFormatFlags,
     SymbolAccessibility,
@@ -2059,20 +2731,18 @@ export {
     LanguageVariant,
     DiagnosticStyle,
     WatchDirectoryFlags,
+    CharacterCodes,
     Extension,
     TransformFlags,
     EmitFlags,
     ExternalEmitHelpers,
     EmitHint,
-    ListFormat,
-    PragmaKindFlags,
     TypeFacts,
     TypeSystemPropertyName,
     CheckMode,
     CallbackCheck,
     MappedTypeModifiers,
     ExpandingFlags,
-    TypeIncludes,
     MembersOrExportsResolutionKind,
     Declaration,
     DeclarationSpaces,
@@ -2085,6 +2755,5 @@ export {
     Tristate,
     JSDocState,
     PropertyLikeParse,
-    InvalidPosition,
-    FileSystemEntryKind
+    InvalidPosition
 };

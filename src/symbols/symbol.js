@@ -4,6 +4,7 @@
  * @version 1.0.0
  * @copyright Planet3, Inc.
  *******************************************************************************************************/
+
 'use strict';
 
 /**
@@ -12,11 +13,11 @@
 
 import { SyntaxKind }         from "../ts/ts-helpers";
 import {
-    CharacterCodes,
     SymbolFlags,
     CheckFlags,
     InternalSymbolName
 }                             from "../types";
+import { CharacterCodes }      from "../utils/char-codes";
 import {
     get_ext_ref,
     implement,
@@ -29,7 +30,7 @@ import { hasStaticModifier }  from "./modifiers";
 import { pushIfUnique, some } from "./array-ish";
 import {
     getNameOfDeclaration
-} from "./nodes";
+}                             from "./nodes";
 
 let nextSymbolId = 1;
 
@@ -49,10 +50,10 @@ export class Symbol
     constructor( flags, name )
     {
         this.name = this.escapedName = name;
-        this.declarations     = void 0;
+        this.declarations     = [];
         this.valueDeclaration = void 0;
-        this.members          = void 0;
-        this.exports          = void 0;
+        this.members          = new Map();
+        this.exports          = new Map();
         this.globalExports    = void 0;
 
         this._id          = nextSymbolId++;
@@ -64,6 +65,11 @@ export class Symbol
 
         /** @type {SymbolFlags} */
         this.flags = flags;
+    }
+
+    toString()
+    {
+        return `Symbol -> "${this.name}", members(${this.members.size}): [ "${[ ...this.members.keys() ].join( '", "' )}" ], decls(${this.declarations.length}): [ "${this.declarations.map( decl => decl.name || 'no name' ).join( '", "' )}" ]`;
     }
 
     get name()
@@ -99,7 +105,9 @@ export class Symbol
      */
     get flags()
     {
-        return this._flags || ( this._flags = SymbolFlags() );
+        if ( this._flags ) return this._flags;
+
+        return this._flags = SymbolFlags.create( 0 );
     }
 
     /**
@@ -107,7 +115,10 @@ export class Symbol
      */
     set flags( v )
     {
-        this._flags = SymbolFlags( v );
+        if ( this._flags === void 0 )
+            this._flags = SymbolFlags.create( +v );
+        else
+            this._flags.value = +v;
     }
 
     add_declaration( node, symbolFlags )
@@ -427,7 +438,7 @@ export class TransientSymbol extends Symbol
     constructor( flags, name )
     {
         super( flags, name );
-        this.checkFlags      = CheckFlags();
+        this.checkFlags      = CheckFlags.create();
         this.isRestParameter = false;
     }
 }
@@ -454,10 +465,10 @@ export class ReverseMappedSymbol extends TransientSymbol
  * @param {?CheckFlags} [checkFlags]
  * @returns {Symbol}
  */
-export function createSymbol( flags, name, checkFlags = CheckFlags() )
+export function createSymbol( flags, name, checkFlags = CheckFlags.create() )
 {
-    const symbol      = new TransientSymbol( SymbolFlags( flags | SymbolFlags.Transient ), name );
-    symbol.checkFlags = CheckFlags( checkFlags );
+    const symbol      = new TransientSymbol( flags | SymbolFlags.Transient, name );
+    symbol.checkFlags = CheckFlags.create( checkFlags );
     return symbol;
 }
 

@@ -1,23 +1,45 @@
+/**
+ * Basic TypeScript traversal:
+ *
+ *
+ * import * as fs from 'fs';
+ * import * as ts from 'typescript';
+ *
+ * function visit(node: ts.Node) {
+ *   if (ts.isFunctionDeclaration(node)) {
+ *     for (const param of node.parameters) {
+ *       console.log(param.name.getText());
+ *     }
+ *   }
+ *   node.forEachChild(visit);
+ * }
+ *
+ * function instrument(fileName: string, sourceCode: string) {
+ *   const sourceFile = ts.createSourceFile(fileName, sourceCode, ts.ScriptTarget.Latest, true);
+ *   visit(sourceFile);
+ * }
+ *
+ * const inputFile = process.argv[2];
+ * instrument(inputFile, fs.readFileSync(inputFile, 'utf-8'));
+ */
 "use strict";
 
 // import { visit } from 'typescript-walk';
-import { object, number, array, has }            from 'convenience';
-import ts, { visitEachChild }                    from 'typescript';
+
+import { object, array, has }       from 'convenience';
+import * as ts                      from 'typescript';
 import {
-    indent,
-    show_copy_paste,
     syntaxKind,
-    nodeName,
-    show_fields,
-    collect_fields, SyntaxKind
-}                                       from './ts-helpers';
-import { traverse }                     from './ts-ast-walker';
-import { inspect }                      from 'util';
-import { nameOf }                       from 'typeofs';
-// import { visitor }                     from "../symbols/define-libraries";
-import { hide_parent} from "../utils";
-import { createBinder }                 from "../symbols/nodes";
-import { create_reporters, output }     from "../utils/source-code";
+    collect_fields
+}                                   from './ts-helpers';
+import { createBinder }             from "../symbols/nodes";
+import { create_reporters, output } from "../utils/source-code";
+import {
+    reportStatistics,
+    performance
+}                                   from "../utils/performance";
+import { file_handler, sync }       from "../utils/files";
+import { create_host }              from "./host";
 
 const defaultOptions = {
     experimentalDecorators:     true,
@@ -25,9 +47,8 @@ const defaultOptions = {
     jsx:                        true
 };
 
-let getComments;
-let seen = new Set();
-
+let getComments,
+    seen = new Set();
 
 export const settings = {
 
@@ -42,58 +63,136 @@ export const settings = {
         }
     },
 
-    parse( filename, code, options = {} )
+    /**
+     * @param filenames
+     * @param options
+     * @return {Promise<*[]>}
+     */
+    async aparse( filenames, options = {} )
     {
         options = { ...defaultOptions, ...options };
 
-        const
-        //     compilerHost /* ts.CompilerHost */ = {
-        //     fileExists:                () => true,
-        //     getCanonicalFileName:      filename => filename,
-        //     getCurrentDirectory:       () => '',
-        //     getDefaultLibFileName:     () => 'lib.d.ts',
-        //     getNewLine:                () => '\n',
-        //     getSourceFile:             filename => ts.createSourceFile( filename, code, ts.ScriptTarget.Latest, true ),
-        //     readFile:                  () => null,
-        //     useCaseSensitiveFileNames: () => true,
-        //     writeFile:                 () => null
-        // };
+        performance.enable();
+        performance.mark( "beforeFiles" );
+
+        const handler = await file_handler( filenames, [ 'data' ] );
+
+        performance.mark( "afterFiles" );
+        performance.measure( "Files", "beforeFiles", "afterFiles" );
+
+        const res = [];
+
+        let concatenated = '';
+
+
+        handler.each( file => concatenated += file.source.replace( /\r/g, '' ) );
+
+        const c = handler.create_file( 'generated.d.ts' );
+
+        sync.writeFile( 'data/concatenated.d.ts', concatenated );
+
+        c.source    = concatenated;
+        c.reporters = create_reporters( c.filename, c.source );
+        c.ast       = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true );
+        c.bound     = createBinder()( c.ast, {} );
+
+        // handler.each( file => {
         //
-        // const program = ts.createProgram( [ filename ], {
-        //     noResolve:                  true,
-        //     target:                     ts.ScriptTarget.Latest,
-        //     experimentalDecorators:     options.experimentalDecorators,
-        //     experimentalAsyncFunctions: options.experimentalAsyncFunctions,
-        //     jsx:                        options.jsx ? 'preserve' : undefined
-        // }, compilerHost ),
+        //     file.ast = ts.createSourceFile( file.filename, file.source, ts.ScriptTarget.Latest, true );
+        //     // file.binder = createBinder();
+        //     file.bound = createBinder()( file.ast, {} );
+        //     res.push( file );
+        // } );
 
-            // sourceFile                = program.getSourceFile( filename ),
+        // return res;
 
 
+        // c.program = create_program( 'generated.d.ts', concatenated, c.ast );
+        // c.typeChecker = c.program.getTypeChecker();
+        c.ast.moduleAugmentations = [];
+        c.typeChecker             = ts.createTypeChecker( create_host( 'generated.d.ts', concatenated, c.ast ), false );
 
-            // typeChecker               = program.getTypeChecker(),
-            // noop                      = () => undefined,
-            // notImplemented            = () => { throw new Error("Not implemented"); },
-            // nullTransformationContext = {
-            //     enableEmitNotification:    noop,
-            //     enableSubstitution:        noop,
-            //     endLexicalEnvironment:     () => undefined,
-            //     getCompilerOptions:        notImplemented,
-            //     getEmitHost:               notImplemented,
-            //     getEmitResolver:           notImplemented,
-            //     hoistFunctionDeclaration:  noop,
-            //     hoistVariableDeclaration:  noop,
-            //     isEmitNotificationEnabled: notImplemented,
-            //     isSubstitutionEnabled:     notImplemented,
-            //     onEmitNode:                noop,
-            //     onSubstituteNode:          notImplemented,
-            //     readEmitHelpers:           notImplemented,
-            //     requestEmitHelper:         noop,
-            //     resumeLexicalEnvironment:  noop,
-            //     startLexicalEnvironment:   noop,
-            //     suspendLexicalEnvironment: noop
-            // },
+        return [ c ];
+    },
 
+    parse( filenames, options = {} )
+    {
+        const handler = file_handler( filenames, [ 'data' ] );
+
+        for ( const file of handler )
+            ts.createSourceFile( file.filename, file.source, ts.ScriptTarget.Latest, true );
+
+        options = { ...defaultOptions, ...options };
+
+        performance.enable();
+        performance.mark( "beforeHost" );
+
+        const
+            compilerHost /* ts.CompilerHost */ = {
+                fileExists: sync.fileExists,
+
+                getCanonicalFileName: filename => {
+                    // console.log( `getCanonicalFileName( ${filename} ) -> ${canonical_name( filename )}, Keys of files: [ "${[ ...filenames.keys() ].join( '", "' )}" ]` );
+                    return handler.fix_path( filename ); // canonical_name( filename );
+                },
+
+                getCurrentDirectory:   () => process.cwd(),
+                getDefaultLibFileName: () => 'lib.es6.d.ts',
+                getNewLine:            () => '\n',
+
+                getSourceFile: filename => {
+                    let file   = handler.get_file( filename ),
+                        source = handler.get_source( file );
+
+                    if ( !file.ast )
+                        file.ast = ts.createSourceFile( file.filename, source, ts.ScriptTarget.Latest, true );
+
+                    return file.ast;
+                },
+
+                readFile:                  sync.readFile,
+                useCaseSensitiveFileNames: () => true,
+                writeFile:                 () => null
+            };
+        performance.mark( "afterHost" );
+        performance.measure( "host", "beforeHost", "afterHost" );
+
+        const
+            program = ts.createProgram( handler.names(), {
+                noResolve:                  true,
+                target:                     ts.ScriptTarget.Latest,
+                experimentalDecorators:     options.experimentalDecorators,
+                experimentalAsyncFunctions: options.experimentalAsyncFunctions,
+                jsx:                        options.jsx ? 'preserve' : undefined
+            }, compilerHost );
+
+        // typeChecker = program.getTypeChecker(),
+        // symWalker   = typeChecker.getSymbolWalker();
+        // console.log( symWalker );
+        // console.log( symWalker.walkSymbol( sourceFile.locals.get( 'TypedPropertyDescriptor' ) ) );
+        // console.log( symWalker.walkType( typeChecker.getTypeOfSymbolAtLocation( sourceFile.locals.get( 'TypedPropertyDescriptor' ), sourceFile ) ) );
+        // process.exit();
+        // // noop                      = () => undefined,
+        // // notImplemented            = () => { throw new Error("Not implemented"); },
+        // // nullTransformationContext = {
+        // //     enableEmitNotification:    noop,
+        // //     enableSubstitution:        noop,
+        // //     endLexicalEnvironment:     () => undefined,
+        // //     getCompilerOptions:        notImplemented,
+        // //     getEmitHost:               notImplemented,
+        // //     getEmitResolver:           notImplemented,
+        // //     hoistFunctionDeclaration:  noop,
+        // //     hoistVariableDeclaration:  noop,
+        // //     isEmitNotificationEnabled: notImplemented,
+        // //     isSubstitutionEnabled:     notImplemented,
+        // //     onEmitNode:                noop,
+        // //     onSubstituteNode:          notImplemented,
+        // //     readEmitHelpers:           notImplemented,
+        // //     requestEmitHelper:         noop,
+        // //     resumeLexicalEnvironment:  noop,
+        // //     startLexicalEnvironment:   noop,
+        // //     suspendLexicalEnvironment: noop
+        // // },
         // visitEachChild( sourceFile, node => {
         //     if ( has( node, 'kind' ) )
         //         console.log( `Kind is ${SyntaxKind[ node.kind ]}` );
@@ -101,38 +200,47 @@ export const settings = {
         //         console.log( 'no kind found' );
         // }, nullTransformationContext );
 
-            binder = createBinder(),
+        program.numLines = 0;
+        const
+            x            = handler.names().map( create_file );
 
-//         let outStr   = inspect( hide_parent( typeChecker.getSymbolAtLocation( sourceFile.statements[ 0 ].name ) ),
-//             {
-//                 showHidden: false,
-//                 depth:      6,
-//                 colors:     false
-//             } ),
-//             preamble =
-//                 `/* eslint-disable max-lines,no-unused-vars,max-len,array-bracket-newline */
-// const
-//     Circular = '',
-//     NodeObject = '',
-//     SymbolObject = '',
-//     TokenObject = '',
-//     Map = '',
-//     dump = `,
-//
-//             clean    = outStr
-//                 .replace( /[A-Z][a-z]+Object {/g, '{' )
-//                 .replace( /Map {}/g, '{}' )
-//                 .replace( /Map {([^}])/g, '{$1' )
-//                 .replace( / =>/g, ':' )
-//                 .replace( /\[(NodeObject|SymbolObject|TokenObject|Circular)]/g, '$1' )
-//                 .replace( /\[Map]/g, '{}' )
-//                 .replace( /\[Array]/g, '[]' );
-//
-//         clean = clean.trim() + ';\n';
-//
-//         console.log( preamble + clean );
 
-        getComments = ( node, isTrailing ) => {
+
+        /**
+         * @param {string} filename
+         * @param {object} file
+         */
+        function create_file( filename )
+        {
+            const file = handler.get_file( filename );
+
+            file.ast = program.getSourceFile( filename );
+
+            // raw    = ts.createSourceFile( filename, code, ts.ScriptTarget.Latest, true ),
+
+            // file.reporters = create_reporters( filename, file.source );
+            file.program = program;
+
+            if ( file.ast )
+                file.ast.info = file;
+            else
+                console.error( `${filename}: Missing AST` );
+            // sourceFile.info = x;
+
+            if ( !file.binder ) file.binder = createBinder();
+            file.bound = file.binder( file.ast, file );
+            program.numLines += file.numLines = file.reporters.numLines;
+
+            return file;
+        }
+
+
+        reportStatistics( program );
+
+        return x;
+
+        function getComments( node, isTrailing )
+        {
             if ( node.parent )
             {
                 const nodePos   = isTrailing ? node.end : node.pos;
@@ -140,9 +248,9 @@ export const settings = {
 
                 if ( node.parent.kind === ts.SyntaxKind.SourceFile || nodePos !== parentPos )
                 {
-                    let comments = isTrailing
-                                   ? ts.getTrailingCommentRanges( sourceFile.text, nodePos )
-                                   : ts.getLeadingCommentRanges( sourceFile.text, nodePos );
+                    let comments = isTrailing ?
+                                   ts.getTrailingCommentRanges( sourceFile.text, nodePos ) :
+                                   ts.getLeadingCommentRanges( sourceFile.text, nodePos );
 
                     if ( array( comments ) )
                     {
@@ -155,22 +263,7 @@ export const settings = {
                     }
                 }
             }
-        },
-            raw = ts.createSourceFile( filename, code, ts.ScriptTarget.Latest, true ),
-
-            r = create_reporters( filename, code ),
-            x = Object.assign( {}, {
-                ast:      raw, // sourceFile,
-                fileName: filename,
-                source:   code
-            }, r );
-
-        raw.info = x;
-        // sourceFile.info = x;
-
-        x.bound = binder( x.ast, x );
-
-        return x;
+        }
 
         function is_node( node )
         {
@@ -222,31 +315,6 @@ export const settings = {
 
             return true;
         }
-
-        // __walk( sourceFile, () => {} );
-
-        // traverse( sourceFile, ( node, parent, field, index ) => {
-        //     let name = nodeName( node );
-        //
-        //     if ( name === 'Identifier' && node.escapedText )
-        //         name += ` ("${node.escapedText}")`;
-        //     // else if ( name === 'JSDocParameterTag' )
-        //     // {
-        //     //     const tnode = Object.assign( {}, node );
-        //     //     delete tnode.parent;
-        //     //
-        //     //     console.log( nameOf( node ) + ': ' + inspect( tnode, { depth: 1, colors: true } ) );
-        //     //     if ( tnode.tagName )
-        //     //         console.log( '----- tagName: ' + nameOf( tnode.tagName ) + ': ' + inspect( tnode.tagName, { depth: 1, colors: true } ) );
-        //     // }
-        //
-        //     console.log( `${indent( node )}${field || 'root'}${number( index ) ? `[ ${index} ]` : ''}: "${name}" => ${parent ? nodeName( parent ) : 'root'}` );
-        // } );
-
-        // console.log( 'identifiers:', sourceFile.identifiers );
-        // console.log( 'named:', [ ...sourceFile.getNamedDeclarations().keys() ] );
-        // console.log( 'compute named:', [ ...sourceFile.computeNamedDeclarations().keys() ] );
-        // console.log( 'ReadonlyArray:', sourceFile.getNamedDeclarations().get( 'ReadonlyArray' ) );
     },
 
     define_symbols( info )
@@ -303,4 +371,5 @@ export const settings = {
         else if ( typeof node.pos !== 'undefined' && typeof node.end !== 'undefined' )
             return [ node.pos, node.end ];
     }
+
 };

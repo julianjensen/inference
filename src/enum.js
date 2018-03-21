@@ -241,3 +241,45 @@ function round_up_to_next_power_of_two( v )
 // show_log2( 16 );
 // show_log2( 256 );
 // show_log2( 123 );
+
+/**
+ * 1. `/const\s+enum\s+([^\s]+)\s*\{\s*([\s\S]*?)\s*,?\s*\}/g.exec( source )`
+ * 2. `/\s*([^\s=]+)\s*=\s*([^,$]+)/g.exec( $2 )`
+ *
+ * @param name
+ * @return {{}}
+ */
+
+
+function declare_proxy_enum( name )
+{
+    const
+        num2key = {},
+        key2num = {},
+        as_string = num => {
+            let i = 1,
+                s = [];
+
+            while ( num )
+            {
+                if ( num & 1 )
+                    s.push( num2key[ i ] );
+
+                num >>>= 1;
+                i <<= 1;
+            }
+
+            return s.join( ' | ' );
+        };
+
+    const enumHandler = {
+        set( target, prop, value )
+        {
+            target[ VALUE ] = value;
+        }
+    };
+
+    return new Proxy( {}, enumHandler );
+}
+
+

@@ -55,7 +55,7 @@ export function hasReadonlyModifier( node )
  */
 export function getSelectedModifierFlags( node, flags )
 {
-    return ModifierFlags( getModifierFlags( node ) & flags );
+    return getModifierFlags( node ) & flags;
 }
 
 /**
@@ -65,13 +65,13 @@ export function getSelectedModifierFlags( node, flags )
 export function getModifierFlags( node )
 {
     if ( node.modifierFlagsCache & ModifierFlags.HasComputedFlags )
-        return ModifierFlags( node.modifierFlagsCache & ~ModifierFlags.HasComputedFlags );
+        return ModifierFlags.create( node.modifierFlagsCache & ~ModifierFlags.HasComputedFlags );
 
     const flags = getModifierFlagsNoCache( node );
 
-    node.modifierFlagsCache = flags() | ModifierFlags.HasComputedFlags;
+    node.modifierFlagsCache = flags | ModifierFlags.HasComputedFlags;
 
-    return ModifierFlags( flags );
+    return flags; // ModifierFlags.create( flags );
 }
 
 /**
@@ -92,7 +92,7 @@ export function getModifierFlagsNoCache( node )
     if ( node.flags & NodeFlags.NestedNamespace || ( node.kind === SyntaxKind.Identifier && node.isInJSDocNamespace ) )
         flags |= ModifierFlags.Export;
 
-    return ModifierFlags( flags );
+    return flags;
 }
 
 /**

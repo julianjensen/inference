@@ -4,9 +4,14 @@
     "description": "A JsDoc parser substitute that will parse JsDoc tags as well as closure annotations.",
     "main": "index.js",
     "scripts": {
+        "syms": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts >sym.txt",
+        "reader": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts",
+        "symtest": "node --trace-warnings _cli.js data/lib.es2017.typedarrays.d.ts >sym.txt",
         "lint": "eslint index.js lib/**/*.js src/**/*.js",
         "check": "npm run lint -s && dependency-check package.json --entry index.js",
-        "test": "rm -rf node_modules/.cache coverage/ && nyc --reporter=lcov --reporter=text --produce-source-map --require=@std/esm mocha",
+        "test": "jest",
+        "test2": "node -r @std/esm node_modules/.bin/jest --no-cache",
+        "test1": "rm -rf node_modules/.cache coverage/ && nyc --reporter=lcov --reporter=text --produce-source-map --require=@std/esm mocha",
         "coveralls": "npm test && nyc report --reporter=text-lcov | coveralls",
         "postcoveralls": "rimraf ./coverage",
         "prepublish": "npm test",
@@ -41,25 +46,31 @@
     },
     "homepage": "https://github.com/julianjensen/jsdoc-tag-parser#readme",
     "devDependencies": {
+        "babel-jest": "^22.4.1",
+        "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
         "chai": "^4.1.2",
         "coveralls": "^3.0.0",
         "dependency-check": "^3.0.0",
         "eslint": "^4.15.0",
         "flow-bin": "^0.66.0",
+        "jest": "^22.4.2",
         "mocha": "^5.0.0",
         "npm-run-all": "^4.1.2",
         "nyc": "^11.4.1",
         "rimraf": "^2.6.2"
     },
     "dependencies": {
-        "@std/esm": "^0.19.7",
+        "@std/esm": "^0.25.2",
+        "bluebird": "^3.5.1",
         "chalk": "^2.3.0",
         "commander": "^2.13.0",
         "convenience": "^1.1.5",
         "doctrine": "^2.1.0",
         "espree": "^3.5.2",
         "estraverse": "^4.2.0",
+        "fs-extra": "^5.0.0",
         "omit-deep": "^0.3.0",
+        "rxjs": "^5.5.7",
         "typeofs": "^1.0.0",
         "typescript": "^2.7.2",
         "typescript-walk": "^2.6.12"
@@ -67,5 +78,23 @@
     "@std/esm": {
         "esm": "js",
         "cjs": true
+    },
+    "jest": {
+        "testMatch": [
+            "<rootDir>/**/__tests__/*test.js"
+        ],
+        "transform": {
+            "^.+\\.js$": "./node_modules/babel-jest"
+        },
+        "testEnvironment": "node",
+        "moduleFileExtensions": [
+            "js",
+            "json"
+        ]
+    },
+    "babel": {
+        "plugins": [
+            "babel-plugin-transform-es2015-modules-commonjs"
+        ]
     }
 }
