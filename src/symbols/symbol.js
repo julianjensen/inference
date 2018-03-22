@@ -28,13 +28,12 @@ import {
 }                             from "../utils";
 import { hasStaticModifier }  from "./modifiers";
 import { pushIfUnique, some } from "./array-ish";
-import {
-    getNameOfDeclaration
-}                             from "./nodes";
 
 let nextSymbolId = 1;
 
 const
+    PARENT = Symbol( 'parent' ),
+    COPY = Symbol( 'copy' ),
     symbolLinks   = {},
     mergedSymbols = {};
 
@@ -49,7 +48,7 @@ export class Symbol
      */
     constructor( flags, name )
     {
-        this.name = this.escapedName = name;
+        this.name = name;
         this.declarations     = [];
         this.valueDeclaration = void 0;
         this.members          = new Map();
@@ -65,6 +64,18 @@ export class Symbol
 
         /** @type {SymbolFlags} */
         this.flags = flags;
+    }
+
+    static copy( sym )
+    {
+        const
+            dst = new Symbol( sym.flags, sym.escapedName );
+
+        dst.declarations = sym.declarations.slice();
+        dst.valueDeclaration = sym.valueDeclaration;
+        if ( sym[ PARENT ] ) dst.parent = sym[ PARENT ];
+        sym[ COPY ] = dst;
+        if ( sym.exports && sym.exports.size ) dst.exports = new Map( ...sym.exports );
     }
 
     toString()
@@ -470,5 +481,13 @@ export function createSymbol( flags, name, checkFlags = CheckFlags.create() )
     const symbol      = new TransientSymbol( flags | SymbolFlags.Transient, name );
     symbol.checkFlags = CheckFlags.create( checkFlags );
     return symbol;
+}
+
+function xfer_sym( sym )
+{
+    if ( !sym ) return;
+    else if ( sym[ COPY ] ) return sym[ COPY ];
+
+    return Symbol.copy( sym );
 }
 

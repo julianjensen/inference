@@ -115,45 +115,45 @@ async function run_all()
     // reportStatistics();
 }
 
-new Promise( ( resolve, reject ) => {
-    let ref = 2;
-    const
-        reader   = read_files( tsFiles ),
-        compiler = compile_files( reader ),
-        sub      = reader.subscribe( {
-            next( obj )
-            {
-                console.log( `name: ${obj.filename}` );
-                console.log( `source? ${!!obj.source}` );
-            },
-            error: reject,
-            complete()
-            {
-                sub.unsubscribe();
-                --ref;
-                if ( ref <= 0 ) resolve( 'okay' );
-            }
-        } ),
-        csub     = compiler.subscribe( {
-            next( file )
-            {
-                console.log( `compiled: ${file.filename}, ast? ${!!file.ast}, is ` );
-            },
-            error: reject,
-            complete()
-            {
-                csub.unsubscribe();
-                --ref;
-                if ( ref <= 0 ) resolve( "comp'd" );
-            }
-        } );
+// new Promise( ( resolve, reject ) => {
+//     let ref = 2;
+//     const
+//         reader   = read_files( tsFiles ),
+//         compiler = compile_files( reader ),
+//         sub      = reader.subscribe( {
+//             next( obj )
+//             {
+//                 console.log( `name: ${obj.filename}` );
+//                 console.log( `source? ${!!obj.source}` );
+//             },
+//             error: reject,
+//             complete()
+//             {
+//                 sub.unsubscribe();
+//                 --ref;
+//                 if ( ref <= 0 ) resolve( 'okay' );
+//             }
+//         } ),
+//         csub     = compiler.subscribe( {
+//             next( file )
+//             {
+//                 console.log( `compiled: ${file.filename}, ast? ${!!file.ast}, is ` );
+//             },
+//             error: reject,
+//             complete()
+//             {
+//                 csub.unsubscribe();
+//                 --ref;
+//                 if ( ref <= 0 ) resolve( "comp'd" );
+//             }
+//         } );
+//
+// } )
+//     .catch( err => console.error( err ) )
+//     .then( status => console.log( status ) );
 
-} )
-    .catch( err => console.error( err ) )
-    .then( status => console.log( status ) );
 
-
-// run_all();
+run_all();
 
 
 /**
