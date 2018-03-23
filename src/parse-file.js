@@ -8,10 +8,10 @@
 
 import { parse as parser }                       from 'espree';
 import { traverse, attachComments, VisitorKeys } from 'estraverse';
-import { TypeFlags }                             from "./types";
+// import { TypeFlags }                             from "./types";
 import { globals, store_ast }                    from "./utils";
-import { enter, exit }                           from "./doctags";
-import { Symbol }                                from "./old/symbols";
+// import { enter, exit }                           from "./doctags";
+// import { Symbol }                                from "./old/symbols";
 
 /**
  * @param {string} source       - The source module
@@ -58,13 +58,13 @@ export function prep( withComments, file )
         allNodesParsed = [],
         byIndex        = [];
 
-    if ( !globals.symbolTable )
-        globals.symbolTable = new Symbol( 'global' ).as( TypeFlags.CONTAINER );
-
-    if ( globals.program.script )
-        globals.current = globals.symbolTable;
-    else
-        globals.current = new Symbol( file, globals.symbolTable ).as( TypeFlags.CONTAINER | TypeFlags.MODULE );
+    // if ( !globals.symbolTable )
+    //     globals.symbolTable = new Symbol( 'global' ).as( TypeFlags.CONTAINER );
+    //
+    // if ( globals.program.script )
+    //     globals.current = globals.symbolTable;
+    // else
+    //     globals.current = new Symbol( file, globals.symbolTable ).as( TypeFlags.CONTAINER | TypeFlags.MODULE );
 
     withComments.fileName = file;
 
@@ -74,12 +74,12 @@ export function prep( withComments, file )
 
             node.parent         = parent;
             node.index          = byIndex.length;
-            node.transformFlags = TransformFlags.None;
+            // node.transformFlags = TransformFlags.None;
             byIndex.push( node );
 
             [ node.field, node.fieldIndex ] = determine_field( node, parent );
 
-            enter( node );
+            // enter( node );
             // const comments = parse_comments( node );
             //
             // if ( comments )
@@ -91,7 +91,7 @@ export function prep( withComments, file )
             // else if ( node.type === Syntax.Identifier )
             //     build_definition( node );
         },
-        exit
+        // exit
     } );
 
     store_ast( file, byIndex );

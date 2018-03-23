@@ -17,7 +17,7 @@ import {
     CheckFlags,
     InternalSymbolName
 }                             from "../types";
-import { CharacterCodes }      from "../utils/char-codes";
+import { CharacterCodes }     from "../utils/char-codes";
 import {
     get_ext_ref,
     implement,
@@ -28,18 +28,17 @@ import {
 }                             from "../utils";
 import { hasStaticModifier }  from "./modifiers";
 import { pushIfUnique, some } from "./array-ish";
-import {
-    getNameOfDeclaration
-}                             from "./nodes";
 
 let nextSymbolId = 1;
 
 const
+    PARENT        = Symbol( 'parent' ),
+    COPY          = Symbol( 'copy' ),
     symbolLinks   = {},
     mergedSymbols = {};
 
 /**
- * @class
+ * @class Symbol
  */
 export class Symbol
 {
@@ -49,27 +48,56 @@ export class Symbol
      */
     constructor( flags, name )
     {
-        this.name = this.escapedName = name;
+        this.name             = name;
         this.declarations     = [];
         this.valueDeclaration = void 0;
         this.members          = new Map();
         this.exports          = new Map();
         this.globalExports    = void 0;
 
-        this._id          = nextSymbolId++;
-        this.mergeId      = 0;
-        this.parent       = null;
-        this.exportSymbol = null;
-        this.isReferenced = false;
-        this.isAssigned   = false;
+        this._id                 = nextSymbolId++;
+        this.mergeId             = 0;
+        this.parent              = null;
+        this.exportSymbol        = null;
+        this.isReferenced        = false;
+        this.isAssigned          = false;
+        this.constEnumOnlyModule = false;
 
         /** @type {SymbolFlags} */
         this.flags = flags;
     }
 
+    /**
+     * @param {Symbol} symbol
+     */
+    static copy( symbol )
+    {
+        if ( symbol[ COPY ] ) return symbol[ COPY ];
+
+        const
+            dst = new Symbol( symbol.flags, symbol.escapedName );
+
+        dst.declarations = symbol.declarations ? symbol.declarations.slice() : [];
+        if ( symbol.valueDeclaration ) dst.valueDeclaration = symbol.valueDeclaration;
+        if ( symbol[ PARENT ] )
+            dst.parent = dst[ PARENT ] = symbol[ PARENT ];
+        else
+            dst.parent = symbol.parent;
+
+        symbol[ COPY ] = dst;
+
+        if ( symbol.exports ) dst.exports = new Map( ...symbol.exports );
+        if ( symbol.members ) dst.members = new Map( ...symbol.members );
+
+        if ( symbol.constEnumOnlyModule ) dst.constEnumOnlyModule = true;
+
+        return dst;
+    }
+
     toString()
     {
-        return `Symbol -> "${this.name}", members(${this.members.size}): [ "${[ ...this.members.keys() ].join( '", "' )}" ], decls(${this.declarations.length}): [ "${this.declarations.map( decl => decl.name || 'no name' ).join( '", "' )}" ]`;
+        return `Symbol -> "${this.name}", members(${this.members.size}): [ "${[ ...this.members.keys() ].join( '", "' )}" ], decls(${this.declarations.length}): [ "${this.declarations.map( decl => decl.name || 'no name' )
+            .join( '", "' )}" ]`;
     }
 
     get name()

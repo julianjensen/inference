@@ -96,6 +96,9 @@ export function sym_walk( node )
      * Locals
      ********************************************************************************************************************/
 
+    if ( node.localSymbol )
+        console.log( `localSymbol:`, $( show_sym( node.localSymbol ), 10 ) );
+
     if ( node.locals )
         console.log( `locals:`, $( [ ...node.locals.values() ].map( show_sym ), 10 ) );
 
