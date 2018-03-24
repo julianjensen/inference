@@ -1609,3 +1609,9 @@ export function canonical_name( filename )
 
     return isWindows ? filename.toLowerCase() :filename;
 }
+
+// export const NamedDeclaration = ( name, cls, ...args ) => new ( { [ name ]: class extends cls {} }[ name ] )( ...args );
+
+export const
+    COPY = Symbol( 'copy' ),
+    PARENT = Symbol( 'parent' );

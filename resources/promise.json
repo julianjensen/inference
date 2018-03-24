@@ -1,0 +1,31 @@
+[
+    {
+        "kind": "SourceFile",
+        "locals": [
+            {
+                "name": "Promise",
+                "flags": "Interface",
+                "decls": [
+                    "@4:0 InterfaceDeclaration<T>"
+                ],
+                "members": [
+                    {
+                        "name": "T",
+                        "flags": "TypeParameter",
+                        "decls": [
+                            "@4:18 TypeParameter"
+                        ]
+                    },
+                    {
+                        "name": "finally",
+                        "flags": "Method",
+                        "valueDeclaration": "@11:4 MethodSignature( onfinally?: ( () => void ) | undefined | null ): Promise<T>",
+                        "decls": [
+                            "@11:4 MethodSignature( onfinally?: ( () => void ) | undefined | null ): Promise<T>"
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

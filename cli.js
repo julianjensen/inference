@@ -111,49 +111,51 @@ async function run_all()
 
     // console.log( `done ${ts.length} files:\n${outputs.join( '\n' )}` );
 
-    ts.forEach( file => walk_symbols( file ) ); // sym_walk( file.ast ) );
+    const outp = ts.map( file => walk_symbols( file ) ); // sym_walk( file.ast ) );
+
+    console.log( $( outp ) );
     // reportStatistics();
 }
 
-new Promise( ( resolve, reject ) => {
-    let ref = 2;
-    const
-        reader   = read_files( tsFiles ),
-        compiler = compile_files( reader ),
-        sub      = reader.subscribe( {
-            next( obj )
-            {
-                console.log( `name: ${obj.filename}` );
-                console.log( `source? ${!!obj.source}` );
-            },
-            error: reject,
-            complete()
-            {
-                sub.unsubscribe();
-                --ref;
-                if ( ref <= 0 ) resolve( 'okay' );
-            }
-        } ),
-        csub     = compiler.subscribe( {
-            next( file )
-            {
-                console.log( `compiled: ${file.filename}, ast? ${!!file.ast}, is ` );
-            },
-            error: reject,
-            complete()
-            {
-                csub.unsubscribe();
-                --ref;
-                if ( ref <= 0 ) resolve( "comp'd" );
-            }
-        } );
+// new Promise( ( resolve, reject ) => {
+//     let ref = 2;
+//     const
+//         reader   = read_files( tsFiles ),
+//         compiler = compile_files( reader ),
+//         sub      = reader.subscribe( {
+//             next( obj )
+//             {
+//                 console.log( `name: ${obj.filename}` );
+//                 console.log( `source? ${!!obj.source}` );
+//             },
+//             error: reject,
+//             complete()
+//             {
+//                 sub.unsubscribe();
+//                 --ref;
+//                 if ( ref <= 0 ) resolve( 'okay' );
+//             }
+//         } ),
+//         csub     = compiler.subscribe( {
+//             next( file )
+//             {
+//                 console.log( `compiled: ${file.filename}, ast? ${!!file.ast}, is ` );
+//             },
+//             error: reject,
+//             complete()
+//             {
+//                 csub.unsubscribe();
+//                 --ref;
+//                 if ( ref <= 0 ) resolve( "comp'd" );
+//             }
+//         } );
+//
+// } )
+//     .catch( err => console.error( err ) )
+//     .then( status => console.log( status ) );
 
-} )
-    .catch( err => console.error( err ) )
-    .then( status => console.log( status ) );
 
-
-// run_all();
+run_all();
 
 
 /**

@@ -61,6 +61,8 @@ export const settings = {
             if ( !syntaxKind[ value ] )
                 syntaxKind[ value ] = name;
         }
+
+        syntaxKind[ syntaxKind.FirstTypeNode ] = "TypePredicate";
     },
 
     /**

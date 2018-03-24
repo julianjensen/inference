@@ -24,7 +24,9 @@ import {
     unescapeLeadingUnderscores,
     isReservedMemberName,
     hasLateBindableName,
-    enumRelation
+    enumRelation,
+    COPY,
+    PARENT
 }                             from "../utils";
 import { hasStaticModifier }  from "./modifiers";
 import { pushIfUnique, some } from "./array-ish";
@@ -32,8 +34,6 @@ import { pushIfUnique, some } from "./array-ish";
 let nextSymbolId = 1;
 
 const
-    PARENT        = Symbol( 'parent' ),
-    COPY          = Symbol( 'copy' ),
     symbolLinks   = {},
     mergedSymbols = {};
 
