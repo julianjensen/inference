@@ -18,10 +18,6 @@
  * lib.esnext.asynciterable.d.ts
  * webworker.generated.d.ts
  *********************************************************************************************************************/
-
-
-
-
 "use strict";
 
 import { hide_parent } from "../utils";
@@ -62,6 +58,17 @@ export function walk_symbols( _file )
     return sym_walk( _file.ast, {} );
 }
 
+function type_in_mapped_type( node )
+{
+    while ( node )
+    {
+        if ( node.kind === SyntaxKind.MappedType ) return true;
+        node = node.parent;
+    }
+
+    return false;
+}
+
 function get_type_of_node( sym, node )
 {
     let t = typeChecker.getTypeOfSymbolAtLocation( sym, node );
@@ -97,6 +104,34 @@ function export_specifier( ex )
     if ( ex.name && ex.name.escapedText !== prop  ) prop += ' as ' + ex.name.escapedText;
 
     return prop;
+}
+
+function list_heritage( nodes )
+{
+    if ( !nodes || !nodes.length ) return null;
+
+    if ( nodes.length === 1 && nodes[ 0 ].kind === SyntaxKind.HeritageClause )
+        return list_heritage( nodes[ 0 ].types );
+
+    return nodes.map( h => {
+        const
+            out = {};
+
+        if ( h.kind === SyntaxKind.ExpressionWithTypeArguments )
+        {
+            if ( h.expression.kind === SyntaxKind.Identifier )
+                out.name = h.expression.escapedText;
+            else
+                out.name = "not identifier but " + SyntaxKind[ h.expression.kind ];
+
+            if ( h.typeArguments && h.typeArguments.length )
+                out.typeArguments = h.typeArguments.map( get_type_name )
+        }
+        else // if ( h.kind === SyntaxKind.HeritageClause )
+            out.name = "not expression with type arguments but " + SyntaxKind[ h.kind ] + ` -> [ ${Object.keys( h )} ]`;
+
+        return out;
+    } );
 }
 
 /**
@@ -294,11 +329,66 @@ function decls( sym )
     return sym.declarations.map( get_decl );
 }
 
+var tmp = {
+    name: "__type",
+    flags: "TypeLiteral",
+    decls: [
+        { loc: "80:90", decl: "TypeLiteral" }
+        ],
+    members: [
+        {
+            name: "__index",
+            flags: "Signature",
+            decls: [
+                {
+                    loc: "80:92",
+                    decl: "[ x: string ]: PropertyDescriptor"
+                }
+                ]
+        }
+        ]
+};
+
+function type_literal_as_string( tl, short = true )
+{
+    const members = tl && tl.members;
+
+    if ( !tl ) return "No fucking TL";
+    if ( !members ) return JSON.stringify( tl );
+
+    return '{ ' + members.map( m => m.valueDeclaration ? m.valueDeclaration.decl : m.decls[ 0 ].decl ).join( short ? '; ' : ';\n' ) + ' }';
+}
+
 function get_decl( decl )
 {
     let [ lineNumber, offset ] = file.reporters.offset_to_line_offset( decl.pos ),
-        declName               = `${SyntaxKind[ decl.kind ]}`,
-        typeName               = decl.type ? add_types( decl.type ) : '';
+        declName               = `${decl.name && decl.name.escapedText || 'noName'}`,
+        // declName               = `${SyntaxKind[ decl.kind ]}`,
+        typeName               = decl.type ? add_types( decl.type ) : '',
+        heritage;
+
+    if ( decl.heritageClauses )
+        heritage = list_heritage( decl.heritageClauses );
+
+    if ( decl.kind === SyntaxKind.IndexSignature )
+    {
+        declName = `[ ${decl.parameters.map( pretty ).join( ', ' )} ]`;
+        typeName = get_type_name( decl.type );
+    }
+    else
+    {
+        declName += check_for_template( decl );
+        // if ( decl.typeParameters )
+        //     declName += type_parameters( decl.typeParameters );
+
+        if ( decl.parameters )
+        {
+            if ( decl.parameters.length )
+                declName = `${declName}( ${decl.parameters.map( pretty ).join( ', ' )} )`;
+            else
+                declName += '()';
+        }
+    }
 
     let flags = '';
     if ( decl.flags && !!( decl.flags & ~NodeFlags.Ambient ) )
@@ -313,41 +403,53 @@ function get_decl( decl )
         else if ( Reflect.has( decl, 'name' ) && type( decl.name ) === 'object' && Reflect.has( decl , 'name' ) )
             propName = decl.name.escapedText;
 
-
-        return `@${lineNumber + 1}:${offset}${flags} ${propName}` ;
+        typeName = propName;
+        // return `@${lineNumber + 1}:${offset}${flags} ${propName}` ;
     }
-               // decl.propertyName !== void 0 ? typeof decl.propertyName.escapedText :
-               // decl.propertyName ? 'NO PROP: [' + Object.keys( decl ) + '], propName: [' + Object.keys( decl.propertyName ) + ']' :
-               // decl.name ? decl.name.escapedText :
-               // 'NO NAME: [' + Object.keys( decl ) + ']';
-
-    if ( decl.kind === SyntaxKind.IndexSignature )
-    {
-        declName = `[ ${decl.parameters.map( pretty ).join( ', ' )} ]`;
-        typeName = get_type_name( decl.type );
-    }
-    else
-    {
-        if ( decl.typeParameters )
-            declName += type_parameters( decl.typeParameters );
-
-        if ( decl.parameters )
-        {
-            if ( decl.parameters.length )
-                declName = `${declName}( ${decl.parameters.map( pretty ).join( ', ' )} )`;
-            else
-                declName += '()';
-        }
-    }
+    // else if ( decl.kind === SyntaxKind.IndexSignature )
+    // {
+    //     declName = `[ ${decl.parameters.map( pretty ).join( ', ' )} ]`;
+    //     typeName = get_type_name( decl.type );
+    // }
+    // else
+    // {
+    //     declName += check_for_template( decl );
+    //     // if ( decl.typeParameters )
+    //     //     declName += type_parameters( decl.typeParameters );
+    //
+    //     if ( decl.parameters )
+    //     {
+    //         if ( decl.parameters.length )
+    //             declName = `${declName}( ${decl.parameters.map( pretty ).join( ', ' )} )`;
+    //         else
+    //             declName += '()';
+    //     }
+    // }
 
     if ( type( typeName ) === 'object' )
     {
         const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
         if ( flags ) r.flags = flags;
-        return r;
     }
 
-    return `@${lineNumber + 1}:${offset}${flags} ` + declName + ( typeName ? ': ' + typeName : '' );
+    // NEW STUFF OLD STUFF
+    const dd = {
+        loc: `${lineNumber + 1}:${offset}`,
+        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' )
+    };
+
+    if ( heritage )
+        dd.heritage = heritage;
+    if ( flags )
+        dd.flags = `${flags}`;
+
+    dd.kind = SyntaxKind[ decl.kind ];
+
+    return dd;
+
+    // TO HERE
+
+    // return `@${lineNumber + 1}:${offset}${flags} ` + declName + ( typeName ? ': ' + typeName : '' );
 }
 
 function pretty( decl )
@@ -395,6 +497,11 @@ function add_types( type )
         return type.types.map( add_types ).join( ' | ' );
     else if ( type.kind === SyntaxKind.IntersectionType )
         return type.types.map( add_types ).join( ' & ' );
+
+    else if ( type.kind === SyntaxKind.MappedType )
+        return `{ [ ${add_types( type.typeParameter )} ]${type.questionToken ? '?' : ''}: ${get_type_name( type.type )} }`;
+
+
     else if ( type.kind === SyntaxKind.LiteralType )
     {
         switch ( type.literal.kind )
@@ -416,15 +523,34 @@ function add_types( type )
         }
     }
     else if ( type.kind === SyntaxKind.TypeLiteral )
-        return show_sym( type.symbol );
+    {
+        const tl = show_sym( type.symbol );
+        Object.defineProperty( tl, 'toString', { enumerable: false, value: () => type_literal_as_string( tl.members ) } );
+        return tl;
+    }
     else
         t = type && !type.types ? get_type_name( type ) : type && type.types ? type.types.map( get_type_name ).join( ' | ' ) : '';
 
     if ( /^\s*[A-Z][a-z]+Keyword\s*$/.test( t ) )
         t = t.replace( /^\s*(.*)Keyword\s*$/, '$1' ).toLowerCase();
 
-    if ( type && type.typeParameters )
-        t += type_parameters( type.typeParameters );
+    if ( type.kind === SyntaxKind.TypeParameter && type.constraint )
+    {
+        let typeOp = type_in_mapped_type( type ) ? ' in' : ' extends',
+            tn;
+
+        if ( type.constraint.kind === SyntaxKind.TypeOperator )
+        {
+            typeOp += ' keyof';
+            tn = get_type_name( type.constraint.type );
+        }
+        else
+            tn = get_type_name( type.constraint );
+
+        t += `${typeOp} ${tn}`;
+    }
+
+    t += check_for_template( type );
 
     return t;
 }
@@ -442,7 +568,7 @@ function check_for_template( type )
 
 function get_type_name( type )
 {
-    if ( !type ) return '<no type>';
+    if ( !type ) return '<no type name>';
 
     let typeName = type.typeName && type.typeName.escapedText ?
                    type.typeName.escapedText :
@@ -454,6 +580,9 @@ function get_type_name( type )
 
     if ( /^\s*[A-Z][a-z]+Keyword\s*$/.test( typeName ) )
         typeName = typeName.replace( /^(.*)Keyword$/, '$1' ).toLowerCase();
+
+    if ( typeName === 'IndexedAccessType' )
+        return get_type_name( type.objectType ) + '[' + get_type_name( type.indexType ) + ']';
 
     typeName += check_for_template( type );
 

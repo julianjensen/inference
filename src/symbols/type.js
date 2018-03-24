@@ -1,6 +1,3 @@
-import { arrayFrom, concatenate } from "./array-ish";
-
-Li;
 /** ******************************************************************************************************************
  * @file Pure type handler.
  *
@@ -144,6 +141,7 @@ import {
 
 import { SyntaxKind } from "../ts/ts-helpers";
 import { output }     from "../utils/source-code";
+import { arrayFrom, concatenate } from "./array-ish";
 
 /** @type {GenericType[]} */
 const tupleTypes = [];
@@ -1433,7 +1431,7 @@ class ObjectType extends Type
      */
     get objectFlags()
     {
-        return this._objectFlags || ( this._objectFlags = ObjectFlags() );
+        return this._objectFlags || ( this._objectFlags = ObjectFlags.create() );
     }
 
     /**
@@ -1441,7 +1439,7 @@ class ObjectType extends Type
      */
     set objectFlags( v )
     {
-        this._objectFlags = ObjectFlags( v );
+        this._objectFlags = ObjectFlags.create( v );
     }
 
     setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo )
