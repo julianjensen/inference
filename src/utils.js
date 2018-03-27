@@ -9,6 +9,7 @@
 "use strict";
 
 export const createSymbolTable = () => new Map();
+export const skeys = obj => `[ ${Object.keys( obj || {} ).sort().join( ', ' )} ]`;
 
 import os from "os";
 export const
@@ -895,13 +896,11 @@ export function getTextOfIdentifierOrLiteral( node )
 /**
  * Remove extra underscore from escaped identifier text content.
  *
- * @param {string} identifier The escaped identifier text.
+ * @param {string} id The escaped identifier text.
  * @returns {string} The unescaped identifier text.
  */
-export function unescapeLeadingUnderscores( identifier )
+export function unescapeLeadingUnderscores( id )
 {
-    const id = identifier;
-
     return id.length >= 3 && id.charCodeAt( 0 ) === CharacterCodes._ && id.charCodeAt( 1 ) === CharacterCodes._ && id.charCodeAt( 2 ) === CharacterCodes._ ? id.substr( 1 ) : id;
 }
 
@@ -1609,3 +1608,9 @@ export function canonical_name( filename )
 
     return isWindows ? filename.toLowerCase() :filename;
 }
+
+// export const NamedDeclaration = ( name, cls, ...args ) => new ( { [ name ]: class extends cls {} }[ name ] )( ...args );
+
+export const
+    COPY = Symbol( 'copy' ),
+    PARENT = Symbol( 'parent' );

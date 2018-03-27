@@ -1,6 +1,3 @@
-import { arrayFrom, concatenate } from "./array-ish";
-
-Li;
 /** ******************************************************************************************************************
  * @file Pure type handler.
  *
@@ -144,6 +141,7 @@ import {
 
 import { SyntaxKind } from "../ts/ts-helpers";
 import { output }     from "../utils/source-code";
+import { arrayFrom, concatenate } from "./array-ish";
 
 /** @type {GenericType[]} */
 const tupleTypes = [];
@@ -700,9 +698,52 @@ export class Type
         return this._id;
     }
 
-    isTypeUsableAsLateBoundName()
+    /**
+     * @param {InterfaceType} type
+     * @return {InterfaceTypeWithDeclaredMembers}
+     */
+    resolveDeclaredMembers( type )
     {
-        return !!( this.flags & TypeFlags.StringOrNumberLiteralOrUnique );
+        if ( !type.declaredProperties )
+        {
+            const symbol                     = type.symbol;
+            const members                    = getMembersOfSymbol( symbol );
+            type.declaredProperties          = getNamedMembers( members );
+            type.declaredCallSignatures      = getSignaturesOfSymbol( members.get( InternalSymbolName.Call ) );
+            type.declaredConstructSignatures = getSignaturesOfSymbol( members.get( InternalSymbolName.New ) );
+            type.declaredStringIndexInfo     = getIndexInfoOfSymbol( symbol, IndexKind.String );
+            type.declaredNumberIndexInfo     = getIndexInfoOfSymbol( symbol, IndexKind.Number );
+        }
+
+        return type;
+    }
+
+    /**
+     * Indicates whether a type can be used as a late-bound name.
+     *
+     * @param {Type | LiteralType | UniqueESSymbolType} type
+     * @return {boolean}
+     */
+    isTypeUsableAsLateBoundName( type )
+    {
+        return !!( type.flags & TypeFlags.StringOrNumberLiteralOrUnique );
+    }
+
+    /**
+     * Gets the symbolic name for a late-bound member from its type.
+     *
+     * @param {LiteralType | UniqueESSymbolType} type
+     */
+    getLateBoundNameFromType( type )
+    {
+        if ( type.flags & TypeFlags.UniqueESSymbol )
+        {
+            return `__@${type.symbol.escapedName}@${type.symbol.id}`;
+        }
+        if ( type.flags & TypeFlags.StringOrNumberLiteral )
+        {
+            return escapeLeadingUnderscores( "" + type.value );
+        }
     }
 
     /**
@@ -1433,7 +1474,7 @@ class ObjectType extends Type
      */
     get objectFlags()
     {
-        return this._objectFlags || ( this._objectFlags = ObjectFlags() );
+        return this._objectFlags || ( this._objectFlags = ObjectFlags.create() );
     }
 
     /**
@@ -1441,7 +1482,7 @@ class ObjectType extends Type
      */
     set objectFlags( v )
     {
-        this._objectFlags = ObjectFlags( v );
+        this._objectFlags = ObjectFlags.create( v );
     }
 
     setStructuredTypeMembers( members, callSignatures, constructSignatures, stringIndexInfo, numberIndexInfo )
@@ -2931,3 +2972,22 @@ function getTypeFromLiteralTypeNode( node )
     return links.resolvedType;
 }
 
+/**
+ * Indicates whether a declaration has a dynamic name that cannot be late-bound.
+ *
+ * @param {Declaration} node
+ */
+function hasNonBindableDynamicName( node )
+{
+    return hasDynamicName( node ) && !hasLateBindableName( node );
+}
+
+/**
+ * Indicates whether a declaration name is a dynamic name that cannot be late-bound.
+ *
+ * @param {DeclarationName} node
+ */
+function isNonBindableDynamicName( node )
+{
+    return isDynamicName( node ) && !isLateBindableName( node );
+}

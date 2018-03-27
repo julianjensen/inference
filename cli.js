@@ -111,7 +111,9 @@ async function run_all()
 
     // console.log( `done ${ts.length} files:\n${outputs.join( '\n' )}` );
 
-    ts.forEach( file => walk_symbols( file ) ); // sym_walk( file.ast ) );
+    const outp = ts.map( file => walk_symbols( file ) ); // sym_walk( file.ast ) );
+
+    console.log( $( outp ) );
     // reportStatistics();
 }
 

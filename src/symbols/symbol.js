@@ -11,20 +11,23 @@
  * @typedef {Map} SymbolTable
  */
 
+import assert from "assert";
 import { SyntaxKind }         from "../ts/ts-helpers";
 import {
     SymbolFlags,
     CheckFlags,
     InternalSymbolName
 }                             from "../types";
-import { CharacterCodes }      from "../utils/char-codes";
+import { CharacterCodes }     from "../utils/char-codes";
 import {
     get_ext_ref,
     implement,
     unescapeLeadingUnderscores,
     isReservedMemberName,
     hasLateBindableName,
-    enumRelation
+    enumRelation,
+    COPY,
+    PARENT
 }                             from "../utils";
 import { hasStaticModifier }  from "./modifiers";
 import { pushIfUnique, some } from "./array-ish";
@@ -32,13 +35,15 @@ import { pushIfUnique, some } from "./array-ish";
 let nextSymbolId = 1;
 
 const
-    PARENT = Symbol( 'parent' ),
-    COPY = Symbol( 'copy' ),
     symbolLinks   = {},
     mergedSymbols = {};
 
 /**
- * @class
+ * @typedef {function(Type):Type} TypeMapper
+ */
+
+/**
+ * @class Symbol
  */
 export class Symbol
 {
@@ -48,39 +53,64 @@ export class Symbol
      */
     constructor( flags, name )
     {
-        this.name = name;
+        name = `${name}`;
+        if ( typeof name !== 'string' )
+        {
+            console.error( 'bad name:', name );
+            console.trace();
+            process.exit( 1 );
+        }
+        this.LOCAL            = 'LOCAL';
+        this.name             = name;
         this.declarations     = [];
         this.valueDeclaration = void 0;
         this.members          = new Map();
         this.exports          = new Map();
         this.globalExports    = void 0;
 
-        this._id          = nextSymbolId++;
-        this.mergeId      = 0;
-        this.parent       = null;
-        this.exportSymbol = null;
-        this.isReferenced = false;
-        this.isAssigned   = false;
+        this._id                 = nextSymbolId++;
+        this.mergeId             = 0;
+        this.parent              = null;
+        this.exportSymbol        = null;
+        this.isReferenced        = false;
+        this.isAssigned          = false;
+        this.constEnumOnlyModule = false;
 
         /** @type {SymbolFlags} */
         this.flags = flags;
     }
 
-    static copy( sym )
+    /**
+     * @param {Symbol} symbol
+     */
+    static copy( symbol )
     {
-        const
-            dst = new Symbol( sym.flags, sym.escapedName );
+        if ( symbol[ COPY ] ) return symbol[ COPY ];
 
-        dst.declarations = sym.declarations.slice();
-        dst.valueDeclaration = sym.valueDeclaration;
-        if ( sym[ PARENT ] ) dst.parent = sym[ PARENT ];
-        sym[ COPY ] = dst;
-        if ( sym.exports && sym.exports.size ) dst.exports = new Map( ...sym.exports );
+        const
+            dst = new Symbol( symbol.flags, symbol.escapedName );
+
+        dst.declarations = symbol.declarations ? symbol.declarations.slice() : [];
+        if ( symbol.valueDeclaration ) dst.valueDeclaration = symbol.valueDeclaration;
+        if ( symbol[ PARENT ] )
+            dst.parent = dst[ PARENT ] = symbol[ PARENT ];
+        else
+            dst.parent = symbol.parent;
+
+        symbol[ COPY ] = dst;
+
+        if ( symbol.exports ) dst.exports = new Map( ...symbol.exports );
+        if ( symbol.members ) dst.members = new Map( ...symbol.members );
+
+        if ( symbol.constEnumOnlyModule ) dst.constEnumOnlyModule = true;
+
+        return dst;
     }
 
     toString()
     {
-        return `Symbol -> "${this.name}", members(${this.members.size}): [ "${[ ...this.members.keys() ].join( '", "' )}" ], decls(${this.declarations.length}): [ "${this.declarations.map( decl => decl.name || 'no name' ).join( '", "' )}" ]`;
+        return `Symbol -> "${this.name}", members(${this.members.size}): [ "${[ ...this.members.keys() ].join( '", "' )}" ], decls(${this.declarations.length}): [ "${this.declarations.map( decl => decl.name || 'no name' )
+            .join( '", "' )}" ]`;
     }
 
     get name()
@@ -95,7 +125,7 @@ export class Symbol
 
     get displayName()
     {
-        const _name = this._escapedName;
+        const _name = this.escapedName;
 
         return _name.length >= 3 && _name.charCodeAt( 0 ) === CharacterCodes._ && _name.charCodeAt( 1 ) === CharacterCodes._ && _name.charCodeAt( 2 ) === CharacterCodes._ ? _name.substr( 1 ) : _name;
     }
@@ -107,7 +137,7 @@ export class Symbol
 
     set escapedName( name )
     {
-        this._escapedName = name.length >= 2 && name.charCodeAt( 0 ) === CharacterCodes._ && name.charCodeAt( 1 ) === CharacterCodes._ ? "_" + name : name;
+        this._escapedName = name.length >= 2 && !name.startsWith( '___' ) && name.charCodeAt( 0 ) === CharacterCodes._ && name.charCodeAt( 1 ) === CharacterCodes._ ? "_" + name : name;
     }
 
 
@@ -252,6 +282,293 @@ export class Symbol
 
         return links[ resolutionKind ];
     }
+
+
+    // The mappingThisOnly flag indicates that the only type parameter being mapped is "this". When the flag is true,
+    // we check symbols to see if we can quickly conclude they are free of "this" references, thus needing no instantiation.
+    /**
+     *
+     * @param {Symbol[]} symbols
+     * @param {TypeMapper} mapper
+     * @param {boolean} mappingThisOnly
+     * @return {SymbolTable}
+     */
+    createInstantiatedSymbolTable( symbols, mapper, mappingThisOnly )
+    {
+        const result = new Map();
+
+        for ( const symbol of symbols )
+            result.set( symbol.escapedName, mappingThisOnly && isThisless( symbol ) ? symbol : instantiateSymbol( symbol, mapper ) );
+
+        return result;
+    }
+
+    instantiateSymbol( mapper )
+    {
+        const links = this.getSymbolLinks();
+
+        if (links.type && !maybeTypeOfKind(links.type, TypeFlags.Object | TypeFlags.Instantiable))
+            // If the type of the symbol is already resolved, and if that type could not possibly
+            // be affected by instantiation, simply return the symbol itself.
+            return symbol;
+
+        if ( this.getCheckFlags() & CheckFlags.Instantiated )
+        {
+            // If symbol being instantiated is itself a instantiation, fetch the original target and combine the
+            // type mappers. This ensures that original type identities are properly preserved and that aliases
+            // always reference a non-aliases.
+            return links.target._intantiateSymbol( combineTypeMappers(links.mapper, mapper) )
+        }
+
+        return this._instantiateSymbol( mapper );
+    }
+
+    _instantiateSymbol( mapper )
+    {
+        // Keep the flags from the symbol we're instantiating.  Mark that is instantiated, and
+        // also transient so that we can just store data on it directly.
+        const result = createSymbol(this.flags, this.escapedName, CheckFlags.Instantiated);
+        result.declarations = this.declarations;
+        result.parent = this.parent;
+        result.target = this;
+        result.mapper = mapper;
+
+        if (this.valueDeclaration)
+            result.valueDeclaration = this.valueDeclaration;
+
+        if ( this.isRestParameter)
+            result.isRestParameter = this.isRestParameter;
+
+        return result;
+    }
+
+    /**
+     * @param {SymbolTable} symbols
+     * @param {Symbol[]} baseSymbols
+     */
+    static addInheritedMembers( symbols, baseSymbols )
+    {
+        for ( const s of baseSymbols )
+            if ( !symbols.has( s.escapedName ) ) symbols.set( s.escapedName, s );
+    }
+
+    /**
+     * Adds a declaration to a late-bound dynamic member. This performs the same function for
+     * late-bound members that `addDeclarationToSymbol` in binder.ts performs for early-bound
+     * members.
+     *
+     * @param {Symbol} symbol
+     * @param {object} member
+     * @param {SymbolFlags} symbolFlags
+     */
+    addDeclarationToLateBoundSymbol( symbol, member, symbolFlags )
+    {
+        assert( !!( getCheckFlags( symbol ) & CheckFlags.Late ), "Expected a late-bound symbol." );
+
+        symbol.flags |= symbolFlags;
+        member.symbol.getSymbolLinks().lateSymbol = symbol;
+
+        if ( !symbol.declarations )
+            symbol.declarations = [ member ];
+        else
+            symbol.declarations.push( member );
+
+        if ( symbolFlags & SymbolFlags.Value )
+        {
+            const valueDeclaration = symbol.valueDeclaration;
+
+            if ( !valueDeclaration || valueDeclaration.kind !== member.kind )
+                symbol.valueDeclaration = member;
+        }
+    }
+
+    /**
+     * Performs late-binding of a dynamic member. This performs the same function for
+     * late-bound members that `declareSymbol` in binder.ts performs for early-bound
+     * members.
+     *
+     * If a symbol is a dynamic name from a computed property, we perform an additional "late"
+     * binding phase to attempt to resolve the name for the symbol from the type of the computed
+     * property's expression. If the type of the expression is a string-literal, numeric-literal,
+     * or unique symbol type, we can use that type as the name of the symbol.
+     *
+     * For example, given:
+     *
+     *   const x = Symbol();
+     *
+     *   interface I {
+             *     [x]: number;
+             *   }
+     *
+     * The binder gives the property `[x]: number` a special symbol with the name "__computed".
+     * In the late-binding phase we can type-check the expression `x` and see that it has a
+     * unique symbol type which we can then use as the name of the member. This allows users
+     * to define custom symbols that can be used in the members of an object type.
+     *
+     * @param {Symbol} parent The containing symbol for the member.
+     * @param {?SymbolTable} earlySymbols The early-bound symbols of the parent.
+     * @param {SymbolTable} lateSymbols The late-bound symbols of the parent.
+     * @param {object} decl The member to bind.
+     */
+    lateBindMember( parent, earlySymbols, lateSymbols, decl )
+    {
+        assert( !!decl.symbol, "The member is expected to have a symbol." );
+        const links = getNodeLinks( decl );
+        if ( !links.resolvedSymbol )
+        {
+            // In the event we attempt to resolve the late-bound name of this member recursively,
+            // fall back to the early-bound name of this member.
+            links.resolvedSymbol = decl.symbol;
+            const type           = checkComputedPropertyName( decl.name );
+            if ( isTypeUsableAsLateBoundName( type ) )
+            {
+                const memberName  = getLateBoundNameFromType( type );
+                const symbolFlags = decl.symbol.flags;
+
+                // Get or add a late-bound symbol for the member. This allows us to merge late-bound accessor declarations.
+                let lateSymbol = lateSymbols.get( memberName );
+                if ( !lateSymbol ) lateSymbols.set( memberName, lateSymbol = createSymbol( SymbolFlags.None, memberName, CheckFlags.Late ) );
+
+                // Report an error if a late-bound member has the same name as an early-bound member,
+                // or if we have another early-bound symbol declaration with the same name and
+                // conflicting flags.
+                const earlySymbol = earlySymbols && earlySymbols.get( memberName );
+                if ( lateSymbol.flags & getExcludedSymbolFlags( symbolFlags ) || earlySymbol )
+                {
+                    // If we have an existing early-bound member, combine its declarations so that we can
+                    // report an error at each declaration.
+                    const declarations = earlySymbol ? concatenate( earlySymbol.declarations, lateSymbol.declarations ) : lateSymbol.declarations;
+                    const name         = declarationNameToString( decl.name );
+                    forEach( declarations, declaration => error( getNameOfDeclaration( declaration ) || declaration, Diagnostics.Duplicate_declaration_0, name ) );
+                    error( decl.name || decl, Diagnostics.Duplicate_declaration_0, name );
+                    lateSymbol = createSymbol( SymbolFlags.None, memberName, CheckFlags.Late );
+                }
+
+                const symbolLinks = getSymbolLinks( lateSymbol );
+                if ( !symbolLinks.nameType )
+                {
+                    // Retain link to name type so that it can be reused later
+                    symbolLinks.nameType = type;
+                }
+
+                addDeclarationToLateBoundSymbol( lateSymbol, decl, symbolFlags );
+                if ( lateSymbol.parent )
+                {
+                    assert( lateSymbol.parent === parent, "Existing symbol parent should match new one" );
+                }
+                else
+                {
+                    lateSymbol.parent = parent;
+                }
+                return links.resolvedSymbol = lateSymbol;
+            }
+        }
+        return links.resolvedSymbol;
+    }
+
+    /**
+     *
+     * @param {Symbol} symbol
+     * @param {MembersOrExportsResolutionKind} resolutionKind
+     * @return {*}
+     */
+    getResolvedMembersOrExportsOfSymbol( symbol, resolutionKind )
+    {
+        const links = getSymbolLinks( symbol );
+        if ( !links[ resolutionKind ] )
+        {
+            const isStatic     = resolutionKind === MembersOrExportsResolutionKind.resolvedExports;
+            const earlySymbols = !isStatic ? symbol.members :
+                                 symbol.flags & SymbolFlags.Module ? getExportsOfModuleWorker( symbol ) :
+                                 symbol.exports;
+
+            // In the event we recursively resolve the members/exports of the symbol, we
+            // set the initial value of resolvedMembers/resolvedExports to the early-bound
+            // members/exports of the symbol.
+            links[ resolutionKind ] = earlySymbols || emptySymbols;
+
+            // fill in any as-yet-unresolved late-bound members.
+            const lateSymbols = createSymbolTable();
+            for ( const decl of symbol.declarations )
+            {
+                const members = getMembersOfDeclaration( decl );
+                if ( members )
+                {
+                    for ( const member of members )
+                    {
+                        if ( isStatic === hasStaticModifier( member ) && hasLateBindableName( member ) )
+                        {
+                            lateBindMember( symbol, earlySymbols, lateSymbols, member );
+                        }
+                    }
+                }
+            }
+
+            links[ resolutionKind ] = combineSymbolTables( earlySymbols, lateSymbols ) || emptySymbols;
+        }
+
+        return links[ resolutionKind ];
+    }
+
+    /**
+     * Gets a SymbolTable containing both the early- and late-bound members of a symbol.
+     *
+     * For a description of late-binding, see `lateBindMember`.
+     */
+    getMembersOfSymbol( symbol )
+    {
+        return symbol.flags & SymbolFlags.LateBindingContainer
+               ? getResolvedMembersOrExportsOfSymbol( symbol, MembersOrExportsResolutionKind.resolvedMembers )
+               : symbol.members || emptySymbols;
+    }
+
+    /**
+     * If a symbol is the dynamic name of the member of an object type, get the late-bound
+     * symbol of the member.
+     *
+     * For a description of late-binding, see `lateBindMember`.
+     */
+    getLateBoundSymbol( symbol )
+    {
+        if ( symbol.flags & SymbolFlags.ClassMember && symbol.escapedName === InternalSymbolName.Computed )
+        {
+            const links = getSymbolLinks( symbol );
+            if ( !links.lateSymbol && some( symbol.declarations, hasLateBindableName ) )
+            {
+                // force late binding of members/exports. This will set the late-bound symbol
+                if ( some( symbol.declarations, hasStaticModifier ) )
+                {
+                    getExportsOfSymbol( symbol.parent );
+                }
+                else
+                {
+                    getMembersOfSymbol( symbol.parent );
+                }
+            }
+            return links.lateSymbol || ( links.lateSymbol = symbol );
+        }
+        return symbol;
+    }
+
+    getTypeWithThisArgument( type, thisArgument, needApparentType )
+    {
+        if ( getObjectFlags( type ) & ObjectFlags.Reference )
+        {
+            const target        = type.target;
+            const typeArguments = type.typeArguments;
+            if ( length( target.typeParameters ) === length( typeArguments ) )
+            {
+                const ref = createTypeReference( target, concatenate( typeArguments, [ thisArgument || target.thisType ] ) );
+                return needApparentType ? getApparentType( ref ) : ref;
+            }
+        }
+        else if ( type.flags & TypeFlags.Intersection )
+        {
+            return getIntersectionType( map( type.types, t => getTypeWithThisArgument( t, thisArgument, needApparentType ) ) );
+        }
+        return needApparentType ? getApparentType( type ) : type;
+    }
+
 
     hasExportAssignment()
     {
@@ -483,11 +800,4 @@ export function createSymbol( flags, name, checkFlags = CheckFlags.create() )
     return symbol;
 }
 
-function xfer_sym( sym )
-{
-    if ( !sym ) return;
-    else if ( sym[ COPY ] ) return sym[ COPY ];
-
-    return Symbol.copy( sym );
-}
 

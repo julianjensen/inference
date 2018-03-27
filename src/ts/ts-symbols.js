@@ -20,40 +20,43 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { hide_parent } from "../utils";
-import { inspect }     from "util";
-import { SyntaxKind }  from "./ts-helpers";
-import * as ts         from "typescript";
+import { hide_parent, skeys } from "../utils";
+import { inspect }            from "util";
+import { SyntaxKind }         from "./ts-helpers";
+import * as ts                from "typescript";
 import {
     NodeFlags,
     ObjectFlags, SymbolFlags,
     TypeFlags
-} from "../types";
-import { nameOf, type } from "typeofs";
+}                             from "../types";
+import { type, nameOf }       from "typeofs";
 
 const
     $    = ( o, d = 2 ) => inspect( o,
         {
             depth:  typeof d === 'number' ? d : 2,
-            colors: true
+            colors: false,
+            showHidden: false
         } ),
-    seen = new Set(),
-    symKeys = new Set();
+    seen = new Set();
 
-function add_keys( sym )
-{
-    const
-        ks = Object.keys( sym );
-
-    let k;
-
-    for ( k of ks )
-        symKeys.add( k );
-}
+const topLevelNames = [];
 
 function get_name( sym )
 {
-    return sym.escapedName;
+    try
+    {
+        let name = sym.name || sym.escapedName || sym._escapedName;
+
+        name = `${name}`;
+
+        return name.startsWith( '"' ) ? name.substring( 1, name.length - 1 ) : name;
+    }
+    catch ( err )
+    {
+        console.error( err );
+        process.exit( 1 );
+    }
 }
 
 let typeChecker,
@@ -66,8 +69,11 @@ export function walk_symbols( _file )
 {
     file        = _file;
     typeChecker = _file.typeChecker;
-    sym_walk( _file.ast );
-    console.log( `Symbol keys: [ ${[ ...symKeys ].join( ', ' )} ]` );
+
+    const r = sym_walk( _file.ast, {} );
+    r.topLevelNames = topLevelNames.sort();
+
+    return r;
 }
 
 function type_in_mapped_type( node )
@@ -81,17 +87,64 @@ function type_in_mapped_type( node )
     return false;
 }
 
-function get_type_of_node( sym, node )
+// function get_type_of_node( sym, node )
+// {
+//     let t = typeChecker.getTypeOfSymbolAtLocation( sym, node );
+//     delete t.symbol;
+//     delete t.bindDiagnostics;
+//     delete t.parent;
+//     delete t.checker;
+//     // t = hide_parent( t );
+//     if ( t.objectFlags ) t.objectFlags = ObjectFlags.create( t.objectFlags );
+//     if ( t.flags ) t.flags = TypeFlags.create( t.flags );
+//     return t;
+// }
+
+function module_name( name )
 {
-    let t = typeChecker.getTypeOfSymbolAtLocation( sym, node );
-    delete t.symbol;
-    delete t.bindDiagnostics;
-    delete t.parent;
-    delete t.checker;
-    // t = hide_parent( t );
-    if ( t.objectFlags ) t.objectFlags = ObjectFlags.create( t.objectFlags );
-    if ( t.flags ) t.flags = TypeFlags.create( t.flags );
-    return t;
+    if ( name.kind === SyntaxKind.Identifier )
+        return name.escapedText;
+    else if ( name.kind === SyntaxKind.StringLiteral )
+        return name.text;
+
+    return SyntaxKind[ name.kind ];
+}
+
+function tmp_name( sym, id = false )
+{
+    return sym.escapedName + ( id && sym.id ? ' (' + sym.id + ')' : '' );
+}
+
+function ident( node, mode = 'tiny' )
+{
+    if ( !node ) return ' NO NODE';
+
+    if ( !Reflect.has( node, 'escapedName' ) )
+    {
+        if ( !Reflect.has( node, 'symbol' ) ) return '';
+        node = node.symbol;
+    }
+
+    if ( !node.id ) return `${node.LOCAL || "ALIEN"}: NO ID ON ${node.escapedName || 'AND NO NAME'} [ ${Object.keys( node ).join( ', ' )} ]`;
+
+    const pid = node.parent && node.parent.id ? `<${node.parent.id}` : '';
+
+    switch ( mode )
+    {
+        case 'tiny':    return ' ' + ( node.id || node.escapedName ) + pid;
+        case 'short':    return ' (ref: ' + node.id + pid + ')';
+        default:
+        case 'long':    return ` ${node.escapedName} (${node.id}${pid})`;
+    }
+}
+
+function export_specifier( ex )
+{
+    let prop = ex.propertyName.escapedText;
+
+    if ( ex.name && ex.name.escapedText !== prop  ) prop += ' as ' + ex.name.escapedText;
+
+    return prop;
 }
 
 function list_heritage( nodes )
@@ -113,7 +166,7 @@ function list_heritage( nodes )
                 out.name = "not identifier but " + SyntaxKind[ h.expression.kind ];
 
             if ( h.typeArguments && h.typeArguments.length )
-                out.typeArguments = h.typeArguments.map( get_type_name )
+                out.typeArguments = h.typeArguments.map( get_type_name );
         }
         else // if ( h.kind === SyntaxKind.HeritageClause )
             out.name = "not expression with type arguments but " + SyntaxKind[ h.kind ] + ` -> [ ${Object.keys( h )} ]`;
@@ -124,8 +177,9 @@ function list_heritage( nodes )
 
 /**
  * @param {ts.Node} node
+ * @param {object} [table={}]
  */
-export function sym_walk( node )
+export function sym_walk( node, table = {} )
 {
     const isInterface = node && node.kind && node.kind === SyntaxKind.InterfaceDeclaration;
 
@@ -136,23 +190,40 @@ export function sym_walk( node )
      * File name info
      ********************************************************************************************************************/
 
-    // if ( node.symbol && node.symbol.escapedName === 'NodeRequire' )
-    //     console.error( `NodeRequire symbol keys: [ ${Object.keys( node.heritageClauses[ 0 ] )} ]` );
-
     if ( node.fileName )
-        console.log( `\n${SyntaxKind[ node.kind ]} of "${node.fileName}" ->` );
-    else if ( ![ SyntaxKind.VariableStatement, SyntaxKind.VariableDeclarationList ].includes( node.kind ) )
-        console.log( `\n${SyntaxKind[ node.kind ]} ->` );
+    {
+        table = table[ node.fileName ] = {
+            kind: SyntaxKind[ node.kind ]
+        };
+    }
+
+    /********************************************************************************************************************
+     * Modules and namespaces
+     ********************************************************************************************************************/
+
+    if ( node.kind === SyntaxKind.ModuleDeclaration )
+    {
+        const tmp = table[ module_name( node.name ) ] = show_sym( node.symbol );
+        delete tmp.name;
+
+        // MAYBE DUPE
+        // tmp.moduleMembers = node.body.statements.map( n => sym_walk( n, {} ) );
+        return table;
+    }
 
     /********************************************************************************************************************
      * Locals
      ********************************************************************************************************************/
 
-    if ( node.locals )
-        console.log( `locals:`, $( [ ...node.locals.values() ].map( show_sym ), 10 ) );
+    if ( node.localSymbol )
+        table[ tmp_name( node.localSymbol ) ] = show_sym( node.localSymbol );
 
-    if ( node.exports )
-        console.log( `node_exports:`, $( [ ...node.exports.values() ].map( show_sym ), 10 ) );
+    // MAYBE DUPE
+    if ( node.locals )
+    {
+        table.locals = [ ...node.locals.values() ].map( show_sym );
+        table.locals.forEach( s => topLevelNames.push( s.name ) );
+    }
 
     /********************************************************************************************************************
      * Variable declaration
@@ -160,20 +231,22 @@ export function sym_walk( node )
 
     if ( node.kind === SyntaxKind.VariableDeclaration )
     {
-        // const v = show_sym( node.symbol );
+        const varDef = {
+            flags: node.symbol.flags ? SymbolFlags.create( node.symbol.flags ).toString() : '',
+            types: add_types( node.type )
+        };
 
-        const
-            flags = node.symbol.flags ? ', flags: ' + SymbolFlags.create( node.symbol.flags ).toString() : '',
-            parent = node.parent.parent.parent ? SyntaxKind[ node.parent.parent.parent.kind ] : '<no parent>';
+        if ( table[ tmp_name( node.symbol ) ] )
+        {
+            const tmp = table[ tmp_name( node.symbol ) ];
 
-        add_keys( node.symbol );
-        console.log( `${get_name( node.symbol )}: ${add_types( node.type )}${flags} [parent: "${parent}"]` );
-
-        // if ( node.type && node.type.typeName )
-        //     console.log( `type: ${node.type.typeName.escapedText}` );
-        // v.type = node.type.typeName.escapedText;
-
-        // console.log( $( v, 10 ) );
+            if ( Array.isArray( tmp ) )
+                tmp.push( varDef );
+            else
+                table[ tmp_name( node.symbol ) ] = [ tmp, varDef ];
+        }
+        else
+            table[ tmp_name( node.symbol ) ] = varDef;
     }
 
     /********************************************************************************************************************
@@ -182,10 +255,18 @@ export function sym_walk( node )
 
     else if ( node.symbol )
     {
-        console.log( `Symbol name: ${get_name( node.symbol )}` );
-        if ( node.symbol.declarations ) console.log( '    declarations:', $( node.symbol.declarations.map( decl => SyntaxKind[ decl.kind ] ), 10 ) );
-        const internal = show_sym( node.symbol, node );
-        console.log( $( internal, 10 ) );
+        // const tmp = {
+        //
+        // };
+
+        // MAYBE DUPE
+        // if ( node.symbol.declarations ) tmp.declarations = node.symbol.declarations.map( decl => SyntaxKind[ decl.kind ] );
+
+        // tmp.internal = show_sym( node.symbol, node );
+
+        if ( !table.internal ) table.internal = [];
+
+        table.internal.push( show_sym( node.symbol, node, true ) );
     }
 
     /********************************************************************************************************************
@@ -193,38 +274,56 @@ export function sym_walk( node )
      ********************************************************************************************************************/
 
     else if ( node.kind === SyntaxKind.VariableStatement )
-        sym_walk( node.declarationList );
-    else if ( node.kind === SyntaxKind.VariableDeclarationList )
-        node.declarations.forEach( sym_walk );
+    {
+        if ( !table.__vars ) table.__vars = {};
 
-    if ( Array.isArray( node.statements ) )
-        node.statements.forEach( sym_walk );
+        sym_walk( node.declarationList, table );
+    }
+    else if ( node.kind === SyntaxKind.VariableDeclarationList )
+    {
+        if ( !table.__vars ) table.__vars = {};
+
+        node.declarations.forEach( sym => sym_walk( sym, table.__vars ) );
+    }
+
+    // MAYBE DUPE
+    // if ( Array.isArray( node.statements ) )
+    //     node.statements.forEach( sym => sym_walk( sym, table ) );
+
+    return table;
 }
 
-function show_sym( sym )
+function show_sym( sym, noExports = false )
 {
     if ( !sym ) return null;
 
     const
-        r = { name: disambiguate( get_name( sym ) ) },
+        r = { name: disambiguate( get_name( sym ) ), id: sym.id },
         d = decls( sym );
 
-    if ( sym.flags ) r.flags = SymbolFlags.create( sym.flags );
+    if ( sym.flags )
+    {
+        const flags = SymbolFlags.create( sym.flags ).toString();
+
+        if ( flags ) r.flags = flags;
+    }
+
+    if ( sym.valueDeclaration && !sym.declarations.includes( sym.valueDeclaration ) )
+        r.valueDeclaration = get_decl( sym.valueDeclaration );
 
     if ( d ) r.decls = d;
-
-    // if ( typeof node === 'object' && node.kind ) r.typed = get_type_of_node( sym, node );
-
-    // if ( sym.declarations && sym.declarations.length )
-    //     r.types = sym.declarations.map( decl => get_type_of_node( sym, decl ) );
 
     if ( sym.members && sym.members.size )
         r.members = from_sym( sym.members );
 
-    if ( sym.exports && sym.exports.size )
+    if ( sym.exports && sym.exports.size && !noExports )
         r.exports = from_sym( sym.exports );
 
-    add_keys( sym );
+    if ( sym.localSymbol )
+        r.localSymbol = show_sym( sym.localSymbol );
+
+    if ( sym.exportSymbol )
+        r.exportSymbol = show_sym( sym.exportSymbol );
 
     return r;
 }
@@ -243,10 +342,41 @@ function decls( sym )
     return sym.declarations.map( get_decl );
 }
 
+var tmp = {
+    name: "__type",
+    flags: "TypeLiteral",
+    decls: [
+        { loc: "80:90", decl: "TypeLiteral" }
+        ],
+    members: [
+        {
+            name: "__index",
+            flags: "Signature",
+            decls: [
+                {
+                    loc: "80:92",
+                    decl: "[ x: string ]: PropertyDescriptor"
+                }
+                ]
+        }
+        ]
+};
+
+function type_literal_as_string( tl, short = true )
+{
+    const members = tl && tl.members;
+
+    if ( !tl ) return "No fucking TL";
+    if ( !members ) return JSON.stringify( tl );
+
+    return '{ ' + members.map( m => m.valueDeclaration ? m.valueDeclaration.decl : m.decls[ 0 ].decl ).join( short ? '; ' : ';\n' ) + ' }';
+}
+
 function get_decl( decl )
 {
     let [ lineNumber, offset ] = file.reporters.offset_to_line_offset( decl.pos ),
-        declName               = `${SyntaxKind[ decl.kind ]} > ${decl.name && decl.name.escapedText || 'noName'}`,
+        declName               = `${decl.name && decl.name.escapedText || 'noName'}`,
+        // declName               = `${SyntaxKind[ decl.kind ]}`,
         typeName               = decl.type ? add_types( decl.type ) : '',
         heritage;
 
@@ -260,8 +390,9 @@ function get_decl( decl )
     }
     else
     {
-        if ( decl.typeParameters )
-            declName += type_parameters( decl.typeParameters );
+        declName += check_for_template( decl );
+        // if ( decl.typeParameters )
+        //     declName += type_parameters( decl.typeParameters );
 
         if ( decl.parameters )
         {
@@ -274,12 +405,50 @@ function get_decl( decl )
 
     let flags = '';
     if ( decl.flags && !!( decl.flags & ~NodeFlags.Ambient ) )
-        flags = NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString();
-        // flags = '/' + NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString();
+        flags = ' [ ' + NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString() + ' ]';
 
+    if ( decl.kind === SyntaxKind.ExportSpecifier )
+    {
+        let propName = '<no prop name>';
+
+        if ( Reflect.has( decl, 'propertyName' ) && type( decl.propertyName ) === 'object' && Reflect.has( decl, 'propertyName' ) )
+            propName = decl.propertyName.escapedText;
+        else if ( Reflect.has( decl, 'name' ) && type( decl.name ) === 'object' && Reflect.has( decl, 'name' ) )
+            propName = decl.name.escapedText;
+
+        typeName = propName;
+        // return `@${lineNumber + 1}:${offset}${flags} ${propName}` ;
+    }
+    // else if ( decl.kind === SyntaxKind.IndexSignature )
+    // {
+    //     declName = `[ ${decl.parameters.map( pretty ).join( ', ' )} ]`;
+    //     typeName = get_type_name( decl.type );
+    // }
+    // else
+    // {
+    //     declName += check_for_template( decl );
+    //     // if ( decl.typeParameters )
+    //     //     declName += type_parameters( decl.typeParameters );
+    //
+    //     if ( decl.parameters )
+    //     {
+    //         if ( decl.parameters.length )
+    //             declName = `${declName}( ${decl.parameters.map( pretty ).join( ', ' )} )`;
+    //         else
+    //             declName += '()';
+    //     }
+    // }
+
+    if ( type( typeName ) === 'object' )
+    {
+        const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
+        if ( flags ) r.flags = flags;
+    }
+
+    // NEW STUFF OLD STUFF
     const dd = {
         loc: `${lineNumber + 1}:${offset}`,
-        decl: declName + ( typeName ? ': ' + typeName : '' )
+        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' )
     };
 
     if ( heritage )
@@ -287,9 +456,14 @@ function get_decl( decl )
     if ( flags )
         dd.flags = `${flags}`;
 
-    if ( decl.symbol ) add_keys( decl.symbol );
+    dd.kind = SyntaxKind[ decl.kind ];
+    dd.hasSymbol = decl.symbol ? ident( decl, 'long' ) : 'no';
+    // dd.hasSymbol = decl.symbol ? tmp_name( decl.symbol, true ) : 'no';
 
     return dd;
+
+    // TO HERE
+
     // return `@${lineNumber + 1}:${offset}${flags} ` + declName + ( typeName ? ': ' + typeName : '' );
 }
 
@@ -320,47 +494,64 @@ function add_types( type )
 {
     // if ( !type ) return '<missing> ' + new Error().stack.split( /\r?\n/ ).slice( 1, 4 ).join( ' | ' );
 
+    let t;
+
     if ( type.kind === SyntaxKind.Identifier )
-        return type.escapedText;
+        return type.escapedText + ident( type );
+
     else if ( type.kind === SyntaxKind.ParenthesizedType )
         return `( ${add_types( type.type )} )`;
+
+    else if ( type.kind === SyntaxKind.TypePredicate )
+        return `${type.parameterName.escapedText} ${ident( type.parameterName )}is ${add_types( type.type )}`;
+
+    else if ( type.kind === SyntaxKind.TypeReference )
+        return add_types( type.typeName ) + check_for_template( type );
+
     else if ( type.kind === SyntaxKind.QualifiedName )
         return qual_name( type );
+
     else if ( type.kind === SyntaxKind.FunctionType )
         return func_type( type );
 
-
     else if ( type.kind === SyntaxKind.UnionType )
         return type.types.map( add_types ).join( ' | ' );
+
     else if ( type.kind === SyntaxKind.IntersectionType )
         return type.types.map( add_types ).join( ' & ' );
 
-
     else if ( type.kind === SyntaxKind.MappedType )
-        return `[ ${add_types( type.typeParameter )} ]${type.questionToken ? '?' : ''}: ${get_type_name( type.type )}`;
+        return `{ [ ${add_types( type.typeParameter )} ]${type.questionToken ? '?' : ''}: ${get_type_name( type.type )} }`;
 
-    else if ( type.kind === SyntaxKind.TypeReference )
-        return add_types( type.typeName ) + ( type.typeParameters || type.typeArguments ? type_parameters( type.typeParameters || type.typeArguments ) : '' );
-
-    else if ( type.kind === SyntaxKind.TypePredicate )
-        return `${type.parameterName.escapedText} is ${add_types( type.type )}`;
 
     else if ( type.kind === SyntaxKind.LiteralType )
     {
         switch ( type.literal.kind )
         {
             case SyntaxKind.StringLiteral:
-                return `"${type.literal.text}"`;
+                return `'${type.literal.text}' ${ident( type )}`;
 
             case SyntaxKind.NumericLiteral:
-                return type.literal.text;
+                return type.literal.text + ident( type );
+
+            case SyntaxKind.TrueKeyword:
+                return 'true' + ident( type );
+
+            case SyntaxKind.FalseKeyword:
+                return 'false' + ident( type );
 
             default:
-                return `Unknown literal "${SyntaxKind[ type.literal.kind ]}"`;
+                return `Unknown literal "${SyntaxKind[ type.literal.kind ]}" ${ident( type )}`;
         }
     }
-
-    let t = type && !type.types ? get_type_name( type ) : type && type.types ? type.types.map( get_type_name ).join( ' | ' ) : '';
+    else if ( type.kind === SyntaxKind.TypeLiteral )
+    {
+        const tl = show_sym( type.symbol );
+        Object.defineProperty( tl, 'toString', { enumerable: false, value: () => type_literal_as_string( tl.members ) } );
+        return tl;
+    }
+    else
+        t = type && !type.types ? get_type_name( type ) : type && type.types ? type.types.map( get_type_name ).join( ' | ' ) : '';
 
     if ( /^\s*[A-Z][a-z]+Keyword\s*$/.test( t ) )
         t = t.replace( /^\s*(.*)Keyword\s*$/, '$1' ).toLowerCase();
@@ -381,36 +572,41 @@ function add_types( type )
         t += `${typeOp} ${tn}`;
     }
 
-    if ( type && type.typeParameters )
-        t += type_parameters( type.typeParameters );
+    t += check_for_template( type );
 
     return t;
+}
+
+function check_for_template( type )
+{
+    if ( type.typeParameters )
+        return type_parameters( type.typeParameters );
+
+    if ( type.typeArguments )
+        return type_parameters( type.typeArguments );
+
+    return '';
 }
 
 function get_type_name( type )
 {
     if ( !type ) return '<no type name>';
 
-    let typeName = type.typeName && type.typeName.escapedText ? type.typeName.escapedText :
-                   type && type.name && type.name.escapedText ? type.name.escapedText :
-                   type && type.kind ? SyntaxKind[ type.kind ] :
+    let typeName = type.typeName && type.typeName.escapedText ?
+                   type.typeName.escapedText :
+                   type.name && type.name.escapedText ? type.name.escapedText :
+                   type.exprName ? type.exprName.escapedText :
+                   type.kind ?
+                   SyntaxKind[ type.kind ] :
                    '';
 
     if ( /^\s*[A-Z][a-z]+Keyword\s*$/.test( typeName ) )
         typeName = typeName.replace( /^(.*)Keyword$/, '$1' ).toLowerCase();
 
     if ( typeName === 'IndexedAccessType' )
-        return get_type_name( type.objectType ) + '[' + get_type_name( type.indexType ) + ']';
+        return get_type_name( type.objectType ) + '[' + get_type_name( type.indexType ) + ']' + ident( type );
 
-
-    if ( type )
-    {
-        if ( type.typeParameters )
-            typeName += type_parameters( type.typeParameters );
-
-        if ( type.typeArguments )
-            typeName += type_parameters( type.typeArguments );
-    }
+    typeName += check_for_template( type );
 
     if ( typeName === 'ArrayType' && type.elementType ) typeName = add_types( type.elementType ) + '[]';
 
@@ -436,7 +632,7 @@ function disambiguate( name )
 function qual_name( node )
 {
     if ( SyntaxKind.Identifier === node.kind )
-        return node.escapedText;
+        return node.escapedText + ident( node );
     else if ( SyntaxKind.QualifiedName === node.kind )
         return qual_name( node.left ) + '.' + qual_name( node.right );
 

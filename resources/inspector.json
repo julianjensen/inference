@@ -1,0 +1,1713 @@
+[
+    {
+        "kind": "SourceFile",
+        "locals": [
+            {
+                "name": "inspector",
+                "id": 2,
+                "flags": "ValueModule | Transient",
+                "decls": [
+                    {
+                        "loc": "10:0",
+                        "decl": "noName",
+                        "flags": " [ ExportContext ]",
+                        "kind": "ModuleDeclaration",
+                        "hasSymbol": " \"inspector\" (2)"
+                    }
+                ],
+                "exports": [
+                    {
+                        "name": "InspectorNotification",
+                        "id": 5,
+                        "flags": "Interface | Transient",
+                        "decls": [
+                            {
+                                "loc": "14:4",
+                                "decl": "InspectorNotification<T>",
+                                "kind": "InterfaceDeclaration",
+                                "hasSymbol": " InspectorNotification (5<2)"
+                            }
+                        ],
+                        "members": [
+                            {
+                                "name": "T",
+                                "id": 6,
+                                "flags": "TypeParameter | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "14:43",
+                                        "decl": "T",
+                                        "kind": "TypeParameter",
+                                        "hasSymbol": " T (6<5)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "method",
+                                "id": 7,
+                                "flags": "Property | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "16:8",
+                                        "decl": "method: string",
+                                        "kind": "PropertySignature",
+                                        "hasSymbol": " method (7<5)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "params",
+                                "id": 8,
+                                "flags": "Property | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "17:8",
+                                        "decl": "params: T",
+                                        "kind": "PropertySignature",
+                                        "hasSymbol": " params (8<5)"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Schema",
+                        "id": 10,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "20:4",
+                                "decl": "Schema",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " Schema (10<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Runtime",
+                        "id": 19,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "46:4",
+                                "decl": "Runtime",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " Runtime (19<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Debugger",
+                        "id": 229,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "745:4",
+                                "decl": "Debugger",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " Debugger (229<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Console",
+                        "id": 423,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "1372:4",
+                                "decl": "Console",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " Console (423<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Profiler",
+                        "id": 436,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "1414:4",
+                                "decl": "Profiler",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " Profiler (436<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "HeapProfiler",
+                        "id": 498,
+                        "flags": "ValueModule | Transient",
+                        "decls": [
+                            {
+                                "loc": "1620:4",
+                                "decl": "HeapProfiler",
+                                "flags": " [ Namespace | ExportContext ]",
+                                "kind": "ModuleDeclaration",
+                                "hasSymbol": " HeapProfiler (498<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Session",
+                        "id": 556,
+                        "flags": "Class | Transient",
+                        "decls": [
+                            {
+                                "loc": "1762:4",
+                                "decl": "Session",
+                                "heritage": [
+                                    {
+                                        "name": "EventEmitter"
+                                    }
+                                ],
+                                "kind": "ClassDeclaration",
+                                "hasSymbol": " Session (556<2)"
+                            }
+                        ],
+                        "members": [
+                            {
+                                "name": "Constructor",
+                                "id": 558,
+                                "flags": "Constructor | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "1767:8",
+                                        "decl": "noName()",
+                                        "kind": "Constructor",
+                                        "hasSymbol": " Constructor (558<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "connect",
+                                "id": 559,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "1772:8",
+                                        "decl": "connect(): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " connect (559<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "disconnect",
+                                "id": 560,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "1777:8",
+                                        "decl": "disconnect(): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " disconnect (560<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "post",
+                                "id": 561,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "1782:8",
+                                        "decl": "post( method: string [ FunctionScopedVariable | Transient ], params?: No fucking TL [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params?: No fucking TL [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1783:8",
+                                        "decl": "post( method: string [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params?: No fucking TL [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1788:8",
+                                        "decl": "post( method: 'Schema.getDomains'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Schema.GetDomainsReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1792:8",
+                                        "decl": "post( method: 'Runtime.evaluate'  [ FunctionScopedVariable | Transient ], params?: Runtime.EvaluateParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.EvaluateReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1793:8",
+                                        "decl": "post( method: 'Runtime.evaluate'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.EvaluateReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1798:8",
+                                        "decl": "post( method: 'Runtime.awaitPromise'  [ FunctionScopedVariable | Transient ], params?: Runtime.AwaitPromiseParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.AwaitPromiseReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1799:8",
+                                        "decl": "post( method: 'Runtime.awaitPromise'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.AwaitPromiseReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1804:8",
+                                        "decl": "post( method: 'Runtime.callFunctionOn'  [ FunctionScopedVariable | Transient ], params?: Runtime.CallFunctionOnParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.CallFunctionOnReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1805:8",
+                                        "decl": "post( method: 'Runtime.callFunctionOn'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.CallFunctionOnReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1810:8",
+                                        "decl": "post( method: 'Runtime.getProperties'  [ FunctionScopedVariable | Transient ], params?: Runtime.GetPropertiesParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.GetPropertiesReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1811:8",
+                                        "decl": "post( method: 'Runtime.getProperties'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.GetPropertiesReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1816:8",
+                                        "decl": "post( method: 'Runtime.releaseObject'  [ FunctionScopedVariable | Transient ], params?: Runtime.ReleaseObjectParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1817:8",
+                                        "decl": "post( method: 'Runtime.releaseObject'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1822:8",
+                                        "decl": "post( method: 'Runtime.releaseObjectGroup'  [ FunctionScopedVariable | Transient ], params?: Runtime.ReleaseObjectGroupParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1823:8",
+                                        "decl": "post( method: 'Runtime.releaseObjectGroup'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1828:8",
+                                        "decl": "post( method: 'Runtime.runIfWaitingForDebugger'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1833:8",
+                                        "decl": "post( method: 'Runtime.enable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1838:8",
+                                        "decl": "post( method: 'Runtime.disable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1843:8",
+                                        "decl": "post( method: 'Runtime.discardConsoleEntries'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1848:8",
+                                        "decl": "post( method: 'Runtime.setCustomObjectFormatterEnabled'  [ FunctionScopedVariable | Transient ], params?: Runtime.SetCustomObjectFormatterEnabledParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1849:8",
+                                        "decl": "post( method: 'Runtime.setCustomObjectFormatterEnabled'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1854:8",
+                                        "decl": "post( method: 'Runtime.compileScript'  [ FunctionScopedVariable | Transient ], params?: Runtime.CompileScriptParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.CompileScriptReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1855:8",
+                                        "decl": "post( method: 'Runtime.compileScript'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.CompileScriptReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1860:8",
+                                        "decl": "post( method: 'Runtime.runScript'  [ FunctionScopedVariable | Transient ], params?: Runtime.RunScriptParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.RunScriptReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1861:8",
+                                        "decl": "post( method: 'Runtime.runScript'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Runtime.RunScriptReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1865:8",
+                                        "decl": "post( method: 'Debugger.enable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1870:8",
+                                        "decl": "post( method: 'Debugger.disable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1875:8",
+                                        "decl": "post( method: 'Debugger.setBreakpointsActive'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetBreakpointsActiveParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1876:8",
+                                        "decl": "post( method: 'Debugger.setBreakpointsActive'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1881:8",
+                                        "decl": "post( method: 'Debugger.setSkipAllPauses'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetSkipAllPausesParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1882:8",
+                                        "decl": "post( method: 'Debugger.setSkipAllPauses'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1887:8",
+                                        "decl": "post( method: 'Debugger.setBreakpointByUrl'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetBreakpointByUrlParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetBreakpointByUrlReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1888:8",
+                                        "decl": "post( method: 'Debugger.setBreakpointByUrl'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetBreakpointByUrlReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1893:8",
+                                        "decl": "post( method: 'Debugger.setBreakpoint'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetBreakpointParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetBreakpointReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1894:8",
+                                        "decl": "post( method: 'Debugger.setBreakpoint'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetBreakpointReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1899:8",
+                                        "decl": "post( method: 'Debugger.removeBreakpoint'  [ FunctionScopedVariable | Transient ], params?: Debugger.RemoveBreakpointParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1900:8",
+                                        "decl": "post( method: 'Debugger.removeBreakpoint'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1906:8",
+                                        "decl": "post( method: 'Debugger.getPossibleBreakpoints'  [ FunctionScopedVariable | Transient ], params?: Debugger.GetPossibleBreakpointsParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.GetPossibleBreakpointsReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1907:8",
+                                        "decl": "post( method: 'Debugger.getPossibleBreakpoints'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.GetPossibleBreakpointsReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1912:8",
+                                        "decl": "post( method: 'Debugger.continueToLocation'  [ FunctionScopedVariable | Transient ], params?: Debugger.ContinueToLocationParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1913:8",
+                                        "decl": "post( method: 'Debugger.continueToLocation'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1918:8",
+                                        "decl": "post( method: 'Debugger.stepOver'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1923:8",
+                                        "decl": "post( method: 'Debugger.stepInto'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1928:8",
+                                        "decl": "post( method: 'Debugger.stepOut'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1933:8",
+                                        "decl": "post( method: 'Debugger.pause'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1939:8",
+                                        "decl": "post( method: 'Debugger.scheduleStepIntoAsync'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1944:8",
+                                        "decl": "post( method: 'Debugger.resume'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1950:8",
+                                        "decl": "post( method: 'Debugger.searchInContent'  [ FunctionScopedVariable | Transient ], params?: Debugger.SearchInContentParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SearchInContentReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1951:8",
+                                        "decl": "post( method: 'Debugger.searchInContent'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SearchInContentReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1956:8",
+                                        "decl": "post( method: 'Debugger.setScriptSource'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetScriptSourceParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetScriptSourceReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1957:8",
+                                        "decl": "post( method: 'Debugger.setScriptSource'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.SetScriptSourceReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1962:8",
+                                        "decl": "post( method: 'Debugger.restartFrame'  [ FunctionScopedVariable | Transient ], params?: Debugger.RestartFrameParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.RestartFrameReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1963:8",
+                                        "decl": "post( method: 'Debugger.restartFrame'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.RestartFrameReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1968:8",
+                                        "decl": "post( method: 'Debugger.getScriptSource'  [ FunctionScopedVariable | Transient ], params?: Debugger.GetScriptSourceParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.GetScriptSourceReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1969:8",
+                                        "decl": "post( method: 'Debugger.getScriptSource'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.GetScriptSourceReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1974:8",
+                                        "decl": "post( method: 'Debugger.setPauseOnExceptions'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetPauseOnExceptionsParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1975:8",
+                                        "decl": "post( method: 'Debugger.setPauseOnExceptions'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1980:8",
+                                        "decl": "post( method: 'Debugger.evaluateOnCallFrame'  [ FunctionScopedVariable | Transient ], params?: Debugger.EvaluateOnCallFrameParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.EvaluateOnCallFrameReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1981:8",
+                                        "decl": "post( method: 'Debugger.evaluateOnCallFrame'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Debugger.EvaluateOnCallFrameReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1986:8",
+                                        "decl": "post( method: 'Debugger.setVariableValue'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetVariableValueParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1987:8",
+                                        "decl": "post( method: 'Debugger.setVariableValue'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1992:8",
+                                        "decl": "post( method: 'Debugger.setAsyncCallStackDepth'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetAsyncCallStackDepthParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1993:8",
+                                        "decl": "post( method: 'Debugger.setAsyncCallStackDepth'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "1999:8",
+                                        "decl": "post( method: 'Debugger.setBlackboxPatterns'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetBlackboxPatternsParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2000:8",
+                                        "decl": "post( method: 'Debugger.setBlackboxPatterns'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2006:8",
+                                        "decl": "post( method: 'Debugger.setBlackboxedRanges'  [ FunctionScopedVariable | Transient ], params?: Debugger.SetBlackboxedRangesParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2007:8",
+                                        "decl": "post( method: 'Debugger.setBlackboxedRanges'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2011:8",
+                                        "decl": "post( method: 'Console.enable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2016:8",
+                                        "decl": "post( method: 'Console.disable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2021:8",
+                                        "decl": "post( method: 'Console.clearMessages'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2022:8",
+                                        "decl": "post( method: 'Profiler.enable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2024:8",
+                                        "decl": "post( method: 'Profiler.disable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2029:8",
+                                        "decl": "post( method: 'Profiler.setSamplingInterval'  [ FunctionScopedVariable | Transient ], params?: Profiler.SetSamplingIntervalParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2030:8",
+                                        "decl": "post( method: 'Profiler.setSamplingInterval'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2032:8",
+                                        "decl": "post( method: 'Profiler.start'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2034:8",
+                                        "decl": "post( method: 'Profiler.stop'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Profiler.StopReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2040:8",
+                                        "decl": "post( method: 'Profiler.startPreciseCoverage'  [ FunctionScopedVariable | Transient ], params?: Profiler.StartPreciseCoverageParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2041:8",
+                                        "decl": "post( method: 'Profiler.startPreciseCoverage'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2047:8",
+                                        "decl": "post( method: 'Profiler.stopPreciseCoverage'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2053:8",
+                                        "decl": "post( method: 'Profiler.takePreciseCoverage'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Profiler.TakePreciseCoverageReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2059:8",
+                                        "decl": "post( method: 'Profiler.getBestEffortCoverage'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: Profiler.GetBestEffortCoverageReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2060:8",
+                                        "decl": "post( method: 'HeapProfiler.enable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2062:8",
+                                        "decl": "post( method: 'HeapProfiler.disable'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2064:8",
+                                        "decl": "post( method: 'HeapProfiler.startTrackingHeapObjects'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.StartTrackingHeapObjectsParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2065:8",
+                                        "decl": "post( method: 'HeapProfiler.startTrackingHeapObjects'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2067:8",
+                                        "decl": "post( method: 'HeapProfiler.stopTrackingHeapObjects'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.StopTrackingHeapObjectsParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2068:8",
+                                        "decl": "post( method: 'HeapProfiler.stopTrackingHeapObjects'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2070:8",
+                                        "decl": "post( method: 'HeapProfiler.takeHeapSnapshot'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.TakeHeapSnapshotParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2071:8",
+                                        "decl": "post( method: 'HeapProfiler.takeHeapSnapshot'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2073:8",
+                                        "decl": "post( method: 'HeapProfiler.collectGarbage'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2075:8",
+                                        "decl": "post( method: 'HeapProfiler.getObjectByHeapObjectId'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.GetObjectByHeapObjectIdParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: HeapProfiler.GetObjectByHeapObjectIdReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2078:8",
+                                        "decl": "post( method: 'HeapProfiler.getObjectByHeapObjectId'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: HeapProfiler.GetObjectByHeapObjectIdReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2083:8",
+                                        "decl": "post( method: 'HeapProfiler.addInspectedHeapObject'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.AddInspectedHeapObjectParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2084:8",
+                                        "decl": "post( method: 'HeapProfiler.addInspectedHeapObject'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2086:8",
+                                        "decl": "post( method: 'HeapProfiler.getHeapObjectId'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.GetHeapObjectIdParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: HeapProfiler.GetHeapObjectIdReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2087:8",
+                                        "decl": "post( method: 'HeapProfiler.getHeapObjectId'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: HeapProfiler.GetHeapObjectIdReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2089:8",
+                                        "decl": "post( method: 'HeapProfiler.startSampling'  [ FunctionScopedVariable | Transient ], params?: HeapProfiler.StartSamplingParameterType [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2090:8",
+                                        "decl": "post( method: 'HeapProfiler.startSampling'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    },
+                                    {
+                                        "loc": "2092:8",
+                                        "decl": "post( method: 'HeapProfiler.stopSampling'  [ FunctionScopedVariable | Transient ], callback?: ( err: Error | null [ FunctionScopedVariable | Transient ], params: HeapProfiler.StopSamplingReturnType [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): void",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " post (561<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "addListener",
+                                "id": 1135,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2096:8",
+                                        "decl": "addListener( event: string [ FunctionScopedVariable | Transient ], listener: ( ...args: any[] [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2101:8",
+                                        "decl": "addListener( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2106:8",
+                                        "decl": "addListener( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2111:8",
+                                        "decl": "addListener( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2116:8",
+                                        "decl": "addListener( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2121:8",
+                                        "decl": "addListener( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2126:8",
+                                        "decl": "addListener( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2131:8",
+                                        "decl": "addListener( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2136:8",
+                                        "decl": "addListener( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2141:8",
+                                        "decl": "addListener( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2146:8",
+                                        "decl": "addListener( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2151:8",
+                                        "decl": "addListener( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2156:8",
+                                        "decl": "addListener( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2161:8",
+                                        "decl": "addListener( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2166:8",
+                                        "decl": "addListener( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2171:8",
+                                        "decl": "addListener( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2173:8",
+                                        "decl": "addListener( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2174:8",
+                                        "decl": "addListener( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2175:8",
+                                        "decl": "addListener( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2176:8",
+                                        "decl": "addListener( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2181:8",
+                                        "decl": "addListener( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    },
+                                    {
+                                        "loc": "2186:8",
+                                        "decl": "addListener( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " addListener (1135<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "emit",
+                                "id": 1244,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2188:8",
+                                        "decl": "emit( event: string | symbol [ FunctionScopedVariable | Transient ], ...args: any[] [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2189:8",
+                                        "decl": "emit( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2190:8",
+                                        "decl": "emit( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2191:8",
+                                        "decl": "emit( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2192:8",
+                                        "decl": "emit( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2193:8",
+                                        "decl": "emit( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2194:8",
+                                        "decl": "emit( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2195:8",
+                                        "decl": "emit( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2196:8",
+                                        "decl": "emit( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2197:8",
+                                        "decl": "emit( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2198:8",
+                                        "decl": "emit( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2199:8",
+                                        "decl": "emit( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2200:8",
+                                        "decl": "emit( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2201:8",
+                                        "decl": "emit( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2202:8",
+                                        "decl": "emit( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2203:8",
+                                        "decl": "emit( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2204:8",
+                                        "decl": "emit( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2205:8",
+                                        "decl": "emit( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2206:8",
+                                        "decl": "emit( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2207:8",
+                                        "decl": "emit( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2208:8",
+                                        "decl": "emit( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    },
+                                    {
+                                        "loc": "2209:8",
+                                        "decl": "emit( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ): boolean",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " emit (1244<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "on",
+                                "id": 1287,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2211:8",
+                                        "decl": "on( event: string [ FunctionScopedVariable | Transient ], listener: ( ...args: any[] [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2216:8",
+                                        "decl": "on( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2221:8",
+                                        "decl": "on( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2226:8",
+                                        "decl": "on( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2231:8",
+                                        "decl": "on( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2236:8",
+                                        "decl": "on( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2241:8",
+                                        "decl": "on( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2246:8",
+                                        "decl": "on( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2251:8",
+                                        "decl": "on( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2256:8",
+                                        "decl": "on( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2261:8",
+                                        "decl": "on( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2266:8",
+                                        "decl": "on( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2271:8",
+                                        "decl": "on( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2276:8",
+                                        "decl": "on( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2281:8",
+                                        "decl": "on( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2286:8",
+                                        "decl": "on( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2288:8",
+                                        "decl": "on( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2289:8",
+                                        "decl": "on( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2290:8",
+                                        "decl": "on( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2291:8",
+                                        "decl": "on( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2296:8",
+                                        "decl": "on( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    },
+                                    {
+                                        "loc": "2301:8",
+                                        "decl": "on( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " on (1287<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "once",
+                                "id": 1396,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2303:8",
+                                        "decl": "once( event: string [ FunctionScopedVariable | Transient ], listener: ( ...args: any[] [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2308:8",
+                                        "decl": "once( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2313:8",
+                                        "decl": "once( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2318:8",
+                                        "decl": "once( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2323:8",
+                                        "decl": "once( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2328:8",
+                                        "decl": "once( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2333:8",
+                                        "decl": "once( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2338:8",
+                                        "decl": "once( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2343:8",
+                                        "decl": "once( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2348:8",
+                                        "decl": "once( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2353:8",
+                                        "decl": "once( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2358:8",
+                                        "decl": "once( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2363:8",
+                                        "decl": "once( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2368:8",
+                                        "decl": "once( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2373:8",
+                                        "decl": "once( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2378:8",
+                                        "decl": "once( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2380:8",
+                                        "decl": "once( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2381:8",
+                                        "decl": "once( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2382:8",
+                                        "decl": "once( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2383:8",
+                                        "decl": "once( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2388:8",
+                                        "decl": "once( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    },
+                                    {
+                                        "loc": "2393:8",
+                                        "decl": "once( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " once (1396<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "prependListener",
+                                "id": 1505,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2395:8",
+                                        "decl": "prependListener( event: string [ FunctionScopedVariable | Transient ], listener: ( ...args: any[] [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2400:8",
+                                        "decl": "prependListener( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2405:8",
+                                        "decl": "prependListener( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2410:8",
+                                        "decl": "prependListener( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2415:8",
+                                        "decl": "prependListener( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2420:8",
+                                        "decl": "prependListener( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2425:8",
+                                        "decl": "prependListener( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2430:8",
+                                        "decl": "prependListener( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2435:8",
+                                        "decl": "prependListener( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2440:8",
+                                        "decl": "prependListener( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2445:8",
+                                        "decl": "prependListener( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2450:8",
+                                        "decl": "prependListener( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2455:8",
+                                        "decl": "prependListener( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2460:8",
+                                        "decl": "prependListener( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2465:8",
+                                        "decl": "prependListener( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2470:8",
+                                        "decl": "prependListener( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2472:8",
+                                        "decl": "prependListener( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2473:8",
+                                        "decl": "prependListener( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2474:8",
+                                        "decl": "prependListener( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2475:8",
+                                        "decl": "prependListener( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2480:8",
+                                        "decl": "prependListener( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    },
+                                    {
+                                        "loc": "2485:8",
+                                        "decl": "prependListener( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependListener (1505<556)"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "prependOnceListener",
+                                "id": 1614,
+                                "flags": "Method | Transient",
+                                "decls": [
+                                    {
+                                        "loc": "2487:8",
+                                        "decl": "prependOnceListener( event: string [ FunctionScopedVariable | Transient ], listener: ( ...args: any[] [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2492:8",
+                                        "decl": "prependOnceListener( event: 'inspectorNotification'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<No fucking TL> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2497:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.executionContextCreated'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextCreatedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2502:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.executionContextDestroyed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExecutionContextDestroyedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2507:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.executionContextsCleared'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2512:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.exceptionThrown'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionThrownEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2517:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.exceptionRevoked'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ExceptionRevokedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2522:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.consoleAPICalled'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.ConsoleAPICalledEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2527:8",
+                                        "decl": "prependOnceListener( event: 'Runtime.inspectRequested'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Runtime.InspectRequestedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2532:8",
+                                        "decl": "prependOnceListener( event: 'Debugger.scriptParsed'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptParsedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2537:8",
+                                        "decl": "prependOnceListener( event: 'Debugger.scriptFailedToParse'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.ScriptFailedToParseEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2542:8",
+                                        "decl": "prependOnceListener( event: 'Debugger.breakpointResolved'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.BreakpointResolvedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2547:8",
+                                        "decl": "prependOnceListener( event: 'Debugger.paused'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Debugger.PausedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2552:8",
+                                        "decl": "prependOnceListener( event: 'Debugger.resumed'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2557:8",
+                                        "decl": "prependOnceListener( event: 'Console.messageAdded'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Console.MessageAddedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2562:8",
+                                        "decl": "prependOnceListener( event: 'Profiler.consoleProfileStarted'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileStartedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2564:8",
+                                        "decl": "prependOnceListener( event: 'Profiler.consoleProfileFinished'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<Profiler.ConsoleProfileFinishedEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2565:8",
+                                        "decl": "prependOnceListener( event: 'HeapProfiler.addHeapSnapshotChunk'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.AddHeapSnapshotChunkEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2566:8",
+                                        "decl": "prependOnceListener( event: 'HeapProfiler.resetProfiles'  [ FunctionScopedVariable | Transient ], listener: () => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2567:8",
+                                        "decl": "prependOnceListener( event: 'HeapProfiler.reportHeapSnapshotProgress'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.ReportHeapSnapshotProgressEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2572:8",
+                                        "decl": "prependOnceListener( event: 'HeapProfiler.lastSeenObjectId'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.LastSeenObjectIdEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    },
+                                    {
+                                        "loc": "2577:8",
+                                        "decl": "prependOnceListener( event: 'HeapProfiler.heapStatsUpdate'  [ FunctionScopedVariable | Transient ], listener: ( message: InspectorNotification<HeapProfiler.HeapStatsUpdateEventDataType> [ FunctionScopedVariable | Transient ] ) => void [ FunctionScopedVariable | Transient ] ): ThisType",
+                                        "kind": "MethodDeclaration",
+                                        "hasSymbol": " prependOnceListener (1614<556)"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "open",
+                        "id": 1724,
+                        "flags": "Function | Transient",
+                        "decls": [
+                            {
+                                "loc": "2589:4",
+                                "decl": "open( port?: number [ FunctionScopedVariable | Transient ], host?: string [ FunctionScopedVariable | Transient ], wait?: boolean [ FunctionScopedVariable | Transient ] ): void",
+                                "kind": "FunctionDeclaration",
+                                "hasSymbol": " open (1724<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "close",
+                        "id": 1729,
+                        "flags": "Function | Transient",
+                        "decls": [
+                            {
+                                "loc": "2594:4",
+                                "decl": "close(): void",
+                                "kind": "FunctionDeclaration",
+                                "hasSymbol": " close (1729<2)"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "url",
+                        "id": 1731,
+                        "flags": "Function | Transient",
+                        "decls": [
+                            {
+                                "loc": "2599:4",
+                                "decl": "url(): string",
+                                "kind": "FunctionDeclaration",
+                                "hasSymbol": " url (1731<2)"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "internal": [
+            {
+                "name": "generated.d",
+                "id": 1,
+                "flags": "ValueModule | Transient",
+                "decls": [
+                    {
+                        "loc": "10:0",
+                        "decl": "noName",
+                        "flags": " [ ExportContext ]",
+                        "kind": "SourceFile",
+                        "hasSymbol": " \"generated.d\" (1)"
+                    }
+                ]
+            }
+        ],
+        "topLevelNames": [
+            "inspector"
+        ]
+    }
+]

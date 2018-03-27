@@ -1,0 +1,80 @@
+[
+    {
+        "kind": "SourceFile",
+        "locals": [
+            {
+                "name": "Promise",
+                "id": 2,
+                "flags": "Transient",
+                "decls": [
+                    {
+                        "loc": "4:0",
+                        "decl": "Promise<T>",
+                        "kind": "InterfaceDeclaration",
+                        "hasSymbol": " Promise (3<1)"
+                    }
+                ],
+                "exportSymbol": {
+                    "name": "Promise",
+                    "id": 3,
+                    "flags": "Interface | Transient",
+                    "decls": [
+                        {
+                            "loc": "4:0",
+                            "decl": "Promise<T>",
+                            "kind": "InterfaceDeclaration",
+                            "hasSymbol": " Promise (3<1)"
+                        }
+                    ],
+                    "members": [
+                        {
+                            "name": "T",
+                            "id": 4,
+                            "flags": "TypeParameter | Transient",
+                            "decls": [
+                                {
+                                    "loc": "4:18",
+                                    "decl": "T",
+                                    "kind": "TypeParameter",
+                                    "hasSymbol": " T (4<3)"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "finally",
+                            "id": 5,
+                            "flags": "Method | Transient",
+                            "decls": [
+                                {
+                                    "loc": "11:4",
+                                    "decl": "finally( onfinally?: ( () => void ) | undefined | null [ FunctionScopedVariable | Transient ] ): Promise<T>",
+                                    "kind": "MethodSignature",
+                                    "hasSymbol": " finally (5<3)"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ],
+        "internal": [
+            {
+                "name": "generated.d",
+                "id": 1,
+                "flags": "ValueModule | Transient",
+                "decls": [
+                    {
+                        "loc": "4:0",
+                        "decl": "noName",
+                        "flags": " [ ExportContext ]",
+                        "kind": "SourceFile",
+                        "hasSymbol": " \"generated.d\" (1)"
+                    }
+                ]
+            }
+        ],
+        "topLevelNames": [
+            "Promise"
+        ]
+    }
+]

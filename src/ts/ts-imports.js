@@ -40,6 +40,7 @@ import {
 }                                   from "../utils/performance";
 import { file_handler, sync }       from "../utils/files";
 import { create_host }              from "./host";
+import { skeys }                    from "../utils";
 
 const defaultOptions = {
     experimentalDecorators:     true,
@@ -61,6 +62,8 @@ export const settings = {
             if ( !syntaxKind[ value ] )
                 syntaxKind[ value ] = name;
         }
+
+        syntaxKind[ syntaxKind.FirstTypeNode ] = "TypePredicate";
     },
 
     /**
@@ -94,7 +97,7 @@ export const settings = {
         c.source    = concatenated;
         c.reporters = create_reporters( c.filename, c.source );
         c.ast       = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true );
-        c.bound     = createBinder()( c.ast, {} );
+        c.ast     = createBinder()( c.ast, {} );
 
         // handler.each( file => {
         //
@@ -109,8 +112,9 @@ export const settings = {
 
         // c.program = create_program( 'generated.d.ts', concatenated, c.ast );
         // c.typeChecker = c.program.getTypeChecker();
-        c.ast.moduleAugmentations = [];
-        c.typeChecker             = ts.createTypeChecker( create_host( 'generated.d.ts', concatenated, c.ast ), false );
+
+        // c.ast.moduleAugmentations = [];
+        // c.typeChecker             = ts.createTypeChecker( create_host( 'generated.d.ts', concatenated, c.ast ), false );
 
         return [ c ];
     },

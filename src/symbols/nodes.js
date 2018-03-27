@@ -46,8 +46,8 @@ import {
     hide_parent,
     checkStrictModeNumericLiteral,
     set_strict_mode,
-    get_strict_mode
-}                       from "../utils";
+    get_strict_mode, skeys
+} from "../utils";
 import {
     getNameOfJSDocTypedef,
     isJSDocConstructSignature
@@ -181,7 +181,9 @@ export function createBinder()
         else
             log( "Source file is NOT bound" );
 
-        file = options = parent = container = blockScopeContainer = lastContainer = seenThisKeyword = false;
+        options = parent = container = blockScopeContainer = lastContainer = seenThisKeyword = false;
+
+        return file;
     }
 
     return bindSourceFile;
@@ -298,13 +300,24 @@ export function createBinder()
         const isDefaultExport = hasModifier( node, ModifierFlags.Default );
 
         // The exported symbol for an export default function/class node is always named "default"
-        const name = isDefaultExport && parent ? InternalSymbolName.Default : getDeclarationName( node );
+        let name = isDefaultExport && parent ? InternalSymbolName.Default : getDeclarationName( node );
 
-        log( `Decl name: "${name}"` );
+        name = `${name}`;
+        // console.error( '\n----------------\n' );
+        // console.error( `isDefExp: ${isDefaultExport}, parent? ${!!parent}` );
+        // console.error( 'node:', skeys( node ) );
+        // console.error( `Decl name: "${name}"` );
+        // if ( `${name}` === "Index" )
+        // {
+        //     console.error( "Really is Index" );
+        // }
         let symbol;
 
         if ( name === undefined )
+        {
+            console.error( "Name is undefined" );
             symbol = createSymbol( SymbolFlags.None, InternalSymbolName.Missing );
+        }
         else
         {
             /**
@@ -338,7 +351,7 @@ export function createBinder()
 
             if ( !symbolTable )
             {
-                console.log( 'node:', $( hide_parent( node ), 3 ) );
+                console.error( 'node:', $( hide_parent( node ), 3 ) );
                 symbol = symbolTable.get( name );
                 process.exit( 1 );
             }
@@ -348,7 +361,9 @@ export function createBinder()
 
             if ( !symbol )
             {
+                // console.error( "creating symbol:", name );
                 symbolTable.set( name, symbol = createSymbol( SymbolFlags.None, name ) );
+                // console.error( `created "${name}"` );
                 if ( isReplaceableByMethod ) symbol.isReplaceableByMethod = true;
             }
             else if ( isReplaceableByMethod && !symbol.isReplaceableByMethod )  // A symbol already exists, so don't add this as a declaration.
