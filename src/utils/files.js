@@ -26,6 +26,177 @@ const
     byteOrderMarkIndicator = "\uFEFF",
     fs                     = Promise.promisifyAll( _fs );
 
+let sync, concurrent;
+
+/**
+ * @param {Array<string>} _files
+ * @param {?Array<string>} [includePaths]
+ * @return {Promise<{}>}
+ */
+export async function file_handler( _files, includePaths )
+{
+    const
+        files = new Map();
+
+    await Promise.all( _files.map( read_one ) );
+
+    function add( ...fileNames )
+    {
+        return Promise.all( fileNames.map( read_one ) );
+    }
+
+    function concatenate( concatName, done = () => null )
+    {
+        const
+            oneFile = [ ...files.values() ].map( file => file.source.replace( /\r/g, '' ) ).join( '' );
+
+        files.clear();
+        const file = create_file( concatName, oneFile );
+
+        done( file );
+
+        if ( file.ast && concatName.endsWith( '.ts' ) )
+            file.ast = createBinder()( file.ast, {} );
+    }
+
+    /**
+     * @param {string} filename
+     * @return {Promise<void>}
+     */
+    async function read_one( filename )
+    {
+        filename   = await fix_path( filename );
+        const file = create_file( filename );
+        await get_source( file );
+        return file;
+    }
+
+    /**
+     * @param {string} filename
+     * @return {*}
+     */
+    async function fix_path( filename )
+    {
+        filename = canonical_name( filename );
+
+        if ( await concurrent.fileExists( filename ) ) return filename;
+
+        let i = 0;
+
+        while ( i < includePaths.length )
+        {
+            const p = path.join( includePaths[ i++ ], filename );
+
+            if ( await concurrent.fileExists( p ) )
+                return p;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param filename
+     * @return {*}
+     */
+    async function get_file( filename )
+    {
+        filename = await fix_path( filename );
+
+        if ( !files.has( filename ) )
+            return create_file( filename );
+
+        return files.get( filename );
+    }
+
+    /**
+     * @param {string} filename
+     * @param {string} [source]
+     * @return {*}
+     */
+    function create_file( filename, source )
+    {
+        let file = files.get( filename );
+
+        if ( !file ) files.set( filename, file = { filename } );
+
+        if ( source )
+        {
+            file.source = source;
+            file.reporters = create_reporters( filename, source );
+        }
+        // file.binder = createBinder();
+
+        return file;
+    }
+
+    /**
+     * @param {object} file
+     * @return {Promise<*>}
+     */
+    async function get_source( file )
+    {
+        if ( !file ) return null;
+        if ( file.source ) return file.source;
+
+        file.source = await concurrent.readFile( file.filename, 'utf8' );
+
+        file.reporters = create_reporters( file.filename, file.source );
+
+        return file;
+    }
+
+    /**
+     * @return {*[]}
+     */
+    function names()
+    {
+        return [ ...files.keys() ];
+    }
+
+    /**
+     * @param {string} name
+     * @return {obj}
+     */
+    function get( name )
+    {
+        return files.get( name );
+    }
+
+    /**
+     * @param {function} fn
+     */
+    function each( fn )
+    {
+        [ ...files.values() ].forEach( fn );
+    }
+
+    /**
+     * @param {function} fn
+     * @return {Array<*>}
+     */
+    function map( fn )
+    {
+        return [ ...files.values() ].map( fn );
+    }
+
+    return {
+        add,
+        each,
+        map,
+        get,
+        get_file,
+        create_file,
+        get_source,
+        names,
+        concatenate,
+        fix_path,
+        *[ Symbol.iterator ]()
+        {
+            yield *files.values();
+        }
+    };
+}
+
 /** Convert all lowercase chars to uppercase, and vice-versa */
 function swapCase( s )
 {
@@ -204,7 +375,7 @@ function writeFile( fileName, data, writeByteOrderMark = false )
 }
 
 
-export const sync = {
+sync = {
     fileSystemEntryExists,
     getDirectories,
 
@@ -299,7 +470,7 @@ export const sync = {
     }
 };
 
-export const concurrent = {
+concurrent = {
     async getDirectories( path )
     {
         return await fs.readdirAsync( path ).filter( dir => concurrent.fileSystemEntryExists( path.join( path, dir ), FileSystemEntryKind.Directory ) );
@@ -424,141 +595,4 @@ export const concurrent = {
 
 };
 
-/**
- * @param {Array<string>} _files
- * @param {?Array<string>} [includePaths]
- * @return {Promise<{}>}
- */
-export async function file_handler( _files, includePaths )
-{
-    const
-        files = new Map();
-
-    await Promise.all( _files.map( read_one ) );
-
-    function add( ...fileNames )
-    {
-        return Promise.all( fileNames.map( read_one ) );
-    }
-
-    /**
-     * @param {string} filename
-     * @return {Promise<void>}
-     */
-    async function read_one( filename )
-    {
-        filename   = await fix_path( filename );
-        const file = create_file( filename );
-        await get_source( file );
-        return file;
-    }
-
-    /**
-     * @param {string} filename
-     * @return {*}
-     */
-    async function fix_path( filename )
-    {
-        filename = canonical_name( filename );
-
-        if ( await concurrent.fileExists( filename ) ) return filename;
-
-        let i = 0;
-
-        while ( i < includePaths.length )
-        {
-            const p = path.join( includePaths[ i++ ], filename );
-
-            if ( await concurrent.fileExists( p ) )
-                return p;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param filename
-     * @return {*}
-     */
-    async function get_file( filename )
-    {
-        filename = await fix_path( filename );
-
-        if ( !files.has( filename ) )
-            return create_file( filename );
-
-        return files.get( filename );
-    }
-
-    /**
-     * @param {string} filename
-     * @return {*}
-     */
-    function create_file( filename )
-    {
-        let file = files.get( filename );
-
-        if ( !file ) files.set( filename, file = { filename } );
-
-        file.binder = createBinder();
-
-        return file;
-    }
-
-    /**
-     * @param {object} file
-     * @return {Promise<*>}
-     */
-    async function get_source( file )
-    {
-        if ( !file ) return null;
-        if ( file.source ) return file.source;
-
-        file.source = await concurrent.readFile( file.filename, 'utf8' );
-
-        file.reporters = create_reporters( file.filename, file.source );
-
-        return file;
-    }
-
-    /**
-     * @return {*[]}
-     */
-    function names()
-    {
-        return [ ...files.keys() ];
-    }
-
-    /**
-     * @param {string} name
-     * @return {obj}
-     */
-    function get( name )
-    {
-        return files.get( name );
-    }
-
-    /**
-     * @param {function} fn
-     */
-    function each( fn )
-    {
-        [ ...files.values() ].forEach( fn );
-    }
-
-    return {
-        add,
-        each,
-        get,
-        get_file,
-        create_file,
-        get_source,
-        names,
-        fix_path,
-        *[ Symbol.iterator ]()
-        {
-            yield *files.values();
-        }
-    };
-}
-
+export { sync, concurrent };

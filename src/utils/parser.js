@@ -17,130 +17,228 @@ import {
 import { create_host }        from "../ts/host";
 import { syntaxKind }         from "../ts/ts-helpers";
 import * as ts from "typescript";
+import { walk_symbols } from "../ts/ts-symbols";
+import { traverse, attachComments, VisitorKeys } from "estraverse";
+import { parse as parser } from "espree";
 
 let sys = concurrent;
 
-export class Parser
+/** */
+export default class Parser
 {
     /**
      * @param {?Array<string>} [includePaths]
+     * @param {object} [options]
      */
-    constructor( includePaths )
+    constructor( includePaths, options = { jsOptions: {}, tsOptions: {} } )
     {
-        this.handler = null;
+        performance.enable();
+        performance.mark( "beforeFiles" );
+
+        this.tsHandler = this.jsHandler = null;
         this.includePaths = includePaths;
 
+        // workarounds issue described at https://github.com/Microsoft/TypeScript/issues/18062
+        for ( const name of Object.keys( ts.SyntaxKind ).filter( x => isNaN( parseInt( x ) ) ) )
+        {
+            const value = ts.SyntaxKind[ name ];
+            if ( !syntaxKind[ value ] )
+                syntaxKind[ value ] = name;
+        }
+
+        syntaxKind[ syntaxKind.FirstTypeNode ] = "TypePredicate";
+
+        this.tsOptions = Object.assign( {
+            // noResolve:                  true,
+            target:                     ts.ScriptTarget.Latest,
+            experimentalDecorators:     true,
+            experimentalAsyncFunctions: true,
+            jsx:                        'preserve'
+        }, options.tsOptions );
+
+        this.jsOptions = Object.assign( {
+            loc:          true,
+            range:        true,
+            comment:      true,
+            tokens:       true,
+            ecmaVersion:  9,
+            sourceType:   'module', // globals.program && globals.program.script ? 'script' : 'module',
+            ecmaFeatures: {
+                impliedStrict:                true,
+                experimentalObjectRestSpread: true
+            }
+        }, options.jsOptions );
+
+        this.jsOptions.range = this.jsOptions.loc = this.jsOptions.comment = this.jsOptions.tokens = true;
+        this.jsOptions.ecmaVersion                               = 2018;
+        this.jsOptions.ecmaFeatures                              = options.jsOptions.ecmaFeatures || {};
+        this.jsOptions.ecmaFeatures.experimentalObjectRestSpread = true;
     }
 
     async add_source_files( ...srcs )
     {
-        if ( !this.handler )
-            this.handler = await file_handler( srcs, this.includePaths );
-        else
-            this.handler.add( ...srcs );
+        const
+            tsFiles = [],
+            jsFiles = [];
+
+        srcs.forEach( fileName => ( fileName.endsWith( '.ts' ) ? tsFiles : jsFiles ).push( fileName ) );
+
+        if ( !this.tsHandler && tsFiles.length )
+            this.tsHandler = await file_handler( tsFiles, [ 'data' ] );
+        else if ( tsFiles.length )
+            this.tsHandler.add( ...tsFiles );
+
+        if ( !this.jsHandler && jsFiles.length )
+            this.jsHandler = await file_handler( jsFiles, [] );
+        else if ( jsFiles.length )
+            this.jsHandler.add( ...jsFiles );
 
         return this;
     }
 
     /**
-     * @param {string} filename
-     * @return {Promise<*>}
-     */
-    async create_bundle( filename = 'data/concatenated.d.ts' )
-    {
-        let concatenated = '';
-
-        this.handler.each( file => concatenated += file.source.replace( /\r/g, '' ) );
-
-        if ( sys === concurrent )
-        {
-            return sys.writeFile( filename, concatenated )
-                .then( async () => this.handler = await file_handler( [ filename ], this.includePaths ) )
-                .then( () => this );
-        }
-
-        sys.writeFile( filename, concatenated );
-        this.handler = await file_handler( [ filename ], this.includePaths )
-        return this;
-    }
-
-    /**
-     * @param {object} [options={}]
      * @return {Array<object>}
      */
-    parse( options = {} )
+    async parse()
     {
-        return this.handler.names().map( filename => {
-            const file = this.handler.get( filename );
-            Object.assign( file, this.parse_file( filename, file.source, options ) );
-            return file;
-        } );
+        performance.mark( "afterFiles" );
+        performance.measure( "Files", "beforeFiles", "afterFiles" );
+
+        await this.parse_file( {}, this.tsOptions );
+        // if ( this.tsHandler ) await Promise.all( this.tsHandler.map( file => this.parse_file( file, this.tsOptions ) ) );
+        if ( this.jsHandler ) await Promise.all( this.jsHandler.map( file => this.parse_file( file, this.jsOptions ) ) );
     }
 
     /**
      *
-     * @param {string} filename
-     * @param {string} source
+     * @param {object} file
      * @param {object} [options={}]
      * @abstract
      */
-    parse_file( filename, source, options = {} )
+    async parse_file( file, options = {} )
     {
+        const { filename, source } = file;
 
+        if ( !filename || filename.endsWith( '.ts' ) )
+        {
+            const genName = 'generated.d.ts';
+
+            await this.create_bundle( genName );
+            this.ambient = this.tsHandler.get( genName );
+        }
+        else
+            file.ast = this.js_ast( source, options );
     }
 
-    // /**
-    //  * @param filenames
-    //  * @param options
-    //  * @return {Promise<*[]>}
-    //  */
-    // async aparse( filenames, options = {} )
-    // {
-    //     options = { ...defaultOptions, ...options };
-    //
-    //     performance.enable();
-    //     performance.mark( "beforeFiles" );
-    //
-    //     const handler = await file_handler( filenames, [ 'data' ] );
-    //
-    //     performance.mark( "afterFiles" );
-    //     performance.measure( "Files", "beforeFiles", "afterFiles" );
-    //
-    //     const res = [];
-    //
-    //     let concatenated = '';
-    //
-    //
-    //     handler.each( file => concatenated += file.source.replace( /\r/g, '' ) );
-    //
-    //     const c = handler.create_file( 'generated.d.ts' );
-    //
-    //     sync.writeFile( 'data/concatenated.d.ts', concatenated );
-    //
-    //     c.source    = concatenated;
-    //     c.reporters = create_reporters( c.filename, c.source );
-    //     c.ast       = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true );
-    //     c.bound     = createBinder()( c.ast, {} );
-    //
-    //     // handler.each( file => {
-    //     //
-    //     //     file.ast = ts.createSourceFile( file.filename, file.source, ts.ScriptTarget.Latest, true );
-    //     //     // file.binder = createBinder();
-    //     //     file.bound = createBinder()( file.ast, {} );
-    //     //     res.push( file );
-    //     // } );
-    //
-    //     // return res;
-    //
-    //
-    //     // c.program = create_program( 'generated.d.ts', concatenated, c.ast );
-    //     // c.typeChecker = c.program.getTypeChecker();
-    //     c.ast.moduleAugmentations = [];
-    //     c.typeChecker             = ts.createTypeChecker( create_host( 'generated.d.ts', concatenated, c.ast ), false );
-    //
-    //     return [ c ];
-    // }
+    /**
+     * @param {string} [newname]
+     * @param {string} [filename]
+     * @return {Promise<*>}
+     */
+    async create_bundle( newname = 'generated.d.ts', filename = 'data/concatenated.d.ts' )
+    {
+        this.tsHandler.concatenate( newname, c => {
+            c.ast = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true )
+            sync.writeFile( filename, c.source );
+        } );
 
+        return this;
+    }
+
+    get ambientTypes()
+    {
+        if ( !this._ambientTypes )
+            this._ambientTypes = walk_symbols( this.ambient );
+
+        return this._ambientTypes;
+    }
+
+    /**
+     * @param {string} source       - The source module
+     * @param {object} [_options]    - The usual espree/esprima options
+     * @return {Program}
+     */
+    js_ast( source, _options = this.jsOptions )
+    {
+        const
+            ast = parser( source, _options );
+
+        return this.prep( attachComments( ast, ast.comments, ast.tokens ) );
+    }
+
+    /**
+     * @param {Program} withComments
+     * @param {string} [file]
+     * @return {object|Program}
+     */
+    prep( withComments, file )
+    {
+        const
+            types          = new Set(),
+            allNodesParsed = [],
+            byIndex        = [];
+
+        withComments.fileName = file;
+
+        traverse( withComments, {
+            enter: ( node, parent ) => {
+
+                node.parent         = parent;
+                node.index          = byIndex.length;
+                // node.transformFlags = TransformFlags.None;
+                byIndex.push( node );
+
+                [ node.field, node.fieldIndex ] = Parser.determine_field( node, parent );
+
+                // enter( node );
+                // const comments = parse_comments( node );
+                //
+                // if ( comments )
+                // {
+                //     types.add( node.type );
+                //     allNodesParsed.push( comments );
+                //     build_definition( node, comments );
+                // }
+                // else if ( node.type === Syntax.Identifier )
+                //     build_definition( node );
+            },
+            // exit
+        } );
+
+        return { fileName: file, types: [ ...types ], allDocNodes: allNodesParsed };
+    }
+
+    /**
+     *
+     * @param node
+     * @param parent
+     * @return {*[]}
+     */
+    static determine_field( node, parent )
+    {
+        if ( !parent ) return [ null, null ];
+
+        for ( const key of VisitorKeys[ parent.type ] )
+        {
+            const pv = parent[ key ];
+
+            if ( !pv ) continue;
+
+            if ( !Array.isArray( pv ) )
+            {
+                if ( pv === node ) return [ key, null ];
+            }
+            else
+            {
+                const i = pv.indexOf( node );
+
+                if ( i !== -1 )
+                    return [ key, i ];
+            }
+        }
+
+        return [ null, null ];
+    }
 }
 
 /**
@@ -172,48 +270,6 @@ export class TypeScriptParser extends Parser
             jsx:                        'preserve'
         };
     }
-
-    // /**
-    //  * @param filenames
-    //  * @param options
-    //  * @return {Promise<*[]>}
-    //  */
-    // async cparse( filenames, options = {} )
-    // {
-    //     options = { ...this.defaultOptions, ...options };
-    //
-    //     let concatenated = '';
-    //
-    //
-    //     handler.each( file => concatenated += file.source.replace( /\r/g, '' ) );
-    //
-    //     const c = handler.create_file( 'generated.d.ts' );
-    //
-    //     sync.writeFile( 'data/concatenated.d.ts', concatenated );
-    //
-    //     c.source    = concatenated;
-    //     c.reporters = create_reporters( c.filename, c.source );
-    //     c.ast       = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true );
-    //     c.bound     = createBinder()( c.ast, {} );
-    //
-    //     // handler.each( file => {
-    //     //
-    //     //     file.ast = ts.createSourceFile( file.filename, file.source, ts.ScriptTarget.Latest, true );
-    //     //     // file.binder = createBinder();
-    //     //     file.bound = createBinder()( file.ast, {} );
-    //     //     res.push( file );
-    //     // } );
-    //
-    //     // return res;
-    //
-    //
-    //     // c.program = create_program( 'generated.d.ts', concatenated, c.ast );
-    //     // c.typeChecker = c.program.getTypeChecker();
-    //     c.ast.moduleAugmentations = [];
-    //     c.typeChecker             = ts.createTypeChecker( create_host( 'generated.d.ts', concatenated, c.ast ), false );
-    //
-    //     return [ c ];
-    // }
 
     /**
      * @param {string} filename

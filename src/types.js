@@ -43,7 +43,7 @@ const
         get value() { return this[ VALUE ]; },
         set value( v ) { this[ VALUE ] = v; },
         asString,
-        toString() { return this[ VALUE ] ? this.asString( this[ VALUE ] ) : '<no value>'; },
+        toString() { return this[ VALUE ] ? this.asString( this[ VALUE ] ) : ''; },
         valueOf() { return this[ VALUE ] || 0; },
         [ Symbol.toPrimitive ]( hint ) { return hint === 'string' ? this.toString() : this.valueOf(); },
         [ util.inspect.custom ]( depth, options ) { return this.toString(); }

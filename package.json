@@ -5,6 +5,7 @@
     "main": "index.js",
     "scripts": {
         "syms": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts >sym.json",
+        "show": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts",
         "symbols": "npm-run-all es6 node dom promise inspector es2017",
         "es6": "node _cli.js data/lib.es6.d.ts >resources/es6.json",
         "node": "node _cli.js data/node.d.ts >resources/node.json",
@@ -35,7 +36,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/julianjensen/jsdoc-tag-parser.git"
+        "url": "https://github.com/julianjensen/inference.git"
     },
     "keywords": [
         "jsdoc",
@@ -67,12 +68,14 @@
         "rimraf": "^2.6.2"
     },
     "dependencies": {
-        "@std/esm": "^0.25.2",
+        "babel-core": "^6.26.3",
         "bluebird": "^3.5.1",
         "chalk": "^2.3.0",
         "commander": "^2.13.0",
         "convenience": "^1.1.5",
+        "deep-eql": "^3.0.1",
         "doctrine": "^2.1.0",
+        "esm": "^3.0.31",
         "espree": "^3.5.2",
         "estraverse": "^4.2.0",
         "fs-extra": "^5.0.0",
@@ -82,9 +85,10 @@
         "typescript": "^2.7.2",
         "typescript-walk": "^2.6.12"
     },
-    "@std/esm": {
-        "esm": "js",
-        "cjs": true
+    "esm": {
+        "mode": "auto",
+        "debug": true,
+        "sourceMap": true
     },
     "jest": {
         "testMatch": [

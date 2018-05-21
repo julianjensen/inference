@@ -30,17 +30,94 @@ import {
     TypeFlags
 }                             from "../types";
 import { type, nameOf }       from "typeofs";
+import deep from "deep-eql";
 
 const
+    optional = ( obj, check ) => {
+        if ( !check ) return obj;
+
+        obj.optional = true;
+        return obj;
+    },
+    clean = o => {
+
+        if ( !isObject( o ) ) return o;
+
+        const no = {};
+
+        Object.keys( o ).forEach( k => ( o[ k ] === null || o[ k ] === void 0 ) || ( no[ k ] = o[ k ] ) );
+
+        return no;
+    },
+    declDupes = new WeakSet(),
+    hide = ( obj, name, value ) => Object.defineProperty( obj, name, { enumerable: false, value } ),
+    isObject = o => typeof o === 'object' && !Array.isArray( o ) && o !== null,
+    isString = s => typeof s === 'string',
+    isArray = a => Array.isArray( a ),
+    keyCount = o => Object.keys( o ).length,
     $    = ( o, d = 2 ) => inspect( o,
         {
             depth:  typeof d === 'number' ? d : 2,
             colors: false,
             showHidden: false
         } ),
-    seen = new Set();
+    seen = new Set(),
+    uniq = arr => {
+        const
+            dest = [],
+            eql = ( a, b ) => {
+                const
+                    akeys = Object.keys( a ).filter( k => k !== 'loc' && k !== 'flags' ).sort(),
+                    bkeys = Object.keys( b ).filter( k => k !== 'loc' && k !== 'flags' ).sort();
+
+                if ( akeys.length !== bkeys.length || !akeys.every( ak => bkeys.includes( ak ) ) ) return false;
+
+                for ( const ak of akeys )
+                {
+                    const
+                        av = a[ ak ],
+                        bv = b[ ak ];
+
+                    if ( isObject( av ) && isObject( bv ) && eql( av, bv ) ) continue;
+                    else if ( isArray( av ) && isArray( bv ) && av.every( ( _av, i ) => eql( _av, bv[ i ] ) ) ) continue;
+                    else if ( av === bv ) continue;
+
+                    return false;
+                }
+            };
+
+        arr.forEach( el => {
+            delete el.loc;
+            if ( !dest.find( d => deep( d, el ) ) )
+                dest.push( el );
+        } );
+
+        return dest;
+    },
+    fixKeyword = s => isString( s ) && /^\s*[A-Z][a-z]+Keyword\s*$/.test( s ) ? s.replace( /^\s*(.*)Keyword\s*$/, '$1' ).toLowerCase() : s;
 
 const topLevelNames = [];
+
+function elevate( obj )
+{
+    // if ( !isObject( obj ) ) return obj;
+
+    // if ( isArray( obj.template ) ) obj.template = fix_raw_templates( obj.template );
+
+    // if ( isObject( obj.name ) && isArray( obj.name.template ) ) obj.name.template = fix_raw_templates( obj.name.template );
+    //
+    // if ( isArray( obj.types ) )
+    //     return obj.types.map( elevate );
+
+    if ( !isObject( obj ) || keyCount( obj ) !== 1 ) return obj;
+
+    if ( isString( obj.typeName ) )
+        return obj.typeName;
+    else if ( isString( obj.type ) )
+        return obj.type;
+
+    return obj;
+}
 
 function get_name( sym )
 {
@@ -63,7 +140,7 @@ let typeChecker,
     file;
 
 /**
- * @param {object} file
+ * @param {object} _file
  */
 export function walk_symbols( _file )
 {
@@ -131,6 +208,7 @@ function ident( node, mode = 'tiny' )
 
     switch ( mode )
     {
+        case 'name':    return node.id || node.escapedName;
         case 'tiny':    return ' ' + ( node.id || node.escapedName ) + pid;
         case 'short':    return ' (ref: ' + node.id + pid + ')';
         default:
@@ -298,23 +376,38 @@ function show_sym( sym, noExports = false )
     if ( !sym ) return null;
 
     const
-        r = { name: disambiguate( get_name( sym ) ), id: sym.id },
+        r = { name: disambiguate( get_name( sym ) ) }, // , id: sym.id },
         d = decls( sym );
 
     if ( sym.flags )
     {
-        const flags = SymbolFlags.create( sym.flags ).toString();
+        const flags = SymbolFlags.create( sym.flags & ~SymbolFlags.Transient ).toString();
 
+        // if ( flags && flags !== 'Transient' ) r.flags = flags;
         if ( flags ) r.flags = flags;
     }
 
     if ( sym.valueDeclaration && !sym.declarations.includes( sym.valueDeclaration ) )
         r.valueDeclaration = get_decl( sym.valueDeclaration );
 
-    if ( d ) r.decls = d;
+    if ( d )
+    {
+        d.forEach( decl => {
+            if ( isObject( decl.type ) && typeof decl.type.typeName === 'string' && Object.keys( decl.type ).length === 1 )
+                decl.type = decl.type.typeName;
+        } );
+        r.decls = d;
+    }
 
     if ( sym.members && sym.members.size )
-        r.members = from_sym( sym.members );
+    {
+        let m = from_sym( sym.members );
+
+        set_members( m, r );
+        // if ( isArray( m ) ) m = m.filter( x => x );
+        //
+        // if ( m && ( !isArray( m ) ||  m.length ) ) r.members = m;
+    }
 
     if ( sym.exports && sym.exports.size && !noExports )
         r.exports = from_sym( sym.exports );
@@ -323,7 +416,31 @@ function show_sym( sym, noExports = false )
         r.localSymbol = show_sym( sym.localSymbol );
 
     if ( sym.exportSymbol )
-        r.exportSymbol = show_sym( sym.exportSymbol );
+    {
+        const tmp = show_sym( sym.exportSymbol );
+
+        if ( r.name !== tmp.name || ( tmp.decls && tmp.decls.length ) )
+            r.exportSymbol = tmp;
+        else if ( tmp.members )
+            set_members( tmp.members, r );
+    }
+
+    hide( r, 'node', sym );
+
+    return r;
+}
+
+function set_members( members, r )
+{
+    const mem = _m => { r.members = _m; return r; };
+
+    if ( !members ) return mem( members );
+
+    if ( !isArray( members ) ) return mem( members );
+
+    const m = members.filter( x => !!x );
+
+    if ( m.length ) return mem( m );
 
     return r;
 }
@@ -339,46 +456,30 @@ function decls( sym )
 {
     if ( !sym || !sym.declarations || !sym.declarations.length ) return null;
 
-    return sym.declarations.map( get_decl );
+    const r = sym.declarations.filter( d => !declDupes.has( d ) ).map( get_decl );
+
+    return r.length ? uniq( r ) : null;
 }
 
-var tmp = {
-    name: "__type",
-    flags: "TypeLiteral",
-    decls: [
-        { loc: "80:90", decl: "TypeLiteral" }
-        ],
-    members: [
-        {
-            name: "__index",
-            flags: "Signature",
-            decls: [
-                {
-                    loc: "80:92",
-                    decl: "[ x: string ]: PropertyDescriptor"
-                }
-                ]
-        }
-        ]
-};
-
-function type_literal_as_string( tl, short = true )
-{
-    const members = tl && tl.members;
-
-    if ( !tl ) return "No fucking TL";
-    if ( !members ) return JSON.stringify( tl );
-
-    return '{ ' + members.map( m => m.valueDeclaration ? m.valueDeclaration.decl : m.decls[ 0 ].decl ).join( short ? '; ' : ';\n' ) + ' }';
-}
+// function type_literal_as_string( tl, short = true )
+// {
+//     const members = tl && tl.members;
+//
+//     if ( !tl ) return "Object";
+//     if ( !members ) return 'wassup: ' + typeof tl; // Object.keys( tl ).join( ', ' ); // JSON.stringify( tl );
+//
+//     return '{ ' + members.map( m => m.valueDeclaration ? m.valueDeclaration.decl : m.decls[ 0 ].decl ).join( short ? '; ' : ';\n' ) + ' }';
+// }
 
 function get_decl( decl )
 {
     let [ lineNumber, offset ] = file.reporters.offset_to_line_offset( decl.pos ),
-        declName               = `${decl.name && decl.name.escapedText || 'noName'}`,
+        declName               = `${decl.name && decl.name.escapedText || ''}`,
         // declName               = `${SyntaxKind[ decl.kind ]}`,
         typeName               = decl.type ? add_types( decl.type ) : '',
         heritage;
+
+    declDupes.add( decl );
 
     if ( decl.heritageClauses )
         heritage = list_heritage( decl.heritageClauses );
@@ -442,23 +543,36 @@ function get_decl( decl )
     if ( type( typeName ) === 'object' )
     {
         const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
-        if ( flags ) r.flags = flags;
+        if ( flags && flags !== NodeFlags.Ambient ) r.flags = flags;
     }
 
     // NEW STUFF OLD STUFF
     const dd = {
         loc: `${lineNumber + 1}:${offset}`,
-        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' )
+        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' ),
     };
+
+    let _type = decl.type ? add_raw_types( decl.type ) : '';
+    if ( _type ) _type = elevate( _type );
+    if ( _type ) dd.type = _type;
+
+    hide( dd, 'node', decl );
+
+    if ( decl.parameters )
+        func_type_info( decl, dd );
 
     if ( heritage )
         dd.heritage = heritage;
-    if ( flags )
-        dd.flags = `${flags}`;
+    // if ( flags )
+    // {
+    //     const f = `${flags}`;
+    //
+    //     if ( f !== 'Transient' )
+    //         dd.flags = f;
+    // }
 
     dd.kind = SyntaxKind[ decl.kind ];
-    dd.hasSymbol = decl.symbol ? ident( decl, 'long' ) : 'no';
-    // dd.hasSymbol = decl.symbol ? tmp_name( decl.symbol, true ) : 'no';
+    // dd.hasSymbol = ( decl.symbol ? ident( decl, 'long' ) : 'no' ).trim();
 
     return dd;
 
@@ -476,14 +590,15 @@ function pretty( decl )
     else
         str += 'anon';
 
-    let flags;
-    if ( decl.symbol && decl.symbol.flags )
-    {
-        flags = ' [ ' + SymbolFlags.create( decl.symbol.flags ).toString() + ' ]';
-        if ( flags === ' [ FunctionScopedVariable ]' ) flags = '';
-    }
+    // let flags;
+    // if ( decl.symbol && decl.symbol.flags )
+    // {
+    //     flags = ' [ ' + SymbolFlags.create( decl.symbol.flags ).toString() + ' ]';
+    //     if ( flags === ' [ FunctionScopedVariable ]' ) flags = '';
+    // }
 
-    return str + ': ' + add_types( decl.type ) + flags;
+    // return str + ': ' + add_types( decl.type ) + flags;
+    return str + ': ' + add_types( decl.type );
 }
 
 /**
@@ -546,10 +661,17 @@ function add_types( type )
     }
     else if ( type.kind === SyntaxKind.TypeLiteral )
     {
-        const tl = show_sym( type.symbol );
-        Object.defineProperty( tl, 'toString', { enumerable: false, value: () => type_literal_as_string( tl.members ) } );
-        return tl;
+        const tl = type.members.length;
+
+        return !tl ? '{}' : tl === 1 ? `{ ${add_types( type.members[ 0 ] )}` : `{ ${type.members.map( add_types ).join( ', ' )} }`;
     }
+    else if ( type.kind === SyntaxKind.IndexSignature )
+        return `[ ${type.parameters.map( add_types ).join( ', ' )} ]: ${add_types( type.type )} }`;
+
+    else if ( type.kind === SyntaxKind.Parameter )
+        return `${add_types( type.name )}: ${add_types( type.type )}`;
+    else if ( type.kind === SyntaxKind.TupleType )
+        return `[ ${type.elementTypes.map( add_types ).join( ', ' )} ]`;
     else
         t = type && !type.types ? get_type_name( type ) : type && type.types ? type.types.map( get_type_name ).join( ' | ' ) : '';
 
@@ -647,3 +769,262 @@ function func_type( type )
     else if ( !type.parameters || !type.parameters.length )
         return `${type_parameters( type.typeParameters )}() => ${add_types( type.type )}`;
 }
+
+function func_type_info( type, dd )
+{
+    if ( type.typeParameters && type.typeParameters.length )
+        dd.typeParameters = type.typeParameters.map( add_types );
+
+    if ( type.parameters && type.parameters.length )
+        dd.parameters = type.parameters.map( add_param );
+}
+
+function add_param( decl )
+{
+
+    const p = add_raw_types( decl.type ) || {};
+    p.name =  decl.name && decl.name.escapedText || 'anon';
+
+    if ( decl.dotDotDotToken )
+        p.rest = true;
+
+    return optional( p, decl.questionToken );
+}
+
+function raw_literal( type )
+{
+    switch ( type.literal.kind )
+    {
+        case SyntaxKind.StringLiteral:
+            return { type: 'literal', ltype: 'string', value: type.literal.text };
+
+        case SyntaxKind.NumericLiteral:
+            return { type: 'literal', ltype: 'number', value: type.literal.text };
+
+        case SyntaxKind.TrueKeyword:
+            return { type: 'literal', ltype: 'boolean', value: true };
+
+        case SyntaxKind.FalseKeyword:
+            return { type: 'literal', ltype: 'boolean', value: false };
+
+        default:
+            return `Unknown literal "${SyntaxKind[ type.literal.kind ]}"`;
+    }
+}
+
+/**
+ * @param {ts.Node} type
+ * @return {{}|[]|void}
+ */
+function add_raw_types( type )
+{
+    // if ( !type ) return '<missing> ' + new Error().stack.split( /\r?\n/ ).slice( 1, 4 ).join( ' | ' );
+
+    let t = {};
+
+    switch ( type.kind )
+    {
+        case SyntaxKind.Identifier:
+            return type.escapedText;
+
+        case SyntaxKind.ParenthesizedType:
+            return { type: 'parens', types: add_raw_types( type.type ) };
+
+        case SyntaxKind.TypePredicate:
+            return { type: 'predicate', param: type.parameterName.escapedText, returns: add_raw_types( type.type ) };
+
+        case SyntaxKind.TypeReference:
+            const
+                r = {
+                    type: add_raw_types( type.typeName )
+                },
+                tmpl = check_for_raw_template( type );
+
+            if ( tmpl )
+                r.template = fix_raw_templates( tmpl );
+
+            return r;
+
+        case SyntaxKind.QualifiedName:
+            return { type: 'qualified', names: qual_raw_name( type ) };
+
+        case SyntaxKind.FunctionType:
+            return func_type_info( type, { type: 'function' } );
+
+        case SyntaxKind.UnionType:
+            return { type: 'union', types: type.types.map( add_raw_types ) };
+
+        case SyntaxKind.IntersectionType:
+            return { type: 'intersection', types: type.types.map( add_raw_types ) };
+
+        case SyntaxKind.MappedType:
+            const mapped = {
+                type: 'mapped',
+                name: null
+            };
+
+            if ( type.questionToken ) mapped.optional = true;
+            mapped.name = get_raw_type_name( type.type );
+
+            return mapped;
+
+        case SyntaxKind.LiteralType:
+            return raw_literal( type );
+
+        case SyntaxKind.TypeLiteral:
+            return {
+                type: 'type',
+                members: type.members.map( add_raw_types )
+            };
+
+        case SyntaxKind.IndexSignature:
+            return {
+                type: 'index',
+                typeName: elevate( add_raw_types( type.type ) ),
+                parameters: type.parameters.map( add_raw_types )
+            };
+
+        case SyntaxKind.Parameter:
+            const typeList = elevate( clean( add_raw_types( type.type ) ) );
+
+            return optional( {
+                name: add_raw_types( type.name ),
+                type: typeList
+            }, type.questionToken );
+
+        case SyntaxKind.TupleType:
+            return {
+                type: 'tuple',
+                types: type.elementTypes.map( add_raw_types ).map( elevate )
+            };
+
+    }
+
+    if ( type )
+        t = !type.types ? get_raw_type_name( type ) : type.types.map( get_raw_type_name );
+
+    if ( !isObject( t ) )
+        t = { type: t };
+    else if ( isObject( t.typeName ) )
+    {
+        const keys = Object.keys( t.typeName );
+
+        if ( keys.length === 1 && keys[ 0 ] === 'type' )
+        {
+            t.type = t.typeName.type;
+            delete t.typeName;
+        }
+    }
+
+    t.types = fixKeyword( t.types );
+
+    if ( type.kind === SyntaxKind.TypeParameter && type.constraint )
+    {
+        t.typeOperator = type_in_mapped_type( type ) ? ' in' : ' extends';
+
+        if ( type.constraint.kind === SyntaxKind.TypeOperator )
+        {
+            t.keyOf = true;
+            t.typeName = get_raw_type_name( type.constraint.type );
+        }
+        else
+            t.typeName = get_raw_type_name( type.constraint );
+    }
+
+    const tmpl = check_for_raw_template( type );
+
+    if ( tmpl ) t.template = fix_raw_templates( tmpl );
+
+    if ( t.type ) t.type = elevate( t.type );
+
+    return t;
+}
+
+/**
+ * @param tmpl
+ * @return {*}
+ */
+function fix_raw_templates( tmpl )
+{
+    if ( Array.isArray( tmpl ) )
+        return tmpl.map( elevate );
+    else if ( isObject( tmpl ) )
+    {
+        const tk = Object.keys( tmpl );
+
+        if ( tk.length !== 1 )
+            tk.forEach( k => tmpl[ k ] = fix_raw_templates( tmpl[ k ] ) );
+    }
+
+    return tmpl;
+}
+
+/**
+ * @param {ts.QualifiedName} node
+ */
+function qual_raw_name( node )
+{
+    if ( SyntaxKind.Identifier === node.kind )
+        return [ node.escapedText ];
+    else if ( SyntaxKind.QualifiedName === node.kind )
+        return qual_raw_name( node.left ).concat( qual_raw_name( node.right ) );
+}
+
+function check_for_raw_template( type )
+{
+    if ( type.typeParameters )
+        return type_raw_parameters( type.typeParameters );
+
+    if ( type.typeArguments )
+        return type_raw_parameters( type.typeArguments );
+
+    return '';
+}
+
+function get_raw_type_name( type )
+{
+    if ( !type ) return '<no type name>';
+
+    let typeName = type.typeName && type.typeName.escapedText ?
+                   type.typeName.escapedText :
+                   type.name && type.name.escapedText ? type.name.escapedText :
+                   type.exprName ? type.exprName.escapedText :
+                   type.kind ?
+                   SyntaxKind[ type.kind ] :
+                   '';
+
+    if ( /^\s*[A-Z][a-z]+Keyword\s*$/.test( typeName ) )
+        typeName = typeName.replace( /^(.*)Keyword$/, '$1' ).toLowerCase();
+
+    const r = {
+        typeName
+    };
+
+    if ( typeName === 'IndexedAccessType' )
+    {
+        r.indexType = get_raw_type_name( type.indexType );
+        r.typeName = get_raw_type_name( type.objectType );
+        return r;
+    }
+
+    const tmpl = check_for_raw_template( type );
+    if ( tmpl )
+        r.template = fix_raw_templates( tmpl );
+
+    if ( typeName === 'ArrayType' && type.elementType )
+    {
+        r.typeName = add_raw_types( type.elementType );
+        r.isArray = true;
+    }
+
+    return r;
+
+}
+
+function type_raw_parameters( tp )
+{
+    if ( !tp || !tp.length ) return null;
+
+    return tp.map( add_raw_types );
+}
+
