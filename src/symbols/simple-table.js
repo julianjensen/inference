@@ -1121,7 +1121,7 @@ export function create_symbols( top )
 
     top.locals.forEach( add_symbol );
 
-    console.log( detection );
-    console.log( 'counts:\n', counts );
-    console.log( 'defs:\n', JSON.stringify( defs, null, 4 ) );
+    // console.log( detection );
+    // console.log( 'counts:\n', counts );
+    // console.log( 'defs:\n', JSON.stringify( defs, null, 4 ) );
 }

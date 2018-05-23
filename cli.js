@@ -53,6 +53,6 @@ globals.program = program;
     await parser.parse();
 
     globals.file = parser.ambient;
-    create_symbols( parser.ambientTypes );
-    // console.log( $( parser.ambientTypes ) );
+    // create_symbols( parser.ambientTypes );
+    console.log( $( parser.ambientTypes ) );
 } )();
