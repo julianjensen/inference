@@ -1,4 +1,4 @@
-# jsdoc-tag-parser
+# inference
 
 
 > A JSDOC substitue that will parse doc tags as well as closure annotations.
@@ -7,17 +7,47 @@
 ## Install
 
 ```sh
-npm i jsdoc-tag-parser
+npm i inference
 ```
 
 ## Usage
 
 ```js
 const 
-    jsdocTagParser = require( 'jsdoc-tag-parser' );
+    inference = require( 'inference' );
 
-jsdocTagParser() // true
+inference() // true
 ```
+
+## Type Overview
+
+|             | name | ref | is type | inst. | index | anon. | scope |
+|-------------|:----:|:---:|:-------:|:-----:|:-----:|:-----:|:-----:|
+| var         |   Y  |  Y  |    N    |   Y   |   N   |   N   |   N   |
+| interface   |   Y  |  N  |    ?    |   N   |   Y   |   N   |   T   |
+| class       |   E  |  N  |    Y    |   ?   |   Y   |   Y   |   T   |
+| module      |   Y  |  N  |    N    |   1   |   Y   |   N   |   Y   |
+| function    |   E  |  N  |    Y    |   Y   |   N   |   Y   |   Y   |
+| generic     |   Y  |  N  |    N    |   N   |   Y   |   N   |   N   |
+| alias       |   Y  |  ?  |    Y    |   N   |   N   |   N   |   N   |
+| union/inter |   E  |  ?  |    ?    |   N   |   N   |   Y   |   N   |
+| parameter   |   Y  |  E  |    N    |   Y   |   Y   |   N   |   N   |
+
+### Pure Types
+
+* Primitives
+* Interface
+* Union
+
+### Substantials
+
+* Identifiers declare with `var`, `let`, or `const`.
+
+  They need a type reference which can be anything except `var` (from table)
+  
+* Function declarations (not assigned anonymous functions)
+* Class statics
+
 
 ## `ModuleDeclaration`
 

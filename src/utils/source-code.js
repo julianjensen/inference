@@ -4,7 +4,6 @@
  * @version 1.0.0
  * @copyright Planet3, Inc.
  *******************************************************************************************************/
-
 'use strict';
 
 import assert                                                                          from "assert";
@@ -12,6 +11,7 @@ import { SyntaxKind }                                                           
 import { CharacterCodes }                                                              from "./char-codes";
 import { binarySearch, comparer, hasJSDocNodes, nodeIsMissing, positionIsSynthesized } from "../utils";
 import chalk                                                                           from 'chalk';
+import { type } from 'typeofs';
 import { isJSDocNode }                                                                 from "typescript";
 
 export const fullTripleSlashReferencePathRegEx            = /^(\/\/\/\s*<reference\s+path\s*=\s*)(['"])(.+?)\2.*?\/>/;
@@ -28,7 +28,7 @@ const
      * @param {string} n
      * @return {boolean}
      */
-    has                                       = ( o, n ) => Reflect.has( o, n );
+    has                                       = ( o, n ) => type( o ) === 'object' ? Object.prototype.hasOwnProperty.call( o, n ) : false;
 
 
 /**
@@ -50,6 +50,8 @@ export function create_reporters( fileName, source )
      */
     function get_start_end( node )
     {
+        if ( !node ) return [ 0, 0 ];
+
         if ( has( node, 'start' ) )
             return [ node.start, node.end ];
         else if ( has( node, 'range' ) )
@@ -120,7 +122,7 @@ export function create_reporters( fileName, source )
                 color   = red
             }              = opts,
             [ start, end ] = get_start_end( node ),
-            loc            = loc_info( start, end ),
+            loc            = node && loc_info( start, end ),
             fileLoc        = loc && `In "${fileName}", line ${loc.start.line + 1}: `,
             txt            = ( loc ? fileLoc : '' ) + msg;
 
@@ -130,7 +132,7 @@ export function create_reporters( fileName, source )
         if ( noThrow )
         {
             console.error( color( txt ) );
-            console.trace();
+            // console.trace();
             return;
         }
 

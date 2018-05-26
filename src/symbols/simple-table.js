@@ -50,12 +50,20 @@
 "use strict";
 
 import globals from '../utils/globals';
+import { type } from 'typeofs';
 import { walk_symbols } from "../ts/ts-symbols";
 
 const
     detection = new Set(),
     defs = [],
-    counts = {};
+    counts = {},
+    LOG = true,
+    log = ( ...args ) => LOG && console.log( ...args ),
+    DEBUG = {
+        DECLS: {
+            VAR: log
+        }
+    };
 
 /** */
 class SymbolTable
@@ -83,29 +91,7 @@ class SymbolTable
     }
 }
 
-/**
- * @param {object} sym
- */
-function add_symbol( sym )
-{
-    const symName = sym.name;
-
-    if ( !sym.name )
-        throw new Error( `No 'name' property for symbol` );
-
-    const types = sym.decls.map( s => s.kind ).join( ', ' );
-
-    if ( detection.has( types ) )
-        ++counts[ types ];
-    else
-    {
-        counts[ types ] = 1;
-        detection.add( types );
-    }
-
-    if ( types === 'FunctionDeclaration, FunctionDeclaration, FunctionDeclaration' )
-        defs.push( sym.decls );
-}
+let scope;
 
 const
     ObjectConstructor = {
@@ -122,8 +108,11 @@ const
                 "flags": "Signature",
                 "decls": [
                     {
-                        "decl": "( value?: any [ FunctionScopedVariable | Transient ] ): Object",
-                        "type": "Object",
+                        "decl": "( value?: any ): Object",
+                        "type": {
+                            "type": "reference",
+                            "typeName": "Object"
+                        },
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -141,16 +130,12 @@ const
                 "decls": [
                     {
                         "decl": "(): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "type": "any",
                         "kind": "CallSignature"
                     },
                     {
-                        "decl": "( value: any [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "( value: any ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -167,7 +152,10 @@ const
                 "decls": [
                     {
                         "decl": "prototype: Object",
-                        "type": "Object",
+                        "type": {
+                            "type": "reference",
+                            "typeName": "Object"
+                        },
                         "kind": "PropertySignature"
                     }
                 ]
@@ -177,10 +165,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "getPrototypeOf( o: any [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "getPrototypeOf( o: any ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -196,12 +182,15 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "getOwnPropertyDescriptor( o: any [ FunctionScopedVariable | Transient ], p: string [ FunctionScopedVariable | Transient ] ): PropertyDescriptor | undefined",
+                        "decl": "getOwnPropertyDescriptor( o: any, p: string ): PropertyDescriptor | undefined",
                         "type": {
                             "type": "union",
                             "types": [
                                 {
-                                    "type": "PropertyDescriptor"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "PropertyDescriptor"
+                                    }
                                 },
                                 {
                                     "typeName": "undefined"
@@ -221,12 +210,15 @@ const
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "getOwnPropertyDescriptor( o: any [ FunctionScopedVariable | Transient ], propertyKey: PropertyKey [ FunctionScopedVariable | Transient ] ): PropertyDescriptor | undefined",
+                        "decl": "getOwnPropertyDescriptor( o: any, propertyKey: PropertyKey ): PropertyDescriptor | undefined",
                         "type": {
                             "type": "union",
                             "types": [
                                 {
-                                    "type": "PropertyDescriptor"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "PropertyDescriptor"
+                                    }
                                 },
                                 {
                                     "typeName": "undefined"
@@ -239,7 +231,8 @@ const
                                 "name": "o"
                             },
                             {
-                                "type": "PropertyKey",
+                                "type": "reference",
+                                "typeName": "PropertyKey",
                                 "name": "propertyKey"
                             }
                         ],
@@ -252,11 +245,9 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "getOwnPropertyNames( o: any [ FunctionScopedVariable | Transient ] ): string[]",
+                        "decl": "getOwnPropertyNames( o: any ): string[]",
                         "type": {
-                            "typeName": {
-                                "typeName": "string"
-                            },
+                            "typeName": "string",
                             "isArray": true
                         },
                         "parameters": [
@@ -274,10 +265,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "create( o: object | null [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "create( o: object | null ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "type": "union",
@@ -295,10 +284,8 @@ const
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "create( o: object | null [ FunctionScopedVariable | Transient ], properties: PropertyDescriptorMap & ThisType<any> [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "create( o: object | null, properties: PropertyDescriptorMap & ThisType<any> ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "type": "union",
@@ -316,11 +303,17 @@ const
                                 "type": "intersection",
                                 "types": [
                                     {
-                                        "type": "PropertyDescriptorMap"
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "PropertyDescriptorMap"
+                                        }
                                     },
                                     {
-                                        "type": "ThisType",
-                                        "template": [
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "ThisType"
+                                        },
+                                        "typeArguments": [
                                             {
                                                 "typeName": "any"
                                             }
@@ -339,10 +332,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "defineProperty( o: any [ FunctionScopedVariable | Transient ], p: string [ FunctionScopedVariable | Transient ], attributes: PropertyDescriptor & ThisType<any> [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "defineProperty( o: any, p: string, attributes: PropertyDescriptor & ThisType<any> ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -356,11 +347,17 @@ const
                                 "type": "intersection",
                                 "types": [
                                     {
-                                        "type": "PropertyDescriptor"
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "PropertyDescriptor"
+                                        }
                                     },
                                     {
-                                        "type": "ThisType",
-                                        "template": [
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "ThisType"
+                                        },
+                                        "typeArguments": [
                                             {
                                                 "typeName": "any"
                                             }
@@ -373,21 +370,21 @@ const
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "defineProperty( o: any [ FunctionScopedVariable | Transient ], propertyKey: PropertyKey [ FunctionScopedVariable | Transient ], attributes: PropertyDescriptor [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "defineProperty( o: any, propertyKey: PropertyKey, attributes: PropertyDescriptor ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
                                 "name": "o"
                             },
                             {
-                                "type": "PropertyKey",
+                                "type": "reference",
+                                "typeName": "PropertyKey",
                                 "name": "propertyKey"
                             },
                             {
-                                "type": "PropertyDescriptor",
+                                "type": "reference",
+                                "typeName": "PropertyDescriptor",
                                 "name": "attributes"
                             }
                         ],
@@ -400,10 +397,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "defineProperties( o: any [ FunctionScopedVariable | Transient ], properties: PropertyDescriptorMap & ThisType<any> [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "defineProperties( o: any, properties: PropertyDescriptorMap & ThisType<any> ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -413,11 +408,17 @@ const
                                 "type": "intersection",
                                 "types": [
                                     {
-                                        "type": "PropertyDescriptorMap"
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "PropertyDescriptorMap"
+                                        }
                                     },
                                     {
-                                        "type": "ThisType",
-                                        "template": [
+                                        "type": "reference",
+                                        "typeName": {
+                                            "name": "ThisType"
+                                        },
+                                        "typeArguments": [
                                             {
                                                 "typeName": "any"
                                             }
@@ -436,14 +437,21 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "seal<T>( o: T [ FunctionScopedVariable | Transient ] ): T",
-                        "type": "T",
+                        "decl": "seal<T>( o: T ): T",
+                        "type": {
+                            "type": "reference",
+                            "typeName": "T"
+                        },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "o"
                             }
                         ],
@@ -456,53 +464,83 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "freeze<T>( a: T[] [ FunctionScopedVariable | Transient ] ): ReadonlyArray<T>",
+                        "decl": "freeze<T>( a: T[] ): ReadonlyArray<T>",
                         "type": {
-                            "type": "ReadonlyArray",
-                            "template": [
-                                "T"
+                            "type": "reference",
+                            "typeName": "ReadonlyArray",
+                            "typeArguments": [
+                                {
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "T"
+                                    }
+                                }
                             ]
                         },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
+                                "typeName": {
+                                    "type": "reference",
+                                    "typeName": "T"
+                                },
                                 "isArray": true,
-                                "type": "T",
                                 "name": "a"
                             }
                         ],
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "freeze<T extends Function>( f: T [ FunctionScopedVariable | Transient ] ): T",
-                        "type": "T",
+                        "decl": "freeze<T extends Function>( f: T ): T",
+                        "type": {
+                            "type": "reference",
+                            "typeName": "T"
+                        },
                         "typeParameters": [
-                            "T extends Function"
+                            {
+                                "typeName": "Function",
+                                "name": "T",
+                                "typeOperator": " extends"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "f"
                             }
                         ],
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "freeze<T>( o: T [ FunctionScopedVariable | Transient ] ): Readonly<T>",
+                        "decl": "freeze<T>( o: T ): Readonly<T>",
                         "type": {
-                            "type": "Readonly",
-                            "template": [
-                                "T"
+                            "type": "reference",
+                            "typeName": "Readonly",
+                            "typeArguments": [
+                                {
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "T"
+                                    }
+                                }
                             ]
                         },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "o"
                             }
                         ],
@@ -515,14 +553,21 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "preventExtensions<T>( o: T [ FunctionScopedVariable | Transient ] ): T",
-                        "type": "T",
+                        "decl": "preventExtensions<T>( o: T ): T",
+                        "type": {
+                            "type": "reference",
+                            "typeName": "T"
+                        },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "o"
                             }
                         ],
@@ -535,10 +580,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "isSealed( o: any [ FunctionScopedVariable | Transient ] ): boolean",
-                        "type": {
-                            "typeName": "boolean"
-                        },
+                        "decl": "isSealed( o: any ): boolean",
+                        "type": "boolean",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -554,10 +597,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "isFrozen( o: any [ FunctionScopedVariable | Transient ] ): boolean",
-                        "type": {
-                            "typeName": "boolean"
-                        },
+                        "decl": "isFrozen( o: any ): boolean",
+                        "type": "boolean",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -573,10 +614,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "isExtensible( o: any [ FunctionScopedVariable | Transient ] ): boolean",
-                        "type": {
-                            "typeName": "boolean"
-                        },
+                        "decl": "isExtensible( o: any ): boolean",
+                        "type": "boolean",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -592,16 +631,14 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "keys( o: {} [ FunctionScopedVariable | Transient ] ): string[]",
+                        "decl": "keys( o: {} ): string[]",
                         "type": {
-                            "typeName": {
-                                "typeName": "string"
-                            },
+                            "typeName": "string",
                             "isArray": true
                         },
                         "parameters": [
                             {
-                                "type": "type",
+                                "type": "typeliteral",
                                 "members": [],
                                 "name": "o"
                             }
@@ -615,130 +652,189 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "assign<T, U>( target: T [ FunctionScopedVariable | Transient ], source: U [ FunctionScopedVariable | Transient ] ): T & U",
+                        "decl": "assign<T, U>( target: T, source: U ): T & U",
                         "type": {
                             "type": "intersection",
                             "types": [
                                 {
-                                    "type": "T"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "T"
+                                    }
                                 },
                                 {
-                                    "type": "U"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "U"
+                                    }
                                 }
                             ]
                         },
                         "typeParameters": [
-                            "T",
-                            "U"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            },
+                            {
+                                "typeName": "U",
+                                "name": "U"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "target"
                             },
                             {
-                                "type": "U",
+                                "type": "reference",
+                                "typeName": "U",
                                 "name": "source"
                             }
                         ],
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "assign<T, U, V>( target: T [ FunctionScopedVariable | Transient ], source1: U [ FunctionScopedVariable | Transient ], source2: V [ FunctionScopedVariable | Transient ] ): T & U & V",
+                        "decl": "assign<T, U, V>( target: T, source1: U, source2: V ): T & U & V",
                         "type": {
                             "type": "intersection",
                             "types": [
                                 {
-                                    "type": "T"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "T"
+                                    }
                                 },
                                 {
-                                    "type": "U"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "U"
+                                    }
                                 },
                                 {
-                                    "type": "V"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "V"
+                                    }
                                 }
                             ]
                         },
                         "typeParameters": [
-                            "T",
-                            "U",
-                            "V"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            },
+                            {
+                                "typeName": "U",
+                                "name": "U"
+                            },
+                            {
+                                "typeName": "V",
+                                "name": "V"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "target"
                             },
                             {
-                                "type": "U",
+                                "type": "reference",
+                                "typeName": "U",
                                 "name": "source1"
                             },
                             {
-                                "type": "V",
+                                "type": "reference",
+                                "typeName": "V",
                                 "name": "source2"
                             }
                         ],
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "assign<T, U, V, W>( target: T [ FunctionScopedVariable | Transient ], source1: U [ FunctionScopedVariable | Transient ], source2: V [ FunctionScopedVariable | Transient ], source3: W [ FunctionScopedVariable | Transient ] ): T & U & V & W",
+                        "decl": "assign<T, U, V, W>( target: T, source1: U, source2: V, source3: W ): T & U & V & W",
                         "type": {
                             "type": "intersection",
                             "types": [
                                 {
-                                    "type": "T"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "T"
+                                    }
                                 },
                                 {
-                                    "type": "U"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "U"
+                                    }
                                 },
                                 {
-                                    "type": "V"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "V"
+                                    }
                                 },
                                 {
-                                    "type": "W"
+                                    "type": "reference",
+                                    "typeName": {
+                                        "name": "W"
+                                    }
                                 }
                             ]
                         },
                         "typeParameters": [
-                            "T",
-                            "U",
-                            "V",
-                            "W"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            },
+                            {
+                                "typeName": "U",
+                                "name": "U"
+                            },
+                            {
+                                "typeName": "V",
+                                "name": "V"
+                            },
+                            {
+                                "typeName": "W",
+                                "name": "W"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "target"
                             },
                             {
-                                "type": "U",
+                                "type": "reference",
+                                "typeName": "U",
                                 "name": "source1"
                             },
                             {
-                                "type": "V",
+                                "type": "reference",
+                                "typeName": "V",
                                 "name": "source2"
                             },
                             {
-                                "type": "W",
+                                "type": "reference",
+                                "typeName": "W",
                                 "name": "source3"
                             }
                         ],
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "assign( target: object [ FunctionScopedVariable | Transient ], ...sources: any[] [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "assign( target: object, ...sources: any[] ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "object",
                                 "name": "target"
                             },
                             {
-                                "typeName": {
-                                    "typeName": "any"
-                                },
+                                "typeName": "any",
                                 "isArray": true,
                                 "name": "sources",
                                 "rest": true
@@ -753,11 +849,9 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "getOwnPropertySymbols( o: any [ FunctionScopedVariable | Transient ] ): symbol[]",
+                        "decl": "getOwnPropertySymbols( o: any ): symbol[]",
                         "type": {
-                            "typeName": {
-                                "typeName": "symbol"
-                            },
+                            "typeName": "symbol",
                             "isArray": true
                         },
                         "parameters": [
@@ -775,10 +869,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "is( value1: any [ FunctionScopedVariable | Transient ], value2: any [ FunctionScopedVariable | Transient ] ): boolean",
-                        "type": {
-                            "typeName": "boolean"
-                        },
+                        "decl": "is( value1: any, value2: any ): boolean",
+                        "type": "boolean",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -798,10 +890,8 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "setPrototypeOf( o: any [ FunctionScopedVariable | Transient ], proto: object | null [ FunctionScopedVariable | Transient ] ): any",
-                        "type": {
-                            "typeName": "any"
-                        },
+                        "decl": "setPrototypeOf( o: any, proto: object | null ): any",
+                        "type": "any",
                         "parameters": [
                             {
                                 "typeName": "any",
@@ -829,24 +919,33 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "values<T>( o: { [ s: string ]: T } | { [ n: number ]: T } [ FunctionScopedVariable | Transient ] ): T[]",
+                        "decl": "values<T>( o: { [ s: string ]: T } | { [ n: number ]: T } ): T[]",
                         "type": {
-                            "isArray": true,
-                            "type": "T"
+                            "typeName": {
+                                "type": "reference",
+                                "typeName": "T"
+                            },
+                            "isArray": true
                         },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
                                 "type": "union",
                                 "types": [
                                     {
-                                        "type": "type",
+                                        "type": "typeliteral",
                                         "members": [
                                             {
                                                 "type": "index",
-                                                "typeName": "T",
+                                                "typeName": {
+                                                    "type": "reference",
+                                                    "typeName": "T"
+                                                },
                                                 "parameters": [
                                                     {
                                                         "name": "s",
@@ -857,11 +956,14 @@ const
                                         ]
                                     },
                                     {
-                                        "type": "type",
+                                        "type": "typeliteral",
                                         "members": [
                                             {
                                                 "type": "index",
-                                                "typeName": "T",
+                                                "typeName": {
+                                                    "type": "reference",
+                                                    "typeName": "T"
+                                                },
                                                 "parameters": [
                                                     {
                                                         "name": "n",
@@ -878,16 +980,14 @@ const
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "values( o: {} [ FunctionScopedVariable | Transient ] ): any[]",
+                        "decl": "values( o: {} ): any[]",
                         "type": {
-                            "typeName": {
-                                "typeName": "any"
-                            },
+                            "typeName": "any",
                             "isArray": true
                         },
                         "parameters": [
                             {
-                                "type": "type",
+                                "type": "typeliteral",
                                 "members": [],
                                 "name": "o"
                             }
@@ -901,7 +1001,7 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "entries<T>( o: { [ s: string ]: T } | { [ n: number ]: T } [ FunctionScopedVariable | Transient ] ): [ string, T ][]",
+                        "decl": "entries<T>( o: { [ s: string ]: T } | { [ n: number ]: T } ): [ string, T ][]",
                         "type": {
                             "typeName": {
                                 "type": "tuple",
@@ -909,24 +1009,33 @@ const
                                     {
                                         "typeName": "string"
                                     },
-                                    "T"
+                                    {
+                                        "type": "reference",
+                                        "typeName": "T"
+                                    }
                                 ]
                             },
                             "isArray": true
                         },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
                                 "type": "union",
                                 "types": [
                                     {
-                                        "type": "type",
+                                        "type": "typeliteral",
                                         "members": [
                                             {
                                                 "type": "index",
-                                                "typeName": "T",
+                                                "typeName": {
+                                                    "type": "reference",
+                                                    "typeName": "T"
+                                                },
                                                 "parameters": [
                                                     {
                                                         "name": "s",
@@ -937,11 +1046,14 @@ const
                                         ]
                                     },
                                     {
-                                        "type": "type",
+                                        "type": "typeliteral",
                                         "members": [
                                             {
                                                 "type": "index",
-                                                "typeName": "T",
+                                                "typeName": {
+                                                    "type": "reference",
+                                                    "typeName": "T"
+                                                },
                                                 "parameters": [
                                                     {
                                                         "name": "n",
@@ -958,7 +1070,7 @@ const
                         "kind": "MethodSignature"
                     },
                     {
-                        "decl": "entries( o: {} [ FunctionScopedVariable | Transient ] ): [ string, any ][]",
+                        "decl": "entries( o: {} ): [ string, any ][]",
                         "type": {
                             "typeName": {
                                 "type": "tuple",
@@ -975,7 +1087,7 @@ const
                         },
                         "parameters": [
                             {
-                                "type": "type",
+                                "type": "typeliteral",
                                 "members": [],
                                 "name": "o"
                             }
@@ -989,32 +1101,42 @@ const
                 "flags": "Method",
                 "decls": [
                     {
-                        "decl": "getOwnPropertyDescriptors<T>( o: T [ FunctionScopedVariable | Transient ] ): { [ P in keyof T ]: TypedPropertyDescriptor<T[P]> } & { [ x: string ]: PropertyDescriptor }",
+                        "decl": "getOwnPropertyDescriptors<T>( o: T ): { [ P in keyof T ]: TypedPropertyDescriptor<T[P]> } & { [ x: string ]: PropertyDescriptor }",
                         "type": {
                             "type": "intersection",
                             "types": [
                                 {
                                     "type": "mapped",
-                                    "name": {
-                                        "typeName": "TypedPropertyDescriptor",
-                                        "template": [
-                                            {
-                                                "typeName": {
-                                                    "typeName": "T"
-                                                },
-                                                "indexType": {
-                                                    "typeName": "P"
+                                    "definition": {
+                                        "type": {
+                                            "type": "reference",
+                                            "typeName": "TypedPropertyDescriptor",
+                                            "typeArguments": [
+                                                {
+                                                    "typeName": "T",
+                                                    "indexType": {
+                                                        "typeName": "P"
+                                                    }
                                                 }
-                                            }
-                                        ]
+                                            ]
+                                        },
+                                        "typeParameter": {
+                                            "typeName": "T",
+                                            "name": "P",
+                                            "typeOperator": " in",
+                                            "keyOf": true
+                                        }
                                     }
                                 },
                                 {
-                                    "type": "type",
+                                    "type": "typeliteral",
                                     "members": [
                                         {
                                             "type": "index",
-                                            "typeName": "PropertyDescriptor",
+                                            "typeName": {
+                                                "type": "reference",
+                                                "typeName": "PropertyDescriptor"
+                                            },
                                             "parameters": [
                                                 {
                                                     "name": "x",
@@ -1027,11 +1149,15 @@ const
                             ]
                         },
                         "typeParameters": [
-                            "T"
+                            {
+                                "typeName": "T",
+                                "name": "T"
+                            }
                         ],
                         "parameters": [
                             {
-                                "type": "T",
+                                "type": "reference",
+                                "typeName": "T",
                                 "name": "o"
                             }
                         ],
@@ -1045,9 +1171,31 @@ const
     scopes = {
         parent: null,
         children: [],
-        symbols: new Map()
-    },
-    scope = scopes;
+        symbols: new Map(),
+        has( name ) { return this.symbols.has( name ); },
+        set( name, thing ) { return this.symbols.set( name, thing ); },
+        get( name ) { return this.symbols.get( name ); }
+    };
+
+scope = scopes;
+
+function lookup( name, scp = scope )
+{
+    if ( scp.symbols.has( name ) )
+        return scp.symbols.get( name );
+
+    let s = scp.parent;
+
+    while ( s )
+    {
+        if ( s.symbols.has( name ) )
+            return s.symbols.get( name );
+
+        s = s.parent;
+    }
+
+    return null;
+}
 
 function add_type( name, type )
 {
@@ -1065,30 +1213,152 @@ function add_instance( def )
 
 export class Type
 {
-    constructor( name, typeName )
+    constructor( typeName, def, decl = '' )
     {
         this.declarations = [];
-        this.name = name;
+        this.name = typeName;
         this.members = [];
         this.parameters = [];
         this.returns = void 0;
-        this.typeName = typeName;
         this.typeParameters = [];
+        this.definition = def;
+        this.decl = decl;
+    }
+
+    toString()
+    {
+        return this.decl;
     }
 }
 
+function get_type( typeName, deferOkay = false )
+{
+    const t = lookup( typeName );
+
+    if ( t )
+    {
+        log( `Found symbol "${typeName}"` );
+        return t;
+    }
+
+    if ( !deferOkay ) return null;
+
+    return ( ( scope, file ) => () => {
+        const t = lookup( typeName, scope );
+
+        if ( t )
+        {
+            log( `Found symbol "${typeName}" (deferred)` );
+            return t;
+        }
+
+        file.reporters.warn( `Undefined symbol "${typeName}" (deferred)` );
+
+        return null;
+    } )( scope, globals.file );
+}
+
+function create_type( typeDef, defer = false )
+{
+    let t;
+
+    if ( type( typeDef ) === 'object' )
+    {
+        switch ( typeDef.type )
+        {
+            case 'reference':
+                return get_type( typeDef.typeName, defer );
+
+            case 'interface':
+                t = get_type( typeDef.typeName );
+                if ( t ) return t;
+                return new Type( typeDef.typeName, typeDef );
+
+            default:
+                log( `Ignoring "${typeDef.type}"` );
+                break;
+        }
+    }
+    else if ( type( typeDef ) === 'string' )
+        return get_type( typeDef, defer );
+}
+
+const deferredTypes = [];
+
+/** */
 export class Symbol
 {
-    constructor( name, typeName, readOnly = false )
+    constructor( name, typeDef, readOnly = false )
     {
         this.name = name;
         this.definition = null;
-        this.typeName = typeName || "any";
+        this.type = typeDef || "any";
         this.typeArguments = [];
         this.values = [];
         this.readOnly = readOnly;
+
+        if ( type( this.type ) === 'function' )
+            deferredTypes.push( this );
+    }
+
+    /** */
+    init()
+    {
+        if ( type( this.type ) === 'function' )
+            this.type = this.type();
     }
 }
+
+const allDecls = new Set();
+
+/**
+ * @param {object} sym
+ */
+function add_symbol( sym )
+{
+    const
+        symName = sym.name,
+        declKinds = [];
+
+    if ( !sym.name )
+        throw new Error( `No 'name' property for symbol` );
+
+    for ( const decl of sym.decls )
+    {
+        declKinds.push( decl.kind );
+        allDecls.add( decl.kind );
+
+        switch ( decl.kind )
+        {
+            case 'VariableDeclaration':
+                add_type( symName, new Symbol( symName, create_type( decl.type, true ) ) );
+                break;
+
+            case 'FunctionDeclaration':
+            case 'InterfaceDeclaration':
+                add_type( symName, new Symbol( symName, create_type( { type: 'interface', typeName: symName, members: sym.members }, true ) ) );
+                break;
+
+            case 'TypeAliasDeclaration':
+            case 'ModuleDeclaration':
+            case 'ClassDeclaration':
+        }
+    }
+
+    const types = declKinds.join( ', ' );
+
+    if ( detection.has( types ) )
+        ++counts[ types ];
+    else
+    {
+        counts[ types ] = 1;
+        detection.add( types );
+    }
+
+    // if ( types === 'FunctionDeclaration, FunctionDeclaration, FunctionDeclaration' )
+    //     defs.push( sym.decls );
+}
+
 
 // export function add_symbol( def )
 // {
@@ -1115,13 +1385,27 @@ export class Symbol
 //     }
 // }
 
+add_type( 'string', new Type( 'string', null, 'string' ) );
+add_type( 'number', new Type( 'number', null, 'number' ) );
+add_type( 'boolean', new Type( 'boolean', null, 'boolean' ) );
+add_type( 'null', new Type( 'null', null, 'null' ) );
+add_type( 'undefined', new Type( 'undefined', null, 'undefined' ) );
+add_type( 'symbol', new Type( 'symbol', null, 'symbol' ) );
+add_type( 'void', new Type( 'void', null, 'void' ) );
+add_type( 'any', new Type( 'any', null, 'any' ) );
+add_type( 'never', new Type( 'never', null, 'never' ) );
+
+
 export function create_symbols( top )
 {
     // const all = walk_symbols( top );
 
     top.locals.forEach( add_symbol );
 
-    // console.log( detection );
-    // console.log( 'counts:\n', counts );
+    deferredTypes.forEach( s => s.init() );
+
+    console.log( detection );
+    console.log( 'counts:\n', counts );
+    console.log( 'all decls:', allDecls );
     // console.log( 'defs:\n', JSON.stringify( defs, null, 4 ) );
 }

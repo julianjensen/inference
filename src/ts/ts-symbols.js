@@ -31,8 +31,21 @@ import {
 }                             from "../types";
 import { type, nameOf }       from "typeofs";
 import deep from "deep-eql";
+import deepAssign from 'deep-assign';
 
 const
+    has = ( o, n ) => !!o && Object.prototype.hasOwnProperty.call( o, n ),
+    MEMBER_MARKER = Symbol( 'marker' ),
+    is_same = ( a, b ) => a[ MEMBER_MARKER ] && b[ MEMBER_MARKER ] && a[ MEMBER_MARKER ].some( m => b[ MEMBER_MARKER ] === m ),
+    add_marker = a => ( a[ MEMBER_MARKER ] || ( a[ MEMBER_MARKER ] = [] ) ).push( Math.random() * 1e9 | 0 ),
+    hide = ( obj, name, value ) => Object.defineProperty( obj, name, { enumerable: false, value } ),
+    strip_parent = o => {
+        if ( type( o ) === 'object' && o.hasOwnProperty( 'parent' ) )
+            hide( o, 'parent', o.parent );
+
+        return o;
+    },
+    namespaces = [],
     optional = ( obj, check ) => {
         if ( !check ) return obj;
 
@@ -50,7 +63,6 @@ const
         return no;
     },
     declDupes = new WeakSet(),
-    hide = ( obj, name, value ) => Object.defineProperty( obj, name, { enumerable: false, value } ),
     isObject = o => typeof o === 'object' && !Array.isArray( o ) && o !== null,
     isString = s => typeof s === 'string',
     isArray = a => Array.isArray( a ),
@@ -279,15 +291,16 @@ export function sym_walk( node, table = {} )
      * Modules and namespaces
      ********************************************************************************************************************/
 
-    if ( node.kind === SyntaxKind.ModuleDeclaration )
-    {
-        const tmp = table[ module_name( node.name ) ] = show_sym( node.symbol );
-        delete tmp.name;
-
-        // MAYBE DUPE
-        // tmp.moduleMembers = node.body.statements.map( n => sym_walk( n, {} ) );
-        return table;
-    }
+    // if ( node.kind === SyntaxKind.ModuleDeclaration )
+    // {
+    //     // const tmp = table[ module_name( node.name ) ] = show_sym( node.symbol );
+    //     // delete tmp.name;
+    //
+    //     // MAYBE DUPE
+    //     // tmp.members =
+    //     table = node.body.statements.map( n => sym_walk( n, {} ) );
+    //     return table;
+    // }
 
     /********************************************************************************************************************
      * Locals
@@ -299,7 +312,9 @@ export function sym_walk( node, table = {} )
     // MAYBE DUPE
     if ( node.locals )
     {
-        table.locals = [ ...node.locals.values() ].map( show_sym );
+        table.locals = [ ...node.locals.values() ].map( show_sym ).map( sym => {
+
+        } );
         table.locals.forEach( s => topLevelNames.push( s.name ) );
     }
 
@@ -377,7 +392,10 @@ function show_sym( sym, noExports = false )
 
     const
         r = { name: disambiguate( get_name( sym ) ) }, // , id: sym.id },
-        d = decls( sym );
+        { decls: d, members: declMembers } = decls( sym ) || {};
+
+    if ( namespaces.length )
+        r.namespaces = namespaces.slice();
 
     if ( sym.flags )
     {
@@ -409,6 +427,13 @@ function show_sym( sym, noExports = false )
         // if ( m && ( !isArray( m ) ||  m.length ) ) r.members = m;
     }
 
+    if ( declMembers )
+    {
+        if ( Array.isArray( declMembers ) && has( declMembers[ 0 ], 'questionToken' ) )
+            console.error( `BAD ${declMembers.length} members written declMembers` );
+        set_members( declMembers, r );
+    }
+
     if ( sym.exports && sym.exports.size && !noExports )
         r.exports = from_sym( sym.exports );
 
@@ -422,7 +447,11 @@ function show_sym( sym, noExports = false )
         if ( r.name !== tmp.name || ( tmp.decls && tmp.decls.length ) )
             r.exportSymbol = tmp;
         else if ( tmp.members )
+        {
+            if ( tmp && Array.isArray( tmp.members ) && has( tmp.members[ 0 ], 'questionToken' ) )
+                console.error( `BAD ${tmp.members.length} members written exportSymbol` );
             set_members( tmp.members, r );
+        }
     }
 
     hide( r, 'node', sym );
@@ -432,15 +461,16 @@ function show_sym( sym, noExports = false )
 
 function set_members( members, r )
 {
-    const mem = _m => { r.members = _m; return r; };
+    const
+        arr = a => Array.isArray( a ),
+        mem = _m => {
+            r.members = r.members ? r.members.concat( _m ) : _m;
+            return r;
+        };
 
-    if ( !members ) return mem( members );
+    if ( members && !arr( members ) ) members = [ members ];
 
-    if ( !isArray( members ) ) return mem( members );
-
-    const m = members.filter( x => !!x );
-
-    if ( m.length ) return mem( m );
+    if ( members.length ) return mem( members );
 
     return r;
 }
@@ -454,11 +484,24 @@ function from_sym( syms )
 
 function decls( sym )
 {
+    let members = [];
+
     if ( !sym || !sym.declarations || !sym.declarations.length ) return null;
 
-    const r = sym.declarations.filter( d => !declDupes.has( d ) ).map( get_decl );
+    const r = sym.declarations
+                 .filter( d => !declDupes.has( d ) )
+                 .map( get_decl )
+                 .map( d => {
+                     if ( d.hasOwnProperty( 'members' ) )
+                     {
+                         members = members.concat( d.members );
+                         delete d.members;
+                     }
+                     return d;
+                 } );
 
-    return r.length ? uniq( r ) : null;
+
+    return r.length ? { decls: uniq( r ), members } : null;
 }
 
 // function type_literal_as_string( tl, short = true )
@@ -504,17 +547,17 @@ function get_decl( decl )
         }
     }
 
-    let flags = '';
-    if ( decl.flags && !!( decl.flags & ~NodeFlags.Ambient ) )
-        flags = ' [ ' + NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString() + ' ]';
+    // let flags = '';
+    // if ( decl.flags && !!( decl.flags & ~NodeFlags.Ambient ) )
+    //     flags = ' [ ' + NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString() + ' ]';
 
     if ( decl.kind === SyntaxKind.ExportSpecifier )
     {
         let propName = '<no prop name>';
 
-        if ( Reflect.has( decl, 'propertyName' ) && type( decl.propertyName ) === 'object' && Reflect.has( decl, 'propertyName' ) )
+        if ( decl.hasOwnProperty( 'propertyName' ) && type( decl.propertyName ) === 'object' && Reflect.has( decl, 'propertyName' ) )
             propName = decl.propertyName.escapedText;
-        else if ( Reflect.has( decl, 'name' ) && type( decl.name ) === 'object' && Reflect.has( decl, 'name' ) )
+        else if ( decl.hasOwnProperty( 'name' ) && type( decl.name ) === 'object' && Reflect.has( decl, 'name' ) )
             propName = decl.name.escapedText;
 
         typeName = propName;
@@ -540,11 +583,14 @@ function get_decl( decl )
     //     }
     // }
 
-    if ( type( typeName ) === 'object' )
-    {
-        const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
-        if ( flags && flags !== NodeFlags.Ambient ) r.flags = flags;
-    }
+    if ( type( typeName ) === 'object' && keyCount( typeName ) === 1 && Object.keys( typeName )[ 0 ] === 'typeName' )
+        typeName = typeName.typeName;
+
+    // if ( type( typeName ) === 'object' )
+    // {
+    //     const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
+    //     if ( flags && flags !== NodeFlags.Ambient ) r.flags = flags;
+    // }
 
     // NEW STUFF OLD STUFF
     const dd = {
@@ -574,11 +620,46 @@ function get_decl( decl )
     dd.kind = SyntaxKind[ decl.kind ];
     // dd.hasSymbol = ( decl.symbol ? ident( decl, 'long' ) : 'no' ).trim();
 
+    if ( decl.kind === SyntaxKind.ModuleDeclaration )
+    {
+        namespaces.push( declName );
+
+        // // debugger;
+        // // const tmp = sym_walk( decl, {} );
+        // // const tmp = decl.body.statements.map( n => sym_walk( n, {} ) );
+        const tmp = decl.body.statements.map( n => sym_walk( n, {} ) );
+
+        // if ( tmp && tmp.locals )
+        //     set_members( tmp.locals.map( o => deepAssign( {}, o ) ), dd );
+        // // else
+        if ( tmp )
+        {
+            let collect = tmp.reduce( ( mm, block ) => mm.concat( we_want_this( block ) ), [] );
+
+            set_members( collect, dd );
+        }
+
+        namespaces.pop();
+    }
+
+    collapse( dd );
+    collapse( dd.type );
+
     return dd;
 
     // TO HERE
 
     // return `@${lineNumber + 1}:${offset}${flags} ` + declName + ( typeName ? ': ' + typeName : '' );
+}
+
+function we_want_this( obj )
+{
+    if ( !obj ) return [];
+
+    const keys = Object.keys( obj ).filter( k => type( obj[ k ] ) === 'object' && has( obj[ k ], 'decls' ) );
+
+    return keys.length ? keys.map( k => obj[ k ] ) : [];
+
 }
 
 function pretty( decl )
@@ -792,6 +873,8 @@ function add_param( decl )
     if ( decl.dotDotDotToken )
         p.rest = true;
 
+    collapse( p );
+
     return optional( p, decl.questionToken );
 }
 
@@ -975,17 +1058,13 @@ function add_raw_types( type )
         case SyntaxKind.TypeReference:
             r = {
                 type: 'reference',
-                typeName: add_raw_types( type.typeName )
+                typeName: collapse( add_raw_types( type.typeName ) )
             };
 
             tmpl = check_for_raw_template( type );
 
             if ( tmpl )
-            {
                 r.typeArguments = tmpl;
-                // r.template = fix_raw_templates( tmpl );
-                // r.template = { _: r.template, sourceLineART01: 'add_raw_types-01' };
-            }
 
             return r;
 
@@ -1006,33 +1085,38 @@ function add_raw_types( type )
 
         case SyntaxKind.MappedType:
             const mapped = {
-                type: 'mapped',
-                name: null
+                type: 'mapped'
             };
 
-            if ( type.questionToken ) mapped.optional = true;
-            mapped.name = get_raw_type_name( type.type );
+            // if ( type.questionToken ) mapped.optional = true;
+            mapped.definition = {
+                type: collapse( add_raw_types( type.type ) ),
+                typeParameter: collapse( add_raw_types( type.typeParameter ) )
+            };
 
-            return mapped;
+            return optional( mapped, type.questionToken );
 
         case SyntaxKind.LiteralType:
             return raw_literal( type );
 
         case SyntaxKind.TypeLiteral:
             return {
-                type: 'type',
+                type: 'typeliteral',
                 members: type.members.map( add_raw_types )
             };
 
         case SyntaxKind.IndexSignature:
-            return {
+            const is = {
                 type: 'index',
-                typeName: elevate( add_raw_types( type.type ) ),
-                parameters: type.parameters.map( add_raw_types )
+                typeName: add_raw_types( type.type ),
+                parameters: type.parameters.map( add_raw_types ).map( collapse )
             };
 
+            collapse( is );
+            return is;
+
         case SyntaxKind.Parameter:
-            const typeList = elevate( clean( add_raw_types( type.type ) ) );
+            const typeList = collapse( add_raw_types( type.type ) );
 
             return optional( {
                 name: add_raw_types( type.name ),
@@ -1042,7 +1126,7 @@ function add_raw_types( type )
         case SyntaxKind.TupleType:
             return {
                 type: 'tuple',
-                types: type.elementTypes.map( add_raw_types ).map( elevate )
+                types: type.elementTypes.map( add_raw_types ).map( collapse )
             };
 
     }
@@ -1063,7 +1147,11 @@ function add_raw_types( type )
     //     }
     // }
 
-    t.types = fixKeyword( t.types );
+    if ( t.types )
+        t.types = fixKeyword( t.types );
+
+    if ( type.name )
+        t.name = get_raw_type_name( type );
 
     if ( type.kind === SyntaxKind.TypeParameter && type.constraint )
     {
@@ -1081,15 +1169,13 @@ function add_raw_types( type )
     tmpl = check_for_raw_template( type );
 
     if ( tmpl )
-    {
         t.typeParameters = tmpl;
-        // t.template = fix_raw_templates( tmpl );
-        // t.template = { _: t.template, sourceLineART02: 'add_raw_types-02' };
-    }
+
+    collapse( t );
 
     // if ( t.type ) t.type = elevate( t.type );
 
-    return t;
+    return optional( t, type.questionToken );
 }
 
 /**
@@ -1100,7 +1186,7 @@ function fix_raw_templates( tmpl )
 {
     return tmpl;
     if ( Array.isArray( tmpl ) )
-        return tmpl.map( elevate );
+        return tmpl.map( collapse );
     else if ( isObject( tmpl ) )
     {
         const tk = Object.keys( tmpl );
@@ -1155,17 +1241,15 @@ function get_raw_type_name( type )
 
     if ( typeName === 'IndexedAccessType' )
     {
-        r.indexType = get_raw_type_name( type.indexType );
-        r.typeName = get_raw_type_name( type.objectType );
+        r.indexType = collapse( get_raw_type_name( type.indexType ) );
+        r.typeName = collapse( get_raw_type_name( type.objectType ) );
         return r;
     }
 
     const tmpl = check_for_raw_template( type );
+
     if ( tmpl )
-    {
-        r.template = fix_raw_templates( tmpl );
-        r.template = { _: r.template, sourceLineGRTN: 'fix_raw_templates' };
-    }
+        r.typeParameters = collapse( tmpl ); // fix_raw_templates( tmpl );
 
     if ( typeName === 'ArrayType' && type.elementType )
     {
@@ -1173,8 +1257,7 @@ function get_raw_type_name( type )
         r.isArray = true;
     }
 
-    return r;
-
+    return collapse( r );
 }
 
 function type_raw_parameters( tp )
@@ -1182,5 +1265,48 @@ function type_raw_parameters( tp )
     if ( !tp || !tp.length ) return null;
 
     return tp.map( add_raw_types );
+}
+
+function collapse( t )
+{
+    if ( !t ) return t;
+
+    if ( Array.isArray( t ) ) return t.map( collapse );
+
+    _collapse( t );
+    _collapse( t, 'name' );
+    _collapse( t, 'typeName', 'name' );
+    _collapse( t, 'name', 'typeName' );
+    _collapse( t, 'type', 'typeName' );
+
+    if ( type( t.typeName ) === 'object' )
+        collapse( t.typeName );
+
+    return t;
+}
+
+function _collapse( t, field = 'typeName', sub = field )
+{
+    if ( !t ) return t;
+
+    const
+        has = ( o, n ) => type( o ) === 'object' ? o.hasOwnProperty( n ) : false,
+        // keys = o => Object.keys( o ),
+        // __ = o => type( o ) === 'object' ? `[ ${keys( o ).join( ', ' )} ]` : '-',
+        tn = type( t[ field ] ) === 'object' ? t[ field ] : null;
+
+    if ( tn && has( tn, 'types' ) && !tn.types )
+        delete tn.types;
+
+    // if ( type( t.typeName ) === 'object' && type( t.typeName.typeName ) === 'string' )
+    //     console.log( `maybe: ${__( t.typeName )}, do? ${type( t.typeName ) === 'object' && keyCount( t.typeName ) === 1 && keys( t.typeName )[ 0 ] === 'typeName'}, t: ${__( t )}` );
+
+    if ( tn && keyCount( tn ) === 1 )
+    {
+        if ( has( tn, sub ) && type( tn[ sub ] ) === 'string' )
+            t[ field ] = tn[ sub ];
+    }
+
+    return t;
 }
 

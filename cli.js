@@ -4,8 +4,6 @@
  * @since 1.0.0
  * @date 19-Jan-2018
  *********************************************************************************************************************/
-
-
 "use strict";
 
 import program from 'commander';
@@ -14,11 +12,14 @@ import Parser from "./src/utils/parser";
 import globals from './src/utils/globals';
 import { create_symbols } from "./src/symbols/simple-table";
 
+import { inspect } from 'util';
+
 const
     pack           = require( './package.json' ),
     version        = pack.version,
     name           = pack.name,
     $              = o => JSON.stringify( o, null, 4 ),
+    $$ = ( o, d ) => inspect( o, { depth: typeof d === 'number' ? d : 8, showHidden: false } ),
     defaultOptions = {
         loc: true,
         range: true,
@@ -38,6 +39,7 @@ program
     .description( 'Parse JavaScript files and extract JsDoc tags' )
     .usage( name + ' [files...]' )
     .option( '-s, --script', 'Process file(s) as script files', false )
+    .option( '-l, --library', 'Process file(s) for library definitions', false )
     .option( '[files...]' )
     .parse( process.argv );
 
@@ -53,6 +55,8 @@ globals.program = program;
     await parser.parse();
 
     globals.file = parser.ambient;
-    // create_symbols( parser.ambientTypes );
-    console.log( $( parser.ambientTypes ) );
+    if ( !program.library )
+        create_symbols( parser.ambientTypes );
+    else
+        console.log( $( parser.ambientTypes ) );
 } )();
