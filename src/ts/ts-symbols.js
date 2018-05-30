@@ -312,9 +312,10 @@ export function sym_walk( node, table = {} )
     // MAYBE DUPE
     if ( node.locals )
     {
-        table.locals = [ ...node.locals.values() ].map( show_sym ).map( sym => {
-
-        } );
+        table.locals = [ ...node.locals.values() ].map( show_sym );
+        // .map( sym => {
+        //
+        // } );
         table.locals.forEach( s => topLevelNames.push( s.name ) );
     }
 

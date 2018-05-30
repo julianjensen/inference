@@ -4,7 +4,7 @@
     "description": "Type inference for JavaScript.",
     "main": "index.js",
     "scripts": {
-        "syms": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts >sym.json",
+        "syms": "node _cli.js -l data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts >sym.json",
         "show": "node _cli.js data/lib.es6.d.ts data/node.d.ts data/dom.es6.generated.d.ts data/esnext.promise.d.ts data/inspector.d.ts data/lib.es2017.intl.d.ts data/lib.es2017.object.d.ts data/lib.es2017.sharedmemory.d.ts data/lib.es2017.string.d.ts data/lib.es2017.typedarrays.d.ts data/lib.esnext.asynciterable.d.ts data/webworker.generated.d.ts",
         "symbols": "npm-run-all es6 node dom promise inspector es2017",
         "es6": "node _cli.js -l data/lib.es6.d.ts >resources/es6.json",
@@ -17,8 +17,8 @@
         "symtest": "node --trace-warnings _cli.js data/lib.es2017.typedarrays.d.ts >sym.txt",
         "lint": "eslint index.js lib/**/*.js src/**/*.js",
         "check": "npm run lint -s && dependency-check package.json --entry index.js",
-        "test": "jest",
-        "test2": "node -r @std/esm node_modules/.bin/jest --no-cache",
+        "test": "jest --watch",
+        "test2": "node -r esm node_modules/.bin/jest --no-cache",
         "test1": "rm -rf node_modules/.cache coverage/ && nyc --reporter=lcov --reporter=text --produce-source-map --require=@std/esm mocha",
         "coveralls": "npm test && nyc report --reporter=text-lcov | coveralls",
         "postcoveralls": "rimraf ./coverage",
@@ -93,7 +93,7 @@
     },
     "jest": {
         "testMatch": [
-            "<rootDir>/**/__tests__/*test.js"
+            "<rootDir>/__tests__/**/*test.js"
         ],
         "transform": {
             "^.+\\.js$": "./node_modules/babel-jest"
