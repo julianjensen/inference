@@ -7,17 +7,23 @@
 /* eslint-env jest */
 "use strict";
 
-import { Identifier, Primitive, ScopeManager, type_def, TypeReference, Undef } from "../../src/tdd/type-system-basic-test";
+import {
+    Identifier,
+    Primitive,
+    type_def,
+    create_type,
+    get_type,
+    TypeReference,
+    Undef,
+    CallableType,
+    Signature,
+    Type,
+    Interface
+} from "../../src/tdd/type-system-basics";
+
+import { ScopeManager } from "../../src/tdd/scopes";
 
 const
-    {
-        create_type,
-        get_type,
-        Interface,
-        Signature,
-        Type
-    } = require( '../../src/tdd/type-system-basic-test' ),
-
     _object = expect.any( Object ),
     _array = expect.any( Array ),
     objectConstructor = {
@@ -1095,7 +1101,9 @@ const
     },
     construct = objectConstructor.members[ 0 ].decls[ 0 ],
     callable = objectConstructor.members[ 1 ].decls,
-    prop = objectConstructor.members[ 2 ].decls[ 0 ];
+    prop = objectConstructor.members[ 2 ].decls[ 0 ],
+    method = objectConstructor.members[ 3 ].decls[ 0 ],
+    values = objectConstructor.members.find( x => x.name === 'values' );
 
 let objConstr, constFunc;
 
@@ -1113,13 +1121,13 @@ describe( "Type system", function() {
      *****************************************************************************/
     describe( "Interface creation", () => {
 
-        test( "should create basic interface", () => {
+        it( "should create basic interface", () => {
             expect( objConstr ).toEqual( _object );
             expect( objConstr ).toBeInstanceOf( Interface );
             expect( objConstr ).toBeInstanceOf( Type );
         } );
 
-        test( "should respond to queries properly", () => {
+        it( "should respond to queries properly", () => {
 
             expect( objConstr.isType() ).toEqual( true );
             expect( objConstr.isType( Interface ) ).toEqual( true );
@@ -1137,7 +1145,7 @@ describe( "Type system", function() {
      *****************************************************************************/
     describe( "Type creation", () => {
 
-        test( 'should create types on the fly', () => {
+        it( 'should create types on the fly', () => {
 
             const
                 t = type_def( {
@@ -1151,7 +1159,7 @@ describe( "Type system", function() {
             expect( t ).toHaveProperty( 'name', 'any' );
         } );
 
-        test( 'should create a type reference', () => {
+        it( 'should create a type reference', () => {
 
             const
                 t = type_def( {
@@ -1180,19 +1188,20 @@ describe( "Type system", function() {
      *****************************************************************************/
     describe( "Constructor functions", () =>
 
-        test( "should add constructor function", () => {
+        it( "should add constructor function", () => {
             constFunc = objConstr.add_member( 'constructor', construct );
 
-            expect( objConstr.numMembers ).toEqual( 1 );
+            expect( objConstr.numMembers ).toEqual( 0 );
+            expect( objConstr.numConstructors ).toEqual( 1 );
             expect( constFunc ).toBeInstanceOf( Signature );
             expect( constFunc.parent ).toBeInstanceOf( Interface );
             expect( objConstr.numSignatures ).toEqual( 1 );
             expect( objConstr.numConstructors ).toEqual( 1 );
             expect( objConstr.numCallables ).toEqual( 0 );
-            expect( objConstr.constructors[ 0 ].parameters ).toEqual( _array );
-            expect( objConstr.constructors[ 0 ].parameters.length ).toEqual( 1 );
+            expect( objConstr.constructors.get( 0 ).parameters ).toEqual( _array );
+            expect( objConstr.constructors.get( 0 ).parameters.length ).toEqual( 1 );
 
-            const sig = objConstr.signatures[ 0 ];
+            const sig = objConstr.constructors.get( 0 );
 
             const p = sig.parameters[ 0 ];
 
@@ -1209,27 +1218,29 @@ describe( "Type system", function() {
      *****************************************************************************/
     describe( "Callable objects", () =>
 
-        test( "should add callable overloaded functions", () => {
-            let calls;
+        it( "should add callable overloaded functions", () => {
 
             objConstr.add_member( 'callable', callable[ 0 ] );
             objConstr.add_member( 'callable', callable[ 1 ] );
 
-            expect( objConstr.numMembers ).toEqual( 2 );
+            expect( objConstr.numMembers ).toEqual( 0 );
 
-            calls = objConstr.callables;
+            expect( objConstr.numSignatures ).toEqual( 1 );
+            expect( objConstr.signatures[ 0 ] ).toBeInstanceOf( CallableType );
+            expect( objConstr.signatures[ 0 ].signatures[ 0 ] ).toBeInstanceOf( Signature );
 
-            expect( objConstr.numSignatures ).toEqual( 2 );
-            expect( objConstr.signatures[ 0 ] ).toBeInstanceOf( Signature );
-            expect( objConstr.signatures[ 1 ] ).toBeInstanceOf( Signature );
-            expect( calls[ 0 ].parent ).toBeInstanceOf( Interface );
-            expect( calls[ 0 ].parameters ).toEqual( _array );
-            expect( calls[ 0 ].parameters.length ).toEqual( 0 );
+            const
+                call0 = objConstr.callables.get( 0 ),
+                call1 = objConstr.callables.get( 1 );
 
-            expect( calls[ 1 ].parameters ).toEqual( _array );
-            expect( calls[ 1 ].parameters.length ).toEqual( 1 );
+            expect( call0.parent ).toBeInstanceOf( Interface );
+            expect( call0.parameters ).toEqual( _array );
+            expect( call0.parameters.length ).toEqual( 0 );
 
-            const p = calls[ 1 ].parameters[ 0 ];
+            expect( call1.parameters ).toEqual( _array );
+            expect( call1.parameters.length ).toEqual( 1 );
+
+            const p = call1.parameters[ 0 ];
 
             expect( p ).toBeInstanceOf( Identifier );
             expect( p.type.invariant( get_type( 'any' ) ) ).toEqual( true );
@@ -1241,9 +1252,9 @@ describe( "Type system", function() {
     /*****************************************************************************
      * OBJECT PROPERTY
      *****************************************************************************/
-    describe.only( "Object properties", () =>
+    describe( "Object properties", () =>
 
-        test( "should add object properties", () => {
+        it( "should add object properties", () => {
 
             objConstr.add_member( 'property', prop, 'prototype' );
 
@@ -1251,12 +1262,59 @@ describe( "Type system", function() {
             expect( objConstr.numMembers ).toEqual( 1 );
             expect( objConstr.numSignatures ).toEqual( 0 );
 
-            // const p = objConstr.get( 'prototype' );
-            //
-            // expect( p ).toBeInstanceOf( Identifier );
-            // expect( p.parent ).toBeInstanceOf( Interface );
-            // expect( p.type ).toBeInstanceOf( TypeReference );
-            // expect( p.type.ref ).toEqual( 'Object' );
+            const p = objConstr.get( 'prototype' );
+
+            expect( p ).toBeInstanceOf( Identifier );
+            expect( p.parent ).toBeInstanceOf( Interface );
+            expect( p.type ).toBeInstanceOf( TypeReference );
+            expect( p.type.ref ).toBeInstanceOf( Undef );
 
         } ) );
+
+    /*****************************************************************************
+     * OBJECT METHOD
+     *****************************************************************************/
+    describe( "Object method", () => {
+
+        it( "should add callable overloaded methods", () => {
+            let calls;
+
+            objConstr.add_member( 'method', method, 'getPrototypeOf' );
+
+            expect( objConstr.numMembers ).toEqual( 1 );
+
+            calls = objConstr.methods;
+
+            expect( objConstr.numMethods ).toEqual( 1 );
+            expect( objConstr.methods[ 0 ] ).toBeInstanceOf( CallableType );
+            expect( calls[ 0 ].parent ).toBeInstanceOf( Interface );
+            expect( calls[ 0 ].signatures[ 0 ].parameters ).toEqual( _array );
+            expect( calls[ 0 ].signatures[ 0 ].parameters.length ).toEqual( 1 );
+
+            const p = calls[ 0 ].signatures[ 0 ].parameters[ 0 ];
+
+            expect( p ).toBeInstanceOf( Identifier );
+            expect( p.type.invariant( get_type( 'any' ) ) ).toEqual( true );
+            expect( p.name ).toEqual( 'o' );
+            expect( p.optional ).toEqual( false );
+
+        } );
+
+        it( 'should add some interesting methods', () => {
+            let calls;
+
+            objConstr.add_member( 'method', values.decls[ 1 ], 'values' );
+
+            expect( objConstr.numMembers ).toEqual( 1 );
+
+            calls = objConstr.methods;
+
+            expect( objConstr.numMethods ).toEqual( 1 );
+            expect( objConstr.methods[ 0 ] ).toBeInstanceOf( CallableType );
+            expect( calls[ 0 ].parent ).toBeInstanceOf( Interface );
+            expect( calls[ 0 ].signatures[ 0 ].parameters ).toEqual( _array );
+            expect( calls[ 0 ].signatures[ 0 ].parameters.length ).toEqual( 1 );
+
+        } );
+    } );
 } );
