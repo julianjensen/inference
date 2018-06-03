@@ -24,6 +24,13 @@ export class CallableType extends Type
         this.isMethod = false;
     }
 
+    toString()
+    {
+        const prefix = this.isConstructor ? 'new' : this.isCallable ? '' : this.name;
+
+        return this.signatures.map( t => `${prefix}${t}` ).join( ';\n' );
+    }
+
     /**
      * @param {Signature} sig
      */
@@ -71,6 +78,11 @@ export class Signature extends Type
         this.type = null;
         this.pnames = {};
         this.parent = null;
+    }
+
+    toString()
+    {
+        return ( this.parameters.length ? `( ${this.parameters.map( t => `${t}` ).join( ', ' )} )` : `()` ) + ':' + `${this.type}`;
     }
 
     /**

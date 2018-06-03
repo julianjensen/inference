@@ -25,6 +25,11 @@ export class Identifier
         this.parent = null;
         this.inner = this.outer = null;
     }
+
+    toString()
+    {
+        return `${this.name}:${this.type}`;
+    }
 }
 
 register( Identifier );

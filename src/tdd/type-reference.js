@@ -45,6 +45,13 @@ export class TypeReference extends Type
     {
         this.typeArguments = typeArgs.slice();
     }
+
+    toString()
+    {
+        const ta = this.typeArguments.length ? `<${this.typeArguments.map( t => t.name || t ).join( ', ' )}>` : '';
+
+        return `${this.ref}${ta}`;
+    }
 }
 
 register( TypeReference );

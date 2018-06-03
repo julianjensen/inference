@@ -9,6 +9,6 @@ import { Type } from "./type-base";
 import { register } from "./type-utils";
 
 /** */
-export class Primitive extends Type {}
+export class Primitive extends Type { toString() { return this.name; } }
 
 register( Primitive );

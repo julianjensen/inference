@@ -23,6 +23,11 @@ export class Undef extends Type
         this.refs = [];
     }
 
+    toString()
+    {
+        return 'Undefined';
+    }
+
     /**
      * @param {Entry} type
      */

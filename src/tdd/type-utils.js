@@ -2,21 +2,11 @@
  * DESCRIPTION
  * @author julian.jensen
  * @since 0.0.1
- *
- * ```
- *  const
- *      namedFunc = name => ({[name]: function() {}})[ name ],
- *      namedInstance = name => new ( namedFunc( name ) );
- * ```
- * or, together
- * ```
- * const namedInstance = name => new ( ({[name]: function() {}})[ name ] );
- * ```
  *******************************************************************************/
 "use strict";
 
 import { ScopeManager } from "./scopes";
-import { type } from "typeofs";
+import { type }         from "typeofs";
 
 export const
     string = o => type( o ) === 'string',
@@ -33,10 +23,14 @@ let types = {
         TypeReference: null,
         Interface: null,
         Undef: null,
-        TypeLiteral: null
+        TypeLiteral: null,
+        Union: null,
+        Intersection: null,
+        Tuple: null
     };
 
 
+/** */
 function def()
 {
     if ( !types.Primitive ) types  = definition( types );
@@ -75,11 +69,14 @@ export function definition( className )
  */
 export function type_def( obj, scope )
 {
+    const make_list = ( name, ...typelist ) => new types[ name ]( anon( name.toLowerCase() ), scope ).add_types( ...typelist );
+
     def();
 
     if ( string( obj ) )
         obj = { type: obj };
 
+    // console.log( `type_def has scope? ${!!scope}, type: ${obj.type}` );
     if ( string( obj.type ) )
     {
         if ( obj.type === 'reference' )
@@ -87,7 +84,7 @@ export function type_def( obj, scope )
             const
                 refName = object( obj.typeName ) ? obj.typeName.name : obj.typeName,
                 t = get_type( refName, false ),
-                ref = new types.TypeReference( 'ref$' + refName, t );
+                ref = new types.TypeReference( refName, t );
 
             if ( obj.typeArguments )
                 ref.add_type_args( ...obj.typeArguments.map( ta => string( ta ) || ta.typeName ) );
@@ -102,6 +99,13 @@ export function type_def( obj, scope )
 
             return lit;
         }
+        else if ( obj.type === 'union' )
+            return make_list( 'Union', ...obj.types );
+        else if ( obj.type === 'intersection' )
+            return make_list( 'Intersection', ...obj.types );
+        else if ( obj.type === 'tuple' )
+            return make_list( 'Tuple', ...obj.types );
+
         else if ( primitives.has( obj.type ) )
             return primitives.get( obj.type );
         else if ( ScopeManager.current.has( obj.type ) )
@@ -111,7 +115,7 @@ export function type_def( obj, scope )
     }
 
     if ( !string( obj.typeName ) )
-        throw new SyntaxError( `Unknown type "${JSON.stringify( obj.typeName, null, 4 )}"` );
+        throw new SyntaxError( `Unknown type "${JSON.stringify( obj, null, 4 )}", obj.type = "${obj.type}"` );
 
     return get_type( obj.typeName );
 
@@ -129,6 +133,8 @@ export function create_type( typeName, typeIdentifier, parent = null )
     let t;
 
     def();
+
+    // console.log( `add_member type "${typeName}", name: "${typeIdentifier}"` );
 
     switch ( typeName )
     {
@@ -197,4 +203,3 @@ export function anon( prefix )
 {
     return prefix + '$' + ( Math.random() * 1e7 | 0 );
 }
-

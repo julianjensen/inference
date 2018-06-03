@@ -288,6 +288,14 @@ export class Scope
         for ( const v of this.symbols.values() )
             if ( v instanceof klass ) yield v;
     }
+
+    /**
+     * @param fn
+     */
+    map( fn )
+    {
+        [ ...this.forEachSymbol() ].map( fn );
+    }
 }
 
 ScopeManager.init();
