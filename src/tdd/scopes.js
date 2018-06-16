@@ -14,6 +14,8 @@ const
     danger = new Set( keys( Object ).concat( keys( {} ) ).concat( keys( function() {} ) ).concat( keys( Function ) ) ),
     escapeId = s => danger.has( s ) ? `__${s}` : s;
 
+export const primitives = new Map();
+
 /** @typedef {Identifier|Type} Entry */
 
 /** */
@@ -24,6 +26,11 @@ export class ScopeManager
     {
         ScopeManager.global = ScopeManager.current = new Scope( null );
         ScopeManager.scopes = new Map();
+    }
+
+    static __add_primitive( typeIdentifier, prim )
+    {
+        primitives.set( typeIdentifier, prim );
     }
 
     /**
@@ -294,7 +301,7 @@ export class Scope
      */
     map( fn )
     {
-        [ ...this.forEachSymbol() ].map( fn );
+        return [ ...this.forEachSymbol() ].map( fn );
     }
 }
 

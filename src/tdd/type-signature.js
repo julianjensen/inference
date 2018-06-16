@@ -6,13 +6,15 @@
 "use strict";
 
 import { Type } from "./type-base";
-import { ScopeManager } from "./scopes";
-import { anon, number, register } from "./type-utils";
+import { register } from "./cross-ref";
+
+const
+    number = n => typeof n === 'number' && n === n;
 
 /** */
 export class CallableType extends Type
 {
-    constructor( name, scope = ScopeManager.global )
+    constructor( name, scope )
     {
         super( name, scope );
 
@@ -61,8 +63,6 @@ export class CallableType extends Type
     }
 }
 
-register( CallableType );
-
 /** */
 export class Signature extends Type
 {
@@ -70,11 +70,12 @@ export class Signature extends Type
      * @param {string} [name]
      * @param {Scope} [scope]
      */
-    constructor( name = anon( 'signature' ), scope = ScopeManager.global )
+    constructor( name, scope )
     {
         super( name, scope );
         /** @type {Array<Identifier>} */
         this.parameters = [];
+        this.typeParameters = [];
         this.type = null;
         this.pnames = {};
         this.parent = null;
@@ -82,7 +83,20 @@ export class Signature extends Type
 
     toString()
     {
-        return ( this.parameters.length ? `( ${this.parameters.map( t => `${t}` ).join( ', ' )} )` : `()` ) + ':' + `${this.type}`;
+        const tp = this.typeParameters.length ? `<${this.typeParameters.map( t => `${t}` ).join( ', ' )}>` : '';
+
+        return tp + ( this.parameters.length ? `( ${this.parameters.map( t => `${t}` ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
+    }
+
+    /**
+     * @param {...(string|Type)} typeArgs
+     * @return {Signature}
+     */
+    add_type_parameters( ...typeArgs )
+    {
+        this.typeParameters = this.typeParameters.concat( typeArgs );
+
+        return this;
     }
 
     /**
@@ -123,4 +137,4 @@ export class Signature extends Type
     }
 }
 
-register( Signature );
+register( CallableType, Signature );

@@ -5,7 +5,7 @@
  *******************************************************************************/
 "use strict";
 
-import { register } from "./type-utils";
+import { register } from "./cross-ref";
 
 /** */
 export class Identifier

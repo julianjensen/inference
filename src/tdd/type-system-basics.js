@@ -6,28 +6,74 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { create_type, get_type, type_def } from "./type-utils";
-
-[ 'any', 'never', 'undefined', 'void', 'number', 'string', 'boolean', 'symbol', 'null' ].forEach( tid => create_type( 'primitive', tid ) );
-
 import { Identifier } from "./identifier";
 import { Type } from "./type-base";
-import { Interface } from "./type-interface";
 import { Primitive } from "./type-primitive";
+import { ObjectType, Interface, TypeLiteral } from "./type-interface";
+import { TypeListBaseType, Union, Intersection, Tuple } from "./type-list-base";
 import { TypeReference } from "./type-reference";
 import { CallableType, Signature } from "./type-signature";
 import { Undef } from "./type-undef";
+import { type_def, get_type, create_type, add_member, auto_member, type_injection } from "./type-utils";
+
+[ ...Object.values( {
+    Identifier,
+        Type,
+        Primitive,
+        ObjectType,
+        Interface,
+        TypeLiteral,
+        TypeListBaseType,
+        Union,
+        Intersection,
+        Tuple,
+        TypeReference,
+        CallableType,
+        Signature,
+        Undef,
+        type_def,
+        get_type,
+        create_type,
+        add_member,
+        auto_member
+} ) ].forEach( t => typeof t.init === 'function' && t.init() );
+
+type_injection( {
+                    Identifier,
+                    Type,
+                    Primitive,
+                    ObjectType,
+                    Interface,
+                    TypeLiteral,
+                    TypeListBaseType,
+                    Union,
+                    Intersection,
+                    Tuple,
+                    TypeReference,
+                    CallableType,
+                    Signature,
+                    Undef
+                } );
 
 export {
     Identifier,
     Type,
-    Interface,
     Primitive,
+    ObjectType,
+    Interface,
+    TypeLiteral,
+    TypeListBaseType,
+    Union,
+    Intersection,
+    Tuple,
     TypeReference,
-    Signature,
     CallableType,
+    Signature,
     Undef,
-    create_type,
+    type_def,
     get_type,
-    type_def
+    create_type,
+    add_member,
+    auto_member
 };
+

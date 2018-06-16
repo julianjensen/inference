@@ -5,30 +5,39 @@
  *******************************************************************************/
 "use strict";
 
-import { ScopeManager } from "./scopes";
-import { type }         from "typeofs";
+import { ScopeManager, primitives } from "./scopes";
+import { type } from "typeofs";
+import _ from 'lodash';
+import { definition } from "./cross-ref";
+
+export { ScopeManager };
 
 export const
     string = o => type( o ) === 'string',
     object = o => type( o ) === 'object',
-    number = o => type( o ) === 'number',
-    primitives = new Map();
+    number = o => type( o ) === 'number';
 
-const
-    classMap = new Map();
+
 
 let types = {
         Primitive: null,
         Signature: null,
+        CallableType: null,
         TypeReference: null,
         Interface: null,
         Undef: null,
         TypeLiteral: null,
         Union: null,
         Intersection: null,
-        Tuple: null
+        Tuple: null,
+        ObjectType: null,
+        Identifier: null
     };
 
+export function type_injection( obj )
+{
+    Object.keys( types ).forEach( k => types[ k ] = obj[ k ] );
+}
 
 /** */
 function def()
@@ -37,29 +46,11 @@ function def()
 }
 
 /**
- * @param {object} klass
+ * @return {ScopeManager}
  */
-export function register( klass )
+export function get_scope_manager()
 {
-    if ( classMap.has( klass.name ) ) return;
-
-    classMap.set( klass.name, klass );
-    classMap.set( klass, klass );
-}
-
-/**
- * @param {string|object} className
- * @return {any}
- */
-export function definition( className )
-{
-    let r = {};
-
-    if ( string( className ) ) return classMap.get( className );
-
-    Object.keys( className ).forEach( key => r[ key ] = classMap.get( key ) );
-
-    return r;
+    return ScopeManager;
 }
 
 /**
@@ -71,12 +62,23 @@ export function type_def( obj, scope )
 {
     const make_list = ( name, ...typelist ) => new types[ name ]( anon( name.toLowerCase() ), scope ).add_types( ...typelist );
 
-    def();
+    console.log( `typedef( obj -> ${JSON.stringify( obj, null, 4 )}, scope )` );
+
+    // def();
 
     if ( string( obj ) )
         obj = { type: obj };
 
-    // console.log( `type_def has scope? ${!!scope}, type: ${obj.type}` );
+    if ( obj.isArray )
+    {
+        if ( type( obj.typeName ) === 'object' )
+            obj = obj.typeName;
+
+        return new types.TypeReference( 'Array', get_type( 'Array', false ), scope )
+                .add_type_args( type_def( _.omit( obj, 'isArray' ), scope ) );
+
+    }
+
     if ( string( obj.type ) )
     {
         if ( obj.type === 'reference' )
@@ -95,7 +97,7 @@ export function type_def( obj, scope )
         {
             const lit = new types.TypeLiteral( anon( 'lit' ), scope );
 
-            obj.members.forEach( m => lit.add_member( m.type, m ) );
+            obj.members.forEach( m => add_member( lit, type_def( m, scope ), m ) );
 
             return lit;
         }
@@ -115,7 +117,7 @@ export function type_def( obj, scope )
     }
 
     if ( !string( obj.typeName ) )
-        throw new SyntaxError( `Unknown type "${JSON.stringify( obj, null, 4 )}", obj.type = "${obj.type}"` );
+        throw new SyntaxError( `Unknown type "${JSON.stringify( obj, null, 4 )}", obj = "${obj}"` );
 
     return get_type( obj.typeName );
 
@@ -125,36 +127,32 @@ export function type_def( obj, scope )
 /**
  * @param {string} typeName
  * @param {string} typeIdentifier
- * @param {Type} [parent]
- * @return {Type}
+ * @param {object} [def]
+ * @return {Type|Interface|TypeLiteral|Signature}
  */
-export function create_type( typeName, typeIdentifier, parent = null )
+export function create_type( typeName, typeIdentifier, def = null )
 {
     let t;
 
-    def();
-
-    // console.log( `add_member type "${typeName}", name: "${typeIdentifier}"` );
+    // def();
 
     switch ( typeName )
     {
         case 'primitive':
-            if ( primitives.has( typeName ) ) return primitives.get( typeName );
-
-            t = new types.Primitive( typeIdentifier, ScopeManager.global );
-
-            primitives.set( typeIdentifier, t );
-
-            return t;
+            return ScopeManager.global.get( typeName );
 
         case 'interface':
             t = new types.Interface( typeIdentifier );
             ScopeManager.current.add( t, typeIdentifier );
+            if ( def && def.typeParameters )
+                t.add_type_parameters( ...def.typeParameters.map( t => t.name ) );
             return t;
 
         case 'signature':
             t = new types.Signature( typeIdentifier );
             ScopeManager.current.add( t, typeIdentifier );
+            if ( def && def.typeParameters )
+                t.add_type_parameters( ...def.typeParameters.map( t => t.name ) );
             return t;
 
         case 'typeliteral':
@@ -171,7 +169,7 @@ export function create_type( typeName, typeIdentifier, parent = null )
  */
 export function get_type( name, required = true )
 {
-    def();
+    // def();
 
     if ( primitives.has( name ) )
         return primitives.get( name );
@@ -186,6 +184,121 @@ export function get_type( name, required = true )
 
     return t;
 }
+
+/**
+ * @param {Interface|Type} intr
+ * @param {object} def
+ */
+export function auto_member( intr, def )
+{
+    const
+        type = def.name === 'New' && def.flags === 'Signature' ? 'constructor' :
+               def.name === 'Call' && def.flags === 'Signature' ? 'callable' :
+               def.flags === 'Method' ? 'method' :
+               def.flags === 'Property' ? 'property' :
+               def.flags === 'TypeParameter' ? 'typeparam' : 'unknown',
+        name = def.name;
+
+    def.decls.forEach( decl => add_member( intr, type, decl, name ) );
+}
+
+/**
+ * @param {Interface|Type} intr
+ * @param {string} type
+ * @param {object} def
+ * @param {string} [name]
+ */
+export function add_member( intr, type, def, name )
+{
+    let func, sym, call;
+
+    console.log( `add_member( intr -> ${intr}, type -> ${type}, def -> ${JSON.stringify( def, null, 4 )}, name -> ${name} )` );
+
+
+    /**
+     * @param {CallableType} fn
+     * @return {Signature}
+     */
+    function finish_func( fn )
+    {
+        if ( def.parameters )
+        {
+            if ( !fn.inner )
+                fn.create_local_scope();
+
+            def.parameters.forEach( p => {
+                const opts = {
+                          optional: !!p.optional,
+                          rest: !!p.rest
+                      },
+                      sym = new types.Identifier( p.name, type_def( p, fn.inner ), opts );
+
+                func.add_parameter( p.name, sym );
+            } );
+        }
+
+        if ( def.typeParameters )
+            func.add_type_parameters( ...def.typeParameters.map( td => td.name ) );
+
+        if ( def.type )
+            func.add_type( type_def( def.type ) );
+
+        fn.add_signature( func );
+        fn.parent = func.parent = intr;
+        return func;
+    }
+
+    switch ( type )
+    {
+        case 'constructor':
+            call = intr.constructors || ( intr.constructors = new types.CallableType( null, intr.members ) );
+
+            /** @type {Signature|Type} */
+            func = create_type( 'signature', anon( 'constructor$' + intr.name ) );
+            call.isConstructor = true;
+            return finish_func( call );
+
+        case 'method':
+            if ( !intr.members.has( name ) )
+                call = intr.members.add( new types.CallableType( name, intr.members ) );
+            else
+                call = intr.members.get( name );
+
+            func = create_type( 'signature', name );
+            call.isMethod = true;
+            return finish_func( call );
+
+        case 'callable':
+            call = intr.callables || ( intr.callables = new types.CallableType( null, intr.members ) );
+
+            func = create_type( 'signature', anon( 'call$' + intr.name ) );
+            call.isCallable = true;
+            return finish_func( call );
+
+        case 'property':
+            sym = new types.Identifier( name, type_def( def.type || def ), { optional: !!def.optional } );
+            intr.members.add( sym );
+            sym.parent = intr;
+            break;
+
+        case 'index':
+            const
+                content = type_def( def.typeName ),
+                p = def.parameters[ 0 ],
+                key = new types.Identifier( p.name, type_def( p.type ), {} );
+
+            intr.add_index( key, content );
+            break;
+
+        case 'typeparam':
+            intr.add_type_parameters( def.name );
+            break;
+
+        default:
+            throw new Error( `Unknown member "${name}", type: "${type}", decl: ${JSON.stringify( def )}` );
+    }
+}
+
 
 /**
  * @return {Entry[]}

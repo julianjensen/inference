@@ -6,17 +6,16 @@
 "use strict";
 
 import { Type } from "./type-base";
-import { ScopeManager } from "./scopes";
-import { register } from "./type-utils";
+import { register } from "./cross-ref";
 
 /** */
 export class Undef extends Type
 {
     /**
      * @param {string} name
-     * @param {Scope} [scope]
+     * @param {?Scope} scope
      */
-    constructor( name, scope = ScopeManager.global )
+    constructor( name, scope )
     {
         super( name, scope );
 

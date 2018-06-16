@@ -6,8 +6,7 @@
 "use strict";
 
 import { Type } from "./type-base";
-import { ScopeManager } from "./scopes";
-import { definition, register } from "./type-utils";
+import { definition, register } from "./cross-ref";
 
 let Undef;
 
@@ -19,7 +18,7 @@ export class TypeReference extends Type
      * @param {Type} [target=null]
      * @param {Scope} [scope]
      */
-    constructor( name, target = null, scope = ScopeManager.global )
+    constructor( name, target = null, scope )
     {
         super( name, scope );
         if ( !Undef ) Undef = definition( 'Undef' );
@@ -36,21 +35,25 @@ export class TypeReference extends Type
 
         if ( type instanceof Undef )
             type.add_ref( this );
+
+        return this;
     }
 
     /**
-     * @param {string[]} typeArgs
+     * @param {...(string|Type)} typeArgs
      */
     add_type_args( ...typeArgs )
     {
         this.typeArguments = typeArgs.slice();
+
+        return this;
     }
 
     toString()
     {
         const ta = this.typeArguments.length ? `<${this.typeArguments.map( t => t.name || t ).join( ', ' )}>` : '';
 
-        return `${this.ref}${ta}`;
+        return `${this.name || this.ref}${ta}`;
     }
 }
 
