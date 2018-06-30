@@ -12,11 +12,15 @@ import { ScopeManager } from "./type-utils";
 /** */
 export class Primitive extends Type
 {
+    /**
+     * @return {string}
+     */
     toString()
     {
         return this.name;
     }
 
+    /** */
     static init()
     {
         [ 'any', 'never', 'undefined', 'void', 'number', 'string', 'boolean', 'symbol', 'null' ]

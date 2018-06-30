@@ -30138,7 +30138,123 @@ declare module "perf_hooks"
     }
 
     const performance: Performance;
-}// Type definitions for inspector
+}
+/////////////////////////////
+/// DOM ES6 APIs
+/////////////////////////////
+
+interface AudioTrackList {
+    [Symbol.iterator](): IterableIterator<AudioTrack>
+}
+
+interface ClientRectList {
+    [Symbol.iterator](): IterableIterator<ClientRect>
+}
+
+interface CSSRuleList {
+    [Symbol.iterator](): IterableIterator<CSSRule>
+}
+
+interface CSSStyleDeclaration {
+    [Symbol.iterator](): IterableIterator<string>
+}
+
+interface DataTransferItemList {
+    [Symbol.iterator](): IterableIterator<File>
+}
+
+interface DOMStringList {
+    [Symbol.iterator](): IterableIterator<string>
+}
+
+interface DOMTokenList {
+    [Symbol.iterator](): IterableIterator<string>
+}
+
+interface FileList {
+    [Symbol.iterator](): IterableIterator<File>
+}
+
+interface HTMLAllCollection {
+    [Symbol.iterator](): IterableIterator<Element>
+}
+
+interface HTMLCollection {
+    [Symbol.iterator](): IterableIterator<Element>
+}
+
+interface MediaList {
+    [Symbol.iterator](): IterableIterator<string>
+}
+
+interface MimeTypeArray {
+    [Symbol.iterator](): IterableIterator<Plugin>
+}
+
+interface MSRangeCollection {
+    [Symbol.iterator](): IterableIterator<Range>
+}
+
+interface NamedNodeMap {
+    [Symbol.iterator](): IterableIterator<Attr>
+}
+
+interface NodeList {
+    [Symbol.iterator](): IterableIterator<Node>
+}
+
+interface Plugin {
+    [Symbol.iterator](): IterableIterator<MimeType>
+}
+
+interface PluginArray {
+    [Symbol.iterator](): IterableIterator<Plugin>
+}
+
+interface SourceBufferList {
+    [Symbol.iterator](): IterableIterator<SourceBuffer>
+}
+
+interface Storage {
+    [Symbol.iterator](): IterableIterator<string>
+}
+
+interface StyleSheetList {
+    [Symbol.iterator](): IterableIterator<StyleSheet>
+}
+
+interface StyleSheetPageList {
+    [Symbol.iterator](): IterableIterator<CSSPageRule>
+}
+
+interface TextTrackCueList {
+    [Symbol.iterator](): IterableIterator<TextTrackCue>
+}
+
+interface TextTrackList {
+    [Symbol.iterator](): IterableIterator<TextTrack>
+}
+
+interface TouchList {
+    [Symbol.iterator](): IterableIterator<Touch>
+}
+
+interface VideoTrackList {
+    [Symbol.iterator](): IterableIterator<VideoTrack>
+}
+/**
+ * Represents the completion of an asynchronous operation
+ */
+interface Promise<T> {
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): Promise<T>
+}
+// Type definitions for inspector
 
 // These definitions are auto-generated.
 // Please see https://github.com/DefinitelyTyped/DefinitelyTyped/pull/19330
@@ -32757,6 +32873,36 @@ and limitations under the License.
 /// <reference no-default-lib="true"/>
 
 
+type DateTimeFormatPartTypes = "day" | "dayPeriod" | "era" | "hour" | "literal" | "minute" | "month" | "second" | "timeZoneName" | "weekday" | "year";
+
+interface DateTimeFormatPart {
+    type: DateTimeFormatPartTypes;
+    value: string;
+}
+
+interface DateTimeFormat {
+    formatToParts(date?: Date | number): DateTimeFormatPart[];
+}
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved. 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0  
+ 
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
+MERCHANTABLITY OR NON-INFRINGEMENT. 
+ 
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
 interface ObjectConstructor {
     /**
      * Returns an array of values of the enumerable properties of an object
@@ -32992,6 +33138,49 @@ and limitations under the License.
 /// <reference no-default-lib="true"/>
 
 
+/// <reference path="lib.es2015.symbol.d.ts" />
+/// <reference path="lib.es2015.iterable.d.ts" />
+
+interface SymbolConstructor {
+    /**
+     * A method that returns the default async iterator for an object. Called by the semantics of
+     * the for-await-of statement.
+     */
+    readonly asyncIterator: symbol;
+}
+
+interface AsyncIterator<T> {
+    next(value?: any): Promise<IteratorResult<T>>;
+    return?(value?: any): Promise<IteratorResult<T>>;
+    throw?(e?: any): Promise<IteratorResult<T>>;
+}
+
+interface AsyncIterable<T> {
+    [Symbol.asyncIterator](): AsyncIterator<T>;
+}
+
+interface AsyncIterableIterator<T> extends AsyncIterator<T> {
+    [Symbol.asyncIterator](): AsyncIterableIterator<T>;
+}/*! *****************************************************************************
+Copyright (c) Microsoft Corporation. All rights reserved. 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0  
+ 
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
+MERCHANTABLITY OR NON-INFRINGEMENT. 
+ 
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
+***************************************************************************** */
+
+
+
+/// <reference no-default-lib="true"/>
+
+
 interface Int8ArrayConstructor {
     new (): Int8Array;
 }
@@ -33026,110 +33215,6 @@ interface Float32ArrayConstructor {
 
 interface Float64ArrayConstructor {
     new (): Float64Array;
-}
-
-/////////////////////////////
-/// DOM ES6 APIs
-/////////////////////////////
-
-interface AudioTrackList {
-    [Symbol.iterator](): IterableIterator<AudioTrack>
-}
-
-interface ClientRectList {
-    [Symbol.iterator](): IterableIterator<ClientRect>
-}
-
-interface CSSRuleList {
-    [Symbol.iterator](): IterableIterator<CSSRule>
-}
-
-interface CSSStyleDeclaration {
-    [Symbol.iterator](): IterableIterator<string>
-}
-
-interface DataTransferItemList {
-    [Symbol.iterator](): IterableIterator<File>
-}
-
-interface DOMStringList {
-    [Symbol.iterator](): IterableIterator<string>
-}
-
-interface DOMTokenList {
-    [Symbol.iterator](): IterableIterator<string>
-}
-
-interface FileList {
-    [Symbol.iterator](): IterableIterator<File>
-}
-
-interface HTMLAllCollection {
-    [Symbol.iterator](): IterableIterator<Element>
-}
-
-interface HTMLCollection {
-    [Symbol.iterator](): IterableIterator<Element>
-}
-
-interface MediaList {
-    [Symbol.iterator](): IterableIterator<string>
-}
-
-interface MimeTypeArray {
-    [Symbol.iterator](): IterableIterator<Plugin>
-}
-
-interface MSRangeCollection {
-    [Symbol.iterator](): IterableIterator<Range>
-}
-
-interface NamedNodeMap {
-    [Symbol.iterator](): IterableIterator<Attr>
-}
-
-interface NodeList {
-    [Symbol.iterator](): IterableIterator<Node>
-}
-
-interface Plugin {
-    [Symbol.iterator](): IterableIterator<MimeType>
-}
-
-interface PluginArray {
-    [Symbol.iterator](): IterableIterator<Plugin>
-}
-
-interface SourceBufferList {
-    [Symbol.iterator](): IterableIterator<SourceBuffer>
-}
-
-interface Storage {
-    [Symbol.iterator](): IterableIterator<string>
-}
-
-interface StyleSheetList {
-    [Symbol.iterator](): IterableIterator<StyleSheet>
-}
-
-interface StyleSheetPageList {
-    [Symbol.iterator](): IterableIterator<CSSPageRule>
-}
-
-interface TextTrackCueList {
-    [Symbol.iterator](): IterableIterator<TextTrackCue>
-}
-
-interface TextTrackList {
-    [Symbol.iterator](): IterableIterator<TextTrack>
-}
-
-interface TouchList {
-    [Symbol.iterator](): IterableIterator<Touch>
-}
-
-interface VideoTrackList {
-    [Symbol.iterator](): IterableIterator<VideoTrack>
 }
 /////////////////////////////
 /// Worker APIs
@@ -34903,88 +34988,4 @@ type RequestType = "" | "audio" | "font" | "image" | "script" | "style" | "track
 type ResponseType = "basic" | "cors" | "default" | "error" | "opaque" | "opaqueredirect";
 type ServiceWorkerState = "installing" | "installed" | "activating" | "activated" | "redundant";
 type VisibilityState = "hidden" | "visible" | "prerender" | "unloaded";
-type XMLHttpRequestResponseType = "" | "arraybuffer" | "blob" | "document" | "json" | "text";/*! *****************************************************************************
-Copyright (c) Microsoft Corporation. All rights reserved. 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this file except in compliance with the License. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0  
- 
-THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
-MERCHANTABLITY OR NON-INFRINGEMENT. 
- 
-See the Apache Version 2.0 License for specific language governing permissions
-and limitations under the License.
-***************************************************************************** */
-
-
-
-/// <reference no-default-lib="true"/>
-
-
-/// <reference path="lib.es2015.symbol.d.ts" />
-/// <reference path="lib.es2015.iterable.d.ts" />
-
-interface SymbolConstructor {
-    /**
-     * A method that returns the default async iterator for an object. Called by the semantics of
-     * the for-await-of statement.
-     */
-    readonly asyncIterator: symbol;
-}
-
-interface AsyncIterator<T> {
-    next(value?: any): Promise<IteratorResult<T>>;
-    return?(value?: any): Promise<IteratorResult<T>>;
-    throw?(e?: any): Promise<IteratorResult<T>>;
-}
-
-interface AsyncIterable<T> {
-    [Symbol.asyncIterator](): AsyncIterator<T>;
-}
-
-interface AsyncIterableIterator<T> extends AsyncIterator<T> {
-    [Symbol.asyncIterator](): AsyncIterableIterator<T>;
-}/*! *****************************************************************************
-Copyright (c) Microsoft Corporation. All rights reserved. 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this file except in compliance with the License. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0  
- 
-THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE, 
-MERCHANTABLITY OR NON-INFRINGEMENT. 
- 
-See the Apache Version 2.0 License for specific language governing permissions
-and limitations under the License.
-***************************************************************************** */
-
-
-
-/// <reference no-default-lib="true"/>
-
-
-type DateTimeFormatPartTypes = "day" | "dayPeriod" | "era" | "hour" | "literal" | "minute" | "month" | "second" | "timeZoneName" | "weekday" | "year";
-
-interface DateTimeFormatPart {
-    type: DateTimeFormatPartTypes;
-    value: string;
-}
-
-interface DateTimeFormat {
-    formatToParts(date?: Date | number): DateTimeFormatPart[];
-}
-/**
- * Represents the completion of an asynchronous operation
- */
-interface Promise<T> {
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): Promise<T>
-}
+type XMLHttpRequestResponseType = "" | "arraybuffer" | "blob" | "document" | "json" | "text";

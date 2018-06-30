@@ -77,7 +77,7 @@ const
     },
     fatal = ( node, msg ) => top( node ).fatal( msg, node ),
     error = ( node, msg ) => top( node ).error( msg, node ),
-    warn  = ( node, msg ) => top( node ).warn( msg, node ),
+    warn  = ( node, msg ) => console.warn( msg ), // top( node ).warn( msg, node ),
     log   = ( node, msg ) => top( node ).log( msg, node );
 
 const

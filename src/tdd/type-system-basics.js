@@ -6,37 +6,47 @@
  *********************************************************************************************************************/
 "use strict";
 
+import { inspect } from 'util';
 import { Identifier } from "./identifier";
 import { Type } from "./type-base";
 import { Primitive } from "./type-primitive";
 import { ObjectType, Interface, TypeLiteral } from "./type-interface";
 import { TypeListBaseType, Union, Intersection, Tuple } from "./type-list-base";
-import { TypeReference } from "./type-reference";
+import { TypeReference, TypeParameter } from "./type-reference";
 import { CallableType, Signature } from "./type-signature";
 import { Undef } from "./type-undef";
 import { type_def, get_type, create_type, add_member, auto_member, type_injection } from "./type-utils";
 
-[ ...Object.values( {
-    Identifier,
-        Type,
-        Primitive,
-        ObjectType,
-        Interface,
-        TypeLiteral,
-        TypeListBaseType,
-        Union,
-        Intersection,
-        Tuple,
-        TypeReference,
-        CallableType,
-        Signature,
-        Undef,
-        type_def,
-        get_type,
-        create_type,
-        add_member,
-        auto_member
-} ) ].forEach( t => typeof t.init === 'function' && t.init() );
+inspect.defaultOptions = {
+    depth:      10,
+    colors:     true,
+    showHidden: false
+};
+
+[
+    ...Object.values( {
+                          Identifier,
+                          Type,
+                          Primitive,
+                          ObjectType,
+                          Interface,
+                          TypeLiteral,
+                          TypeListBaseType,
+                          Union,
+                          Intersection,
+                          Tuple,
+                          TypeReference,
+                          TypeParameter,
+                          CallableType,
+                          Signature,
+                          Undef,
+                          type_def,
+                          get_type,
+                          create_type,
+                          add_member,
+                          auto_member
+                      } )
+].forEach( t => typeof t.init === 'function' && t.init() );
 
 type_injection( {
                     Identifier,
@@ -50,10 +60,13 @@ type_injection( {
                     Intersection,
                     Tuple,
                     TypeReference,
+                    TypeParameter,
                     CallableType,
                     Signature,
                     Undef
                 } );
+
+
 
 export {
     Identifier,

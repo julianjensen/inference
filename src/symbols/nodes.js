@@ -70,7 +70,6 @@ import {
     isBindingPattern,
     isParameterPropertyDeclaration,
     isAccessor,
-    isDeclarationOfFunctionOrClassExpression,
     isRequireCall,
     isBlockOrCatchScoped,
     isParameterDeclaration,
@@ -1690,7 +1689,8 @@ export function createBinder()
     {
         const symbol = lookupSymbolForNameWorker( container, functionName );
 
-        let targetSymbol = symbol && isDeclarationOfFunctionOrClassExpression( symbol ) ? symbol.valueDeclaration.initializer.symbol : symbol;
+        let targetSymbol = symbol ? symbol.valueDeclaration.initializer.symbol : symbol;
+        // let targetSymbol = symbol && isDeclarationOfFunctionOrClassExpression( symbol ) ? symbol.valueDeclaration.initializer.symbol : symbol;
 
         assert( propertyAccess.parent.kind === SyntaxKind.BinaryExpression || propertyAccess.parent.kind === SyntaxKind.ExpressionStatement );
 

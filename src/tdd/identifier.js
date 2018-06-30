@@ -12,10 +12,10 @@ export class Identifier
 {
     /**
      * @param {string} name
-     * @param {Type} type
-     * @param {object} opts
+     * @param {Type|TypeParameter} type
+     * @param {object} [opts]
      */
-    constructor( name, type, opts )
+    constructor( name, type, opts = {} )
     {
         this.name = name;
         this.type = type;

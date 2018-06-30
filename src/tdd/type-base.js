@@ -12,7 +12,7 @@ import { ScopeManager } from "./type-utils";
 export class Type
 {
     /**
-     * @param {string} name
+     * @param {string} [name]
      * @param {?Scope} [outerScope]
      */
     constructor( name, outerScope )

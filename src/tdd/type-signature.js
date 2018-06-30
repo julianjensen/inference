@@ -6,10 +6,12 @@
 "use strict";
 
 import { Type } from "./type-base";
-import { register } from "./cross-ref";
+import { register, definition } from "./cross-ref";
 
 const
     number = n => typeof n === 'number' && n === n;
+
+let TypeParameter;
 
 /** */
 export class CallableType extends Type
@@ -17,6 +19,8 @@ export class CallableType extends Type
     constructor( name, scope )
     {
         super( name, scope );
+
+        if ( !TypeParameter ) TypeParameter = definition( 'TypeParameter' );
 
         /** @type {Array<Signature>} */
         this.signatures = [];
@@ -94,7 +98,7 @@ export class Signature extends Type
      */
     add_type_parameters( ...typeArgs )
     {
-        this.typeParameters = this.typeParameters.concat( typeArgs );
+        this.typeParameters = this.typeParameters.concat( typeArgs.map( t => typeof t === 'string' ? new TypeParameter( t, null, this ) : t ) );
 
         return this;
     }

@@ -6,16 +6,16 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { performance }        from "./performance";
-import { create_reporters }   from "./source-code";
-import { createBinder }       from "../symbols/nodes";
+import { performance } from "./performance";
+import { create_reporters } from "./source-code";
+import { createBinder } from "../symbols/nodes";
 import {
     file_handler,
     sync,
     concurrent
 } from "./files";
-import { create_host }        from "../ts/host";
-import { syntaxKind }         from "../ts/ts-helpers";
+import { create_host } from "../ts/host";
+import { syntaxKind } from "../ts/ts-helpers";
 import * as ts from "typescript";
 import { walk_symbols } from "../ts/ts-symbols";
 import { traverse, attachComments, VisitorKeys } from "estraverse";
@@ -49,30 +49,70 @@ export default class Parser
         syntaxKind[ syntaxKind.FirstTypeNode ] = "TypePredicate";
 
         this.tsOptions = Object.assign( {
-            // noResolve:                  true,
-            target:                     ts.ScriptTarget.Latest,
-            experimentalDecorators:     true,
-            experimentalAsyncFunctions: true,
-            jsx:                        'preserve'
-        }, options.tsOptions );
+                                            // noResolve:                  true,
+                                            target:                     ts.ScriptTarget.Latest,
+                                            experimentalDecorators:     true,
+                                            experimentalAsyncFunctions: true,
+                                            jsx:                        'preserve'
+                                        }, options.tsOptions );
 
         this.jsOptions = Object.assign( {
-            loc:          true,
-            range:        true,
-            comment:      true,
-            tokens:       true,
-            ecmaVersion:  9,
-            sourceType:   'module', // globals.program && globals.program.script ? 'script' : 'module',
-            ecmaFeatures: {
-                impliedStrict:                true,
-                experimentalObjectRestSpread: true
-            }
-        }, options.jsOptions );
+                                            loc:          true,
+                                            range:        true,
+                                            comment:      true,
+                                            tokens:       true,
+                                            ecmaVersion:  9,
+                                            sourceType:   'module', // globals.program && globals.program.script ? 'script' : 'module',
+                                            ecmaFeatures: {
+                                                impliedStrict:                true,
+                                                experimentalObjectRestSpread: true
+                                            }
+                                        }, options.jsOptions );
 
         this.jsOptions.range = this.jsOptions.loc = this.jsOptions.comment = this.jsOptions.tokens = true;
         this.jsOptions.ecmaVersion                               = 2018;
         this.jsOptions.ecmaFeatures                              = options.jsOptions.ecmaFeatures || {};
         this.jsOptions.ecmaFeatures.experimentalObjectRestSpread = true;
+    }
+
+    get ambientTypes()
+    {
+        if ( !this._ambientTypes )
+            this._ambientTypes = walk_symbols( this.ambient );
+
+        return this._ambientTypes;
+    }
+
+    /**
+     *
+     * @param node
+     * @param parent
+     * @return {*[]}
+     */
+    static determine_field( node, parent )
+    {
+        if ( !parent ) return [ null, null ];
+
+        for ( const key of VisitorKeys[ parent.type ] )
+        {
+            const pv = parent[ key ];
+
+            if ( !pv ) continue;
+
+            if ( !Array.isArray( pv ) )
+            {
+                if ( pv === node ) return [ key, null ];
+            }
+            else
+            {
+                const i = pv.indexOf( node );
+
+                if ( i !== -1 )
+                    return [ key, i ];
+            }
+        }
+
+        return [ null, null ];
     }
 
     async add_source_files( ...srcs )
@@ -130,6 +170,28 @@ export default class Parser
             file.ast = this.js_ast( source, options );
     }
 
+    parse_snippet( source, type = '.ts' )
+    {
+        switch ( type )
+        {
+            case 'ts':
+            case '.ts':
+            case 'd.ts':
+            case '.d.ts':
+                const tsSource = ts.createSourceFile( 'tmp' + ( Math.random() * 1e7 ) | 0 + '.ts', source, ts.ScriptTarget.Latest, true );
+                return walk_symbols( tsSource );
+
+            case 'js':
+            case '.js':
+            case 'mjs':
+            case '.mjs':
+                return this.js_ast( source );
+
+            default:
+                throw new Error( `Unknown file type: ${type}` );
+        }
+    }
+
     /**
      * @param {string} [newname]
      * @param {string} [filename]
@@ -138,19 +200,11 @@ export default class Parser
     async create_bundle( newname = 'generated.d.ts', filename = 'data/concatenated.d.ts' )
     {
         this.tsHandler.concatenate( newname, c => {
-            c.ast = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true )
+            c.ast = ts.createSourceFile( c.filename, c.source, ts.ScriptTarget.Latest, true );
             sync.writeFile( filename, c.source );
         } );
 
         return this;
-    }
-
-    get ambientTypes()
-    {
-        if ( !this._ambientTypes )
-            this._ambientTypes = walk_symbols( this.ambient );
-
-        return this._ambientTypes;
     }
 
     /**
@@ -183,8 +237,8 @@ export default class Parser
         traverse( withComments, {
             enter: ( node, parent ) => {
 
-                node.parent         = parent;
-                node.index          = byIndex.length;
+                node.parent = parent;
+                node.index  = byIndex.length;
                 // node.transformFlags = TransformFlags.None;
                 byIndex.push( node );
 
@@ -201,43 +255,11 @@ export default class Parser
                 // }
                 // else if ( node.type === Syntax.Identifier )
                 //     build_definition( node );
-            },
+            }
             // exit
         } );
 
         return { fileName: file, types: [ ...types ], allDocNodes: allNodesParsed };
-    }
-
-    /**
-     *
-     * @param node
-     * @param parent
-     * @return {*[]}
-     */
-    static determine_field( node, parent )
-    {
-        if ( !parent ) return [ null, null ];
-
-        for ( const key of VisitorKeys[ parent.type ] )
-        {
-            const pv = parent[ key ];
-
-            if ( !pv ) continue;
-
-            if ( !Array.isArray( pv ) )
-            {
-                if ( pv === node ) return [ key, null ];
-            }
-            else
-            {
-                const i = pv.indexOf( node );
-
-                if ( i !== -1 )
-                    return [ key, i ];
-            }
-        }
-
-        return [ null, null ];
     }
 }
 
@@ -284,24 +306,24 @@ export class TypeScriptParser extends Parser
             options = { ...this.defaultOptions, ..._options };
 
         return {
-                filename,
-                source,
-                reporters: create_reporters( filename, source ),
-                ast: ts.createSourceFile( filename, source, ts.ScriptTarget.Latest, true ),
+            filename,
+            source,
+            reporters: create_reporters( filename, source ),
+            ast:       ts.createSourceFile( filename, source, ts.ScriptTarget.Latest, true ),
 
-                create_symbols()
-                {
-                    this.bound = createBinder()( this.ast, options );
-                    return this;
-                },
+            create_symbols()
+            {
+                this.bound = createBinder()( this.ast, options );
+                return this;
+            },
 
-                create_types()
-                {
-                    this.ast.moduleAugmentations = [];
-                    this.typeChecker             = ts.createTypeChecker( create_host( this.filename, this.source, this.ast ), false );
-                    return this;
-                }
-            };
+            create_types()
+            {
+                this.ast.moduleAugmentations = [];
+                this.typeChecker             = ts.createTypeChecker( create_host( this.filename, this.source, this.ast ), false );
+                return this;
+            }
+        };
     }
 }
 

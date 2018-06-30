@@ -11,6 +11,23 @@ import { definition, register } from "./cross-ref";
 let Undef;
 
 /** */
+export class TypeParameter extends Type
+{
+    /**
+     * @param {string} name
+     * @param {Type} [target=null]
+     * @param {Scope} [scope]
+     */
+    constructor( name, target = null, scope )
+    {
+        super( name, scope );
+
+        this.keyOf = false;
+        this.constraint = target;
+    }
+}
+
+/** */
 export class TypeReference extends Type
 {
     /**
@@ -58,3 +75,4 @@ export class TypeReference extends Type
 }
 
 register( TypeReference );
+register( TypeParameter );

@@ -369,7 +369,7 @@ describe( "Type system", function() {
 
         } );
 
-        it.only( 'should add some even more interesting methods', () => {
+        it( 'should add some even more interesting methods', () => {
             let calls;
 
             // auto_member( objConstr,by_name( 'T' ) );
@@ -379,9 +379,6 @@ describe( "Type system", function() {
                 method = objConstr.methods[ 0 ],
                 sig = method.signatures[ 0 ];
 
-            console.log( `intr:\n${objConstr}` );
-            console.log( `decl string 1:\n${method.name}${sig}` );
-            console.log( `decl string 2:\n${method}` );
             expect( objConstr.numMembers ).toEqual( 1 );
 
             calls = objConstr.methods;

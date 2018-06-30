@@ -7,9 +7,10 @@
 
 import { Type } from "./type-base";
 import { definition, register } from "./cross-ref";
-import { ScopeManager } from "./type-utils";
+import { ScopeManager } from "./scopes";
+import { get_type } from "./type-system-basics";
 
-let Identifier, Signature, CallableType;
+let Identifier, Signature, CallableType, TypeParameter;
 
 /** */
 export class ObjectType extends Type
@@ -24,6 +25,7 @@ export class ObjectType extends Type
         if ( !Identifier ) Identifier = definition( 'Identifier' );
         if ( !Signature ) Signature = definition( 'Signature' );
         if ( !CallableType ) CallableType = definition( 'CallableType' );
+        if ( !TypeParameter ) TypeParameter = definition( 'TypeParameter' );
         this.isContainer = true;
         /** @type {?CallableType} */
         this.constructors = null;
@@ -39,6 +41,9 @@ export class ObjectType extends Type
         this.index = [];
     }
 
+    /**
+     * @return {string}
+     */
     toString()
     {
         const
@@ -51,18 +56,18 @@ export class ObjectType extends Type
 
     /**
      * @param {...(string|Type)} typeArgs
-     * @return {Signature}
+     * @return {ObjectType}
      */
     add_type_parameters( ...typeArgs )
     {
-        this.typeParameters = this.typeParameters.concat( typeArgs );
+        this.typeParameters = this.typeParameters.concat( typeArgs.map( t => typeof t === 'string' ? new TypeParameter( t, null, this ) : t ) );
 
         return this;
     }
 
     /**
-     * @param {Identifier} keyIdent
-     * @param {Type} contentType
+     * @param {Identifier|object} keyIdent
+     * @param {Type} [contentType]
      * @return {ObjectType}
      */
     add_index( keyIdent, contentType )
@@ -73,6 +78,30 @@ export class ObjectType extends Type
         } );
 
         return this;
+    }
+
+    /**
+     * @return {boolean}
+     */
+    has_index()
+    {
+        return true;
+    }
+
+    /**
+     * @return {Type}
+     */
+    index_key_type()
+    {
+        return this.index.length ? this.index[ 0 ].key : get_type( 'string', false );
+    }
+
+    /**
+     * @return {Type}
+     */
+    index_type()
+    {
+        return this.index.length ? this.index[ 0 ].type : get_type( 'any', false );
     }
 
     /**

@@ -20,7 +20,6 @@
  *********************************************************************************************************************/
 "use strict";
 
-import { hide_parent, skeys } from "../utils";
 import { inspect }            from "util";
 import { SyntaxKind }         from "./ts-helpers";
 import * as ts                from "typescript";
@@ -31,7 +30,6 @@ import {
 }                             from "../types";
 import { type, nameOf }       from "typeofs";
 import deep from "deep-eql";
-import deepAssign from 'deep-assign';
 
 const
     has = ( o, n ) => !!o && Object.prototype.hasOwnProperty.call( o, n ),
@@ -326,6 +324,7 @@ export function sym_walk( node, table = {} )
     if ( node.kind === SyntaxKind.VariableDeclaration )
     {
         const varDef = {
+            SEEN: true,
             flags: node.symbol.flags ? SymbolFlags.create( node.symbol.flags ).toString() : '',
             types: add_types( node.type )
         };
