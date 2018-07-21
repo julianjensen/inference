@@ -6,12 +6,9 @@
 "use strict";
 
 /** */
-export class Indexable
+export const Indexable = superclass => class Indexable extends superclass
 {
-    constructor()
-    {
-        this.keyType = null;
-        this.valueType = null;
-        this.indexable = true;
-    }
-}
+    keyType   = null;
+    valueType = null;
+    indexable = true;
+};

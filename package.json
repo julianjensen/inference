@@ -19,8 +19,8 @@
         "check": "npm run lint -s && dependency-check package.json --entry index.js",
         "test": "node --harmony-dynamic-import node_modules/.bin/jest",
         "test:watch": "jest --watch",
-        "test2": "node --harmony -r esm node_modules/.bin/jest --no-cache",
-        "test1": "rm -rf node_modules/.cache coverage/ && nyc --reporter=lcov --reporter=text --produce-source-map --require=@std/esm mocha",
+        "test2": "node --harmony -r esm node_modules/.bin/jest --no-cache --watch",
+        "test1": "rm -rf node_modules/.cache coverage/ && node --harmony node_modules/.bin/nyc --reporter=lcov --reporter=text --produce-source-map --require=esm mocha --harmony __tests__/tdd/interface-def-test.js",
         "coveralls": "npm test && nyc report --reporter=text-lcov | coveralls",
         "postcoveralls": "rimraf ./coverage",
         "prepublish": "npm test",
@@ -57,7 +57,9 @@
     "devDependencies": {
         "babel-eslint": "^8.2.5",
         "babel-jest": "^23.2.0",
+        "babel-plugin-transform-class-properties": "^6.24.1",
         "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+        "babel-preset-env": "^1.7.0",
         "chai": "^4.1.2",
         "coveralls": "^3.0.0",
         "dependency-check": "^3.0.0",
@@ -89,7 +91,8 @@
         "rxjs": "^5.5.7",
         "typeofs": "^1.0.0",
         "typescript": "^2.7.2",
-        "typescript-walk": "^2.6.12"
+        "typescript-walk": "^2.6.12",
+        "walk-object": "^4.0.0"
     },
     "esm": {
         "mode": "auto",
@@ -98,11 +101,14 @@
     },
     "jest": {
         "testMatch": [
-            "<rootDir>/__tests__/**/*test.js"
+            "<rootDir>/__tests__/**/interface-def*test.js"
         ],
         "transform": {
             "^.+\\.js$": "./node_modules/babel-jest"
         },
+        "transformIgnorePatterns": [
+            "./node_modules/mixwith/*"
+        ],
         "testEnvironment": "node",
         "moduleFileExtensions": [
             "js",

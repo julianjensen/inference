@@ -5,14 +5,13 @@
  *******************************************************************************/
 "use strict";
 
-import { mix } from 'mixwith';
-
 const
     number = n => typeof n === 'number' && n === n; // eslint-disable-line no-self-compare
 
+let Callable;
+
 /** */
-export class Call
-{
+export const iCallable = superclass => Callable = class Callable extends superclass {
     parameters = [];
     type = null;
     pnames = {};
@@ -23,18 +22,20 @@ export class Call
      */
     toString()
     {
-        return ( this.parameters.length ? `( ${this.parameters.map( t => `${t}` ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
+        return ( this.parameters.length ? `( ${this.parameters.map( ( t, i ) => `${this.pnames[ i ]}: ${t.type}` ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
     }
 
     /**
-     * @param {Identifier} sym
-     * @return {Call}
+     * @param {string} name
+     * @param {Type} type
+     * @param {object} [options]
+     * @return {Callable}
      */
-    add_parameter( sym )
+    add_parameter( name, type, options = {} )
     {
-        this.pnames[ sym.name ] = this.parameters.length;
-        this.pnames[ this.parameters.length ] = sym.name;
-        this.parameters.push( sym );
+        this.pnames[ name ] = this.parameters.length;
+        this.pnames[ this.parameters.length ] = name;
+        this.parameters.push( { type, options } );
 
         return this;
     }
@@ -64,6 +65,7 @@ export class Call
 }
 
 /** */
-export class Callable extends mix( Call ) {}
-/** */
-export class Constructs extends mix( Call ) {}
+// export class Constructs extends mix( Call ) {}
+export const Constructs = superclass => class Constructs extends iCallable( superclass ) {};
+
+export {Callable};

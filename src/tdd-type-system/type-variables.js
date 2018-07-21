@@ -5,8 +5,7 @@
  *******************************************************************************/
 "use strict";
 
-import { mix } from 'mixwith';
-import { Type } from '../tdd/type-base';
+import { Type } from "./basic-type";
 import { TypeAlias } from "./abstract-type";
 import { Identifier } from "../tdd/identifier";
 import { type } from 'typeofs';
@@ -16,8 +15,11 @@ const
     _has   = o => n => ( {}.hasOwnProperty.call( o, n ) ),
     hasStr = o => {
         const has = _has( o );
-        return ( ...keys ) => keys.every( k => has( k ) && string( o[ k ] ) );
-    };
+        return ( ...keys ) => keys.every( k => has( k ) && ( string( o[ k ] ) || typeof o[ k ] === 'boolean' ) );
+    },
+    hasKeyType = ( o, name, optType ) => _has( o )( name ) && ( !optType || type( o[ name ] ) === optType ),
+    hasOneKeyType = ( o, name, optType ) => Object.keys( o ).length === 1 && hasKeyType( o, name, optType ),
+    hasTwoKeyType = ( o, n1, n2, t1, t2 ) => Object.keys( o ).length === 2 && hasKeyType( o , n1, t1 ) && hasKeyType( o , n2, t2 );
 
 /**
  * @param {Type} t
@@ -46,20 +48,52 @@ function toType( t )
  * @class TypeArgument
  * @extends Type
  */
-export class TypeArgument extends mix( Type )
+export class TypeArgument extends Type
 {
+    name = null;
+    indexType = null;
 
+    parse( def ) {
+        if ( hasTwoKeyType( def, 'type', 'string', 'typeName', 'object' ) )
+        {
+            if ( def.type === 'reference' )
+                this.name = def.typeName.name;
+        }
+        else if ( hasTwoKeyType( def, 'typeName', 'string', 'indexType', 'object' ) )
+        {
+            this.name = def.typeName;
+            this.indexType = def.indexType.typeName;
+        }
+        else if ( hasOneKeyType( def, 'typeName', 'string' ) )
+            this.name = def.typeName;
+    }
+
+    toString()
+    {
+        return `${this.name}${this.indexType ? `[${this.indexType}]` : ''}`;
+    }
 }
 
 /**
  * @class TypeParameter
  * @extends Type
  */
-export class TypeParameter extends mix( Type )
+export class TypeParameter extends Type
 {
     constraint = null;
-    keyOf = false;
+    keyOf      = false;
     resolvesTo = null;
+    name       = null;
+
+    toString()
+    {
+        if ( !this.constraint )
+            return this.name;
+        else if ( this.keyOf )
+            return `${this.name} in keyof ${this.constraint}`;
+        else
+            return `${this.name} extends ${this.constraint}`;
+    }
 
     /**
      * @param {TypeReference|Type} typeRef
@@ -71,7 +105,7 @@ export class TypeParameter extends mix( Type )
 
         if ( !this.constraint || this.is( this.constraint ) )
         {
-            const inst = new TypeParameter();
+            const inst      = new TypeParameter();
             inst.resolvesTo = toType( typeRef );
             return inst;
         }
@@ -85,27 +119,38 @@ export function define_type_parameter( def )
 {
     const check = hasStr( def );
 
-    if ( check( 'typeName', 'name' ) && def.typeName === def.name )
-        return new Identifier( def.name, new TypeParameter() );
+    if ( check( 'name', 'typeName', 'typeOperator', 'keyOf' ) )
+    {
+        const tp = new TypeParameter();
+
+        tp.constraint          = new TypeReference();
+        tp.constraint.typeName = def.typeName;
+        tp.keyOf               = true;
+        tp.name = def.name;
+
+        return tp;
+        // return new Identifier( def.name, tp );
+    }
     else if ( check( 'name', 'typeName', 'typeOperator' ) )
     {
         const tp = new TypeParameter();
 
-        tp.constraint = new TypeReference();
+        tp.constraint          = new TypeReference();
         tp.constraint.typeName = def.typeName;
+        tp.name = def.name;
 
-        return new Identifier( def.name, tp );
+        return tp;
     }
-    else if ( check( 'name', 'typeName', 'typeOperator', 'keyOf' ) )
+    else if ( check( 'typeName', 'name' ) && def.typeName === def.name )
     {
         const tp = new TypeParameter();
 
-        tp.constraint = new TypeReference();
-        tp.constraint.typeName = def.typeName;
-        tp.keyOf = true;
+        tp.name = def.name;
 
-        return new Identifier( def.name, tp );
+        return tp;
     }
+    // return new Identifier( def.name, new TypeParameter() );
+
 }
 
 
@@ -113,50 +158,9 @@ export function define_type_parameter( def )
  * @class Literal
  * @extends Type
  */
-export class Literal extends mix( Type )
+export class Literal extends Type
 {
 
-}
-
-/**
- * @class TypeReference
- * @extends Type
- * @implements {TypeArguments}
- */
-export class TypeReference extends mix( Type ).with( TypeArguments )
-{
-    resolvesTo = null;
-    typeName = null;
-}
-
-/**
- * @class GenericType
- */
-export class GenericType
-{
-    /** @type {Array<TypeParameter>} */
-    typeParameters = [];
-
-    /**
-     * @return {number}
-     */
-    hasTypeParameters()
-    {
-        return this.typeParameters.length;
-    }
-
-    /**
-     * @param {...(Type|TypeReference)} refTypes
-     */
-    instantiate( ...refTypes )
-    {
-
-    }
-
-    add_type_parameter( def )
-    {
-        this.typeParameters.push( define_type_parameter( def ) );
-    }
 }
 
 /**
@@ -167,10 +171,32 @@ export class GenericType
 
 /**
  * @class TypeArguments
- * @interface
  */
 export class TypeArguments
 {
     /** @type {Array<TypeVariableArgument>} */
     typeArguments = [];
+
+    toString()
+    {
+        return '<' + this.typeArguments.map( ta => `${ta}` ).join( ', ' ) + '>';
+    }
 }
+
+/**
+ * @class TypeReference
+ * @extends Type
+ */
+export class TypeReference extends Type
+{
+    resolvesTo    = null;
+    typeName      = null;
+    typeArguments = new TypeArguments();
+
+    toString()
+    {
+        return typeof this.typeName === 'string' ? `${this.typeName}` : this.typeName.name;
+    }
+}
+
+

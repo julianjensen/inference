@@ -5,12 +5,63 @@
  *******************************************************************************/
 "use strict";
 
-/** */
-export class Members
+import { type } from "typeofs";
+import { Callable} from "./callable";
+
+const object = o => type( o ) === 'object';
+
+function dump_names( o ) {
+
+    let p = o,
+        names = [];
+
+    while ( p ) {
+        names.push( p.constructor.name );
+        p = Object.getPrototypeOf( p );
+    }
+
+    return names.join( ' -> ' );
+}
+
+function mem_name( name )
 {
-    constructor()
+    if ( typeof name === 'string' ) return name;
+
+    if ( name === Members.CONSTRUCTOR ) return 'New';
+    else if ( name === Members.SIGNATURE ) return 'Call';
+
+    throw new Error( `WTF is this: ${name}` );
+}
+
+function stringify()
+{
+    const ms = [];
+    this.each_member( ( t, n ) => ms.push( t instanceof Callable ? `${mem_name( n )}${t}` : `${mem_name( n )}: ${t}` ) );
+
+    if ( this.keyType && this.valueType )
+        ms.push( `[ ${this.keyType} ]: ${this.valueType}` );
+
+    if ( !ms.length )
+        return '{}';
+    else if ( ms.length === 1 )
+        return `{ ${ms[ 0 ]} }`;
+
+    return `{\n    ${ms.join( ';\n    ' )}\n}`;
+
+}
+
+
+/** */
+export const Members = superclass => class Members extends superclass
+{
+    members = new Map();
+
+    /**
+     * @return {number}
+     */
+    get numMembers()
     {
-        this.members = new Map();
+        return this.members.size;
     }
 
     /**
@@ -18,7 +69,13 @@ export class Members
      */
     toString()
     {
-        return `${[ ...this.members.values() ].map( t => `${t}` ).filter( x => x ).join( '; ' )}`;
+        return stringify.call( this );
+        // let mems = [];
+        //
+        // if ( this.keyType && this.valueType )
+        //     mems.push( `[ ${this.keyType} ]: ${this.valueType}` );
+        //
+        // return `${[ ...this.members.values(), ...mems ].map( t => `${t}` ).filter( x => x ).join( '; ' )}`;
     }
 
     /**
@@ -28,14 +85,6 @@ export class Members
     hasMembers()
     {
         return this.members.size !== 0;
-    }
-
-    /**
-     * @return {number}
-     */
-    get numMembers()
-    {
-        return this.members.size;
     }
 
     /**
@@ -58,11 +107,24 @@ export class Members
 
     add_member( name, type )
     {
+        if ( object( type ) && type.hasOwnProperty( 'keyType' ) && type.hasOwnProperty( 'valueType' ) )
+        {
+            this.keyType   = type.keyTpe;
+            this.valueType = type.valueType;
+            return;
+        }
+        // console.warn( `Adding member "${typeof name === 'symbol' ? 'SYMBOL' : name}, defined as ${type ? type.constructor.name : 'no type'}, info: ${type.info()}` );
         this.members.set( name, type );
 
         return this;
     }
 
-    static SIGNATURE = Symbol( 'signature' );
-    static CONSTRUCTOR = Symbol( 'constructor' );
-}
+    each_member( fn )
+    {
+        for ( const [ name, type ] of this.members.entries() )
+            fn( type, name );
+    }
+};
+
+Members.SIGNATURE   = Symbol( 'signature' );
+Members.CONSTRUCTOR = Symbol( 'constructor' );

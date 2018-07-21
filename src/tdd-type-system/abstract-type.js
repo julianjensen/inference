@@ -3,12 +3,10 @@
  * @author julian.jensen
  * @since 0.0.1
  *******************************************************************************/
-
 "use strict";
 
 import { mix } from "mixwith";
-import { Type } from "../tdd/type-base";
-import { TupleType } from "./object-type";
+import { Type } from "./basic-type";
 import { Indexable } from "./interfaces/indexable";
 
 /**
@@ -16,9 +14,10 @@ import { Indexable } from "./interfaces/indexable";
  * @extends Type
  * @extends TupleType
  */
-export class EnumType extends mix( Type ).with( TupleType )
+export class EnumType extends Type
 {
-
+    length = 0;
+    elementTypes = [];
 }
 
 /**
@@ -26,9 +25,21 @@ export class EnumType extends mix( Type ).with( TupleType )
  * @extends Type
  * @extends TupleType
  */
-export class UnionType extends mix( Type ).with( TupleType )
+export class UnionType extends Type
 {
+    length = 0;
+    elementTypes = [];
 
+    add_type( type )
+    {
+        this.elementTypes.push( type );
+        this.length = this.elementTypes.length;
+    }
+
+    toString()
+    {
+        return this.elementTypes.map( t => `${t}` ).join( ' | ' );
+    }
 }
 
 /**
@@ -36,9 +47,21 @@ export class UnionType extends mix( Type ).with( TupleType )
  * @extends Type
  * @extends TupleType
  */
-export class IntersectionType extends mix( Type ).with( TupleType )
+export class IntersectionType extends Type
 {
+    length = 0;
+    elementTypes = [];
 
+    add_type( type )
+    {
+        this.elementTypes.push( type );
+        this.length = this.elementTypes.length;
+    }
+
+    toString()
+    {
+        return this.elementTypes.map( t => `${t}` ).join( ' & ' );
+    }
 }
 
 /**
@@ -48,18 +71,17 @@ export class IntersectionType extends mix( Type ).with( TupleType )
  */
 export class MappedType extends mix( Type ).with( Indexable )
 {
-
+    toString()
+    {
+        return `{ [ ${this.keyType} ]: ${this.valueType} }`;
+    }
 }
 
 /**
  * @class TypeAlias
  */
-export class TypeAlias
+export class TypeAlias extends Type
 {
-    /** */
-    constructor()
-    {
-        this.name = null;
-        this.resolvesTo = null;
-    }
+    name = null;
+    resolvesTo = null;
 }

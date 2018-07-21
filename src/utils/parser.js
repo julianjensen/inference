@@ -24,7 +24,7 @@ import { parse as parser } from "espree";
 let sys = concurrent;
 
 /** */
-export default class Parser
+export class Parser
 {
     /**
      * @param {?Array<string>} [includePaths]

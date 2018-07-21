@@ -5,7 +5,7 @@
  *******************************************************************************/
 "use strict";
 
-import { register } from "./cross-ref";
+// import { register } from "./cross-ref";
 
 /** */
 export class Identifier
@@ -32,4 +32,4 @@ export class Identifier
     }
 }
 
-register( Identifier );
+// register( Identifier );

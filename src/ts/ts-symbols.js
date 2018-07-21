@@ -23,15 +23,13 @@
 import { inspect }            from "util";
 import { SyntaxKind }         from "./ts-helpers";
 import * as ts                from "typescript";
-import {
-    NodeFlags,
-    ObjectFlags, SymbolFlags,
-    TypeFlags
-}                             from "../types";
-import { type, nameOf }       from "typeofs";
+import { type }       from "typeofs";
 import deep from "deep-eql";
 
 const
+    allKinds = new Set(),
+    allKindsWithMembers = new Set(),
+    allMembersKindsNoAmbiguity = new Set(),
     has = ( o, n ) => !!o && Object.prototype.hasOwnProperty.call( o, n ),
     MEMBER_MARKER = Symbol( 'marker' ),
     is_same = ( a, b ) => a[ MEMBER_MARKER ] && b[ MEMBER_MARKER ] && a[ MEMBER_MARKER ].some( m => b[ MEMBER_MARKER ] === m ),
@@ -110,15 +108,6 @@ const topLevelNames = [];
 
 function elevate( obj )
 {
-    // if ( !isObject( obj ) ) return obj;
-
-    // if ( isArray( obj.template ) ) obj.template = fix_raw_templates( obj.template );
-
-    // if ( isObject( obj.name ) && isArray( obj.name.template ) ) obj.name.template = fix_raw_templates( obj.name.template );
-    //
-    // if ( isArray( obj.types ) )
-    //     return obj.types.map( elevate );
-
     if ( !isObject( obj ) || keyCount( obj ) !== 1 ) return obj;
 
     if ( isString( obj.typeName ) )
@@ -158,8 +147,11 @@ export function walk_symbols( _file )
     typeChecker = _file.typeChecker;
 
     const r = sym_walk( _file.ast, {} );
-    r.topLevelNames = topLevelNames.sort();
+    r.topLevelNames = [ ...new Set( topLevelNames ) ].sort();
 
+    r.allKinds = [ ...allKinds ];
+    r.allKindsWithMembers = [ ...allKindsWithMembers ];
+    r.allMembersKindsNoAmbiguity = [ ...allMembersKindsNoAmbiguity ];
     return r;
 }
 
@@ -173,19 +165,6 @@ function type_in_mapped_type( node )
 
     return false;
 }
-
-// function get_type_of_node( sym, node )
-// {
-//     let t = typeChecker.getTypeOfSymbolAtLocation( sym, node );
-//     delete t.symbol;
-//     delete t.bindDiagnostics;
-//     delete t.parent;
-//     delete t.checker;
-//     // t = hide_parent( t );
-//     if ( t.objectFlags ) t.objectFlags = ObjectFlags.create( t.objectFlags );
-//     if ( t.flags ) t.flags = TypeFlags.create( t.flags );
-//     return t;
-// }
 
 function module_name( name )
 {
@@ -286,21 +265,6 @@ export function sym_walk( node, table = {} )
     }
 
     /********************************************************************************************************************
-     * Modules and namespaces
-     ********************************************************************************************************************/
-
-    // if ( node.kind === SyntaxKind.ModuleDeclaration )
-    // {
-    //     // const tmp = table[ module_name( node.name ) ] = show_sym( node.symbol );
-    //     // delete tmp.name;
-    //
-    //     // MAYBE DUPE
-    //     // tmp.members =
-    //     table = node.body.statements.map( n => sym_walk( n, {} ) );
-    //     return table;
-    // }
-
-    /********************************************************************************************************************
      * Locals
      ********************************************************************************************************************/
 
@@ -311,35 +275,7 @@ export function sym_walk( node, table = {} )
     if ( node.locals )
     {
         table.locals = [ ...node.locals.values() ].map( show_sym );
-        // .map( sym => {
-        //
-        // } );
         table.locals.forEach( s => topLevelNames.push( s.name ) );
-    }
-
-    /********************************************************************************************************************
-     * Variable declaration
-     ********************************************************************************************************************/
-
-    if ( node.kind === SyntaxKind.VariableDeclaration )
-    {
-        const varDef = {
-            SEEN: true,
-            flags: node.symbol.flags ? SymbolFlags.create( node.symbol.flags ).toString() : '',
-            types: add_types( node.type )
-        };
-
-        if ( table[ tmp_name( node.symbol ) ] )
-        {
-            const tmp = table[ tmp_name( node.symbol ) ];
-
-            if ( Array.isArray( tmp ) )
-                tmp.push( varDef );
-            else
-                table[ tmp_name( node.symbol ) ] = [ tmp, varDef ];
-        }
-        else
-            table[ tmp_name( node.symbol ) ] = varDef;
     }
 
     /********************************************************************************************************************
@@ -348,15 +284,6 @@ export function sym_walk( node, table = {} )
 
     else if ( node.symbol )
     {
-        // const tmp = {
-        //
-        // };
-
-        // MAYBE DUPE
-        // if ( node.symbol.declarations ) tmp.declarations = node.symbol.declarations.map( decl => SyntaxKind[ decl.kind ] );
-
-        // tmp.internal = show_sym( node.symbol, node );
-
         if ( !table.internal ) table.internal = [];
 
         table.internal.push( show_sym( node.symbol, node, true ) );
@@ -379,10 +306,6 @@ export function sym_walk( node, table = {} )
         node.declarations.forEach( sym => sym_walk( sym, table.__vars ) );
     }
 
-    // MAYBE DUPE
-    // if ( Array.isArray( node.statements ) )
-    //     node.statements.forEach( sym => sym_walk( sym, table ) );
-
     return table;
 }
 
@@ -391,28 +314,23 @@ function show_sym( sym, noExports = false )
     if ( !sym ) return null;
 
     const
-        r = { name: disambiguate( get_name( sym ) ) }, // , id: sym.id },
+        r = { name: disambiguate( get_name( sym ) ) },
         { decls: d, members: declMembers } = decls( sym ) || {};
 
     if ( namespaces.length )
         r.namespaces = namespaces.slice();
 
-    if ( sym.flags )
-    {
-        const flags = SymbolFlags.create( sym.flags & ~SymbolFlags.Transient ).toString();
 
-        // if ( flags && flags !== 'Transient' ) r.flags = flags;
-        if ( flags ) r.flags = flags;
-    }
-
-    if ( sym.valueDeclaration && !sym.declarations.includes( sym.valueDeclaration ) )
-        r.valueDeclaration = get_decl( sym.valueDeclaration );
+    // if ( sym.valueDeclaration && !sym.declarations.includes( sym.valueDeclaration ) )
+    //     r.valueDeclaration = get_decl( sym.valueDeclaration );
 
     if ( d )
     {
         d.forEach( decl => {
             if ( isObject( decl.type ) && typeof decl.type.typeName === 'string' && Object.keys( decl.type ).length === 1 )
                 decl.type = decl.type.typeName;
+
+            if ( decl.kind ) allKinds.add( decl.kind );
         } );
         r.decls = d;
     }
@@ -422,9 +340,6 @@ function show_sym( sym, noExports = false )
         let m = from_sym( sym.members );
 
         set_members( m, r );
-        // if ( isArray( m ) ) m = m.filter( x => x );
-        //
-        // if ( m && ( !isArray( m ) ||  m.length ) ) r.members = m;
     }
 
     if ( declMembers )
@@ -437,8 +352,8 @@ function show_sym( sym, noExports = false )
     if ( sym.exports && sym.exports.size && !noExports )
         r.exports = from_sym( sym.exports );
 
-    if ( sym.localSymbol )
-        r.localSymbol = show_sym( sym.localSymbol );
+    // if ( sym.localSymbol )
+    //     r.localSymbol = show_sym( sym.localSymbol );
 
     if ( sym.exportSymbol )
     {
@@ -450,12 +365,37 @@ function show_sym( sym, noExports = false )
         {
             if ( tmp && Array.isArray( tmp.members ) && has( tmp.members[ 0 ], 'questionToken' ) )
                 console.error( `BAD ${tmp.members.length} members written exportSymbol` );
+
             set_members( tmp.members, r );
         }
     }
 
     hide( r, 'node', sym );
 
+    if ( r.members && r.decls )
+        r.decls.forEach( d => allKindsWithMembers.add( d.kind ) );
+    else if ( r.members && r.decls && r.decls.length === 1 )
+        allMembersKindsNoAmbiguity.add( r.decls[ 0 ].kind );
+
+    if ( r.members && r.decls )
+    {
+        const
+            hasMembers = d => [ 'InterfaceDeclaration', 'ClassDeclaration', 'ModuleDeclaration' ].includes( d.kind ),
+            ndx = r.decls.findIndex( hasMembers ),
+            ndx2 = ndx !== -1 ? r.decls.slice( ndx + 1 ).findIndex( hasMembers ) : -1;
+
+
+        if ( !r.decls[ ndx ] )
+            console.error( "No interface for members:", r );
+        else if ( ndx !== -1 && ndx2 !== -1 && r.decls[ ndx ].kind !== r.decls[ ndx2 ].kind )
+            console.error( 'Oops:', r );
+        else
+        {
+            r.decls[ ndx ].members = r.members;
+            delete r.members;
+        }
+
+    }
     return r;
 }
 
@@ -465,14 +405,14 @@ function set_members( members, r )
         arr = a => Array.isArray( a ),
         mem = _m => {
             r.members = r.members ? r.members.concat( _m ) : _m;
-            return r;
+            return _m.length;
         };
 
     if ( members && !arr( members ) ) members = [ members ];
 
     if ( members.length ) return mem( members );
 
-    return r;
+    return 0;
 }
 
 function from_sym( syms )
@@ -501,7 +441,12 @@ function decls( sym )
                  } );
 
 
-    return r.length ? { decls: uniq( r ), members } : null;
+    const ret = r.length ? { decls: uniq( r ), members } : null;
+
+    if ( ret && ret.members && ret.members.length && ret.decls && ret.decls.length === 1 )
+        allMembersKindsNoAmbiguity.add( ret.decls[ 0 ].kind );
+
+    return ret;
 }
 
 // function type_literal_as_string( tl, short = true )
@@ -518,7 +463,6 @@ function get_decl( decl )
 {
     let [ lineNumber, offset ] = file.reporters.offset_to_line_offset( decl.pos ),
         declName               = `${decl.name && decl.name.escapedText || ''}`,
-        // declName               = `${SyntaxKind[ decl.kind ]}`,
         typeName               = decl.type ? add_types( decl.type ) : '',
         heritage;
 
@@ -535,8 +479,6 @@ function get_decl( decl )
     else
     {
         declName += check_for_template( decl );
-        // if ( decl.typeParameters )
-        //     declName += type_parameters( decl.typeParameters );
 
         if ( decl.parameters )
         {
@@ -546,10 +488,6 @@ function get_decl( decl )
                 declName += '()';
         }
     }
-
-    // let flags = '';
-    // if ( decl.flags && !!( decl.flags & ~NodeFlags.Ambient ) )
-    //     flags = ' [ ' + NodeFlags.create( decl.flags & ~NodeFlags.Ambient ).toString() + ' ]';
 
     if ( decl.kind === SyntaxKind.ExportSpecifier )
     {
@@ -561,38 +499,11 @@ function get_decl( decl )
             propName = decl.name.escapedText;
 
         typeName = propName;
-        // return `@${lineNumber + 1}:${offset}${flags} ${propName}` ;
     }
-    // else if ( decl.kind === SyntaxKind.IndexSignature )
-    // {
-    //     declName = `[ ${decl.parameters.map( pretty ).join( ', ' )} ]`;
-    //     typeName = get_type_name( decl.type );
-    // }
-    // else
-    // {
-    //     declName += check_for_template( decl );
-    //     // if ( decl.typeParameters )
-    //     //     declName += type_parameters( decl.typeParameters );
-    //
-    //     if ( decl.parameters )
-    //     {
-    //         if ( decl.parameters.length )
-    //             declName = `${declName}( ${decl.parameters.map( pretty ).join( ', ' )} )`;
-    //         else
-    //             declName += '()';
-    //     }
-    // }
 
     if ( type( typeName ) === 'object' && keyCount( typeName ) === 1 && Object.keys( typeName )[ 0 ] === 'typeName' )
         typeName = typeName.typeName;
 
-    // if ( type( typeName ) === 'object' )
-    // {
-    //     const r = { name: declName, type: typeName, loc: `@${lineNumber + 1}:${offset}` };
-    //     if ( flags && flags !== NodeFlags.Ambient ) r.flags = flags;
-    // }
-
-    // NEW STUFF OLD STUFF
     const dd = {
         loc: `${lineNumber + 1}:${offset}`,
         decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' ),
@@ -609,29 +520,15 @@ function get_decl( decl )
 
     if ( heritage )
         dd.heritage = heritage;
-    // if ( flags )
-    // {
-    //     const f = `${flags}`;
-    //
-    //     if ( f !== 'Transient' )
-    //         dd.flags = f;
-    // }
 
     dd.kind = SyntaxKind[ decl.kind ];
-    // dd.hasSymbol = ( decl.symbol ? ident( decl, 'long' ) : 'no' ).trim();
 
     if ( decl.kind === SyntaxKind.ModuleDeclaration )
     {
-        namespaces.push( declName );
+        if ( declName ) namespaces.push( declName );
 
-        // // debugger;
-        // // const tmp = sym_walk( decl, {} );
-        // // const tmp = decl.body.statements.map( n => sym_walk( n, {} ) );
         const tmp = decl.body.statements.map( n => sym_walk( n, {} ) );
 
-        // if ( tmp && tmp.locals )
-        //     set_members( tmp.locals.map( o => deepAssign( {}, o ) ), dd );
-        // // else
         if ( tmp )
         {
             let collect = tmp.reduce( ( mm, block ) => mm.concat( we_want_this( block ) ), [] );
@@ -639,17 +536,13 @@ function get_decl( decl )
             set_members( collect, dd );
         }
 
-        namespaces.pop();
+        if ( declName ) namespaces.pop();
     }
 
     collapse( dd );
     collapse( dd.type );
 
     return dd;
-
-    // TO HERE
-
-    // return `@${lineNumber + 1}:${offset}${flags} ` + declName + ( typeName ? ': ' + typeName : '' );
 }
 
 function we_want_this( obj )

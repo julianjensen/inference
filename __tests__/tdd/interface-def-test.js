@@ -6,64 +6,23 @@
 /* eslint-env jest */
 "use strict";
 
-import {
-    Identifier,
-    Type,
-    Primitive,
-    ObjectType,
-    Interface,
-    TypeLiteral,
-    TypeListBaseType,
-    Union,
-    Intersection,
-    Tuple,
-    TypeReference,
-    CallableType,
-    Signature,
-    Undef,
-    type_def,
-    get_type,
-    create_type,
-    add_member,
-    auto_member
-} from '../../src/tdd/type-system-basics';
-import { get_scope_manager } from "../../src/tdd/type-utils";
+import { type_from_def } from "../../src/tdd-type-system/type-parser";
+import { ObjectType } from "../../src/tdd-type-system/object-type";
 
-const ScopeManager = get_scope_manager();
+describe( 'Object constructor interface definition', () => {
 
-const
-    _object = expect.any( Object ),
-    _array = expect.any( Array ),
-    objectConstructor = require( './object-constructor.json' );
-
-let
-    /** @type {Interface|Type} */
-    objConstr,
-    workingName;
-
-describe( "Object constructor interface definition", () => {
+    let objectConstructor;
 
     beforeEach( () => {
-        ScopeManager.reset();
-
-        objConstr = create_type( 'interface', objectConstructor.name );
-
-        const define = def => auto_member( objConstr, workingName = def );
-
-        objectConstructor.members.forEach( define );
+        objectConstructor = require( './fixed.json' );
     } );
 
-    afterEach( () => {
-        if ( workingName )
-            console.log( 'last def:', workingName );
+    it( 'should read the type definition', () => {
+        const { name, type } = type_from_def( objectConstructor );
+
+        expect( type ).toBeInstanceOf( ObjectType );
+        expect( name ).toEqual( 'ObjectConstructor' );
+        console.log( 'stringified:', type.toString() );
     } );
-
-    it( "should create the entire interface", () => {
-
-        expect( objConstr ).toEqual( _object );
-        expect( objConstr ).toBeInstanceOf( Interface );
-        expect( objConstr ).toBeInstanceOf( Type );
-
-    } );
-
 } );
+

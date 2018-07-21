@@ -8,7 +8,7 @@
 
 import program from 'commander';
 
-import Parser from "./src/utils/parser";
+import { Parser } from "./src/utils/parser";
 import globals from './src/utils/globals';
 import { create_symbols } from "./src/symbols/simple-table";
 
