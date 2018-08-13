@@ -216,14 +216,14 @@
  * explicit "this" argument.
  *
  * @typedef {object} TypeReference
- * @property {GenericType} target                  - Type reference target
+ * @property {iGeneric} target                  - Type reference target
  * @property {?Array<Type>} [typeArguments] - Type reference type arguments (undefined if none)
  */
 
 /**
  * Generic class and interface types
  *
- * @typedef {object} GenericType
+ * @typedef {object} iGeneric
  * @extends InterfaceType
  * @extends TypeReference
  * @property {Array<TypeReference>} instantiations    - Generic instantiation cache

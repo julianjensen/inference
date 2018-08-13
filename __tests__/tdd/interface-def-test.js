@@ -6,23 +6,45 @@
 /* eslint-env jest */
 "use strict";
 
-import { type_from_def } from "../../src/tdd-type-system/type-parser";
-import { ObjectType } from "../../src/tdd-type-system/object-type";
+import { type_from_def, init } from "../../src/tdd-type-system/type-parser";
+import { ArrayType, ObjectType } from "../../src/tdd-type-system/object-type";
 
-describe( 'Object constructor interface definition', () => {
+init();
 
-    let objectConstructor;
+describe( 'When given TypeScript definition files', () => {
+    describe( 'When given Object constructor interface definition', () => {
 
-    beforeEach( () => {
-        objectConstructor = require( './fixed.json' );
+        let objectConstructor;
+
+        beforeEach( () => {
+            objectConstructor = require( './fixed.json' );
+        } );
+
+        it( 'Then should read the type definition', () => {
+            const { name, type } = type_from_def( objectConstructor );
+
+            expect( type ).toBeInstanceOf( ObjectType );
+            expect( name ).toEqual( 'ObjectConstructor' );
+            console.log( 'stringified:', type.toString() );
+        } );
     } );
 
-    it( 'should read the type definition', () => {
-        const { name, type } = type_from_def( objectConstructor );
+    describe.only( 'When given Array instance definition', () => {
 
-        expect( type ).toBeInstanceOf( ObjectType );
-        expect( name ).toEqual( 'ObjectConstructor' );
-        console.log( 'stringified:', type.toString() );
+        let arrayDef;
+
+        beforeEach( () => {
+            arrayDef = require( './array-fixed.json' );
+        } );
+
+        it( 'Then should read the type definition', () => {
+            const { name, type } = type_from_def( arrayDef );
+
+            expect( type ).toBeInstanceOf( ObjectType );
+            expect( name ).toEqual( 'Array' );
+            console.log( type.stringify.toString() );
+            console.log( type.stringify( 'Array' ) );
+        } );
     } );
 } );
 

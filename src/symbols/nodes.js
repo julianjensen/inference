@@ -1372,7 +1372,7 @@ export function createBinder()
                     bindCallExpression( node );
                 break;
 
-            // Members of classes, interfaces, and modules
+            // iMembers of classes, interfaces, and modules
             case SyntaxKind.ClassExpression:
             case SyntaxKind.ClassDeclaration:
                 // All classes are automatically in strict mode in ES6.

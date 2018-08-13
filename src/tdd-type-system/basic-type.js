@@ -8,7 +8,6 @@
 // import { ScopeManager } from "../tdd/type-utils";
 
 /** */
-// export const Type = superclass => class Type extends superclass
 export class Type
 {
     /**
@@ -24,6 +23,11 @@ export class Type
         this.outer = outerScope;
         /** @type {?Scope} */
         this.inner = null;
+    }
+
+    stringify( name )
+    {
+        return name ? `${name}: ${this}` : this.toString();
     }
 
     toString()

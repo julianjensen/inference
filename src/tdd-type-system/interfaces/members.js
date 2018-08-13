@@ -7,32 +7,34 @@
 
 import { type } from "typeofs";
 import { Callable} from "./callable";
+import { nameless } from "../utils";
+
+const { CONSTRUCTOR, SIGNATURE } = nameless;
 
 const object = o => type( o ) === 'object';
 
-function dump_names( o ) {
+let Members;
 
-    let p = o,
-        names = [];
-
-    while ( p ) {
-        names.push( p.constructor.name );
-        p = Object.getPrototypeOf( p );
-    }
-
-    return names.join( ' -> ' );
-}
-
+/**
+ * @param {string} name
+ * @return {string}
+ */
 function mem_name( name )
 {
     if ( typeof name === 'string' ) return name;
 
-    if ( name === Members.CONSTRUCTOR ) return 'New';
-    else if ( name === Members.SIGNATURE ) return 'Call';
+    if ( name === iMembers.CONSTRUCTOR ) return 'New';
+    else if ( name === iMembers.SIGNATURE ) return 'Call';
 
-    throw new Error( `WTF is this: ${name}` );
+    return '<anonymous>';
+
+    // throw new Error( `WTF is this: ${name}` );
 }
 
+/**
+ * @return {string}
+ * @this {Members}
+ */
 function stringify()
 {
     const ms = [];
@@ -52,7 +54,9 @@ function stringify()
 
 
 /** */
-export const Members = superclass => class Members extends superclass
+export const iMembers = superclass => Members =
+    /** @class Members */
+    class Members extends superclass
 {
     members = new Map();
 
@@ -70,12 +74,6 @@ export const Members = superclass => class Members extends superclass
     toString()
     {
         return stringify.call( this );
-        // let mems = [];
-        //
-        // if ( this.keyType && this.valueType )
-        //     mems.push( `[ ${this.keyType} ]: ${this.valueType}` );
-        //
-        // return `${[ ...this.members.values(), ...mems ].map( t => `${t}` ).filter( x => x ).join( '; ' )}`;
     }
 
     /**
@@ -105,20 +103,26 @@ export const Members = superclass => class Members extends superclass
         return this.members.get( name );
     }
 
-    add_member( name, type )
+    add_member( name, type, parent )
     {
         if ( object( type ) && type.hasOwnProperty( 'keyType' ) && type.hasOwnProperty( 'valueType' ) )
         {
-            this.keyType   = type.keyTpe;
+            this.keyType   = type.keyType;
             this.valueType = type.valueType;
             return;
         }
-        // console.warn( `Adding member "${typeof name === 'symbol' ? 'SYMBOL' : name}, defined as ${type ? type.constructor.name : 'no type'}, info: ${type.info()}` );
+
         this.members.set( name, type );
+
+        this.parent = this.owner = parent;
 
         return this;
     }
 
+    /**
+     * @param {function} fn
+     * @memberOf Members
+     */
     each_member( fn )
     {
         for ( const [ name, type ] of this.members.entries() )
@@ -126,5 +130,7 @@ export const Members = superclass => class Members extends superclass
     }
 };
 
-Members.SIGNATURE   = Symbol( 'signature' );
-Members.CONSTRUCTOR = Symbol( 'constructor' );
+iMembers.SIGNATURE   = SIGNATURE;
+iMembers.CONSTRUCTOR = CONSTRUCTOR;
+
+export { Members };

@@ -3,26 +3,61 @@
  * @author julian.jensen
  * @since 0.0.1
  *******************************************************************************/
+
 "use strict";
+
+import { readable_name } from "../utils";
 
 const
     number = n => typeof n === 'number' && n === n; // eslint-disable-line no-self-compare
 
-let Callable;
+let /** @type {Callable} */
+    Callable,
+    /** @type {Constructs} */
+    Constructs;
 
 /** */
-export const iCallable = superclass => Callable = class Callable extends superclass {
+export const iCallable = superclass => Callable =
+    /**
+     * @class Callable
+     */
+    class Callable extends superclass {
     parameters = [];
     type = null;
     pnames = {};
     parent = null;
+
+    param_as_string( name, { type, options } )
+    {
+        let s = options.rest ? '...' : '';
+
+        s += name;
+        s += options.optional ? '?' : '';
+        const blah = type.toString();
+        if ( blah === '[object Object]' )
+            console.log( 'bad type:', type );
+        s += ': ' + type.toString();
+
+        return s;
+    }
+
+    /**
+     * @param {string} [name]
+     * @return {string}
+     */
+    stringify( name )
+    {
+        if ( !name ) return this.toString();
+
+        return `${readable_name( name )}${this.type_parameters_to_string()}` + ( this.parameters.length ? `( ${this.parameters.map( ( t, i ) => this.param_as_string( this.pnames[ i ], t ) ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
+    }
 
     /**
      * @return {string}
      */
     toString()
     {
-        return ( this.parameters.length ? `( ${this.parameters.map( ( t, i ) => `${this.pnames[ i ]}: ${t.type}` ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
+        return `${this.type_parameters_to_string()}` + ( this.parameters.length ? `( ${this.parameters.map( ( t, i ) => `${this.pnames[ i ]}: ${t.type}` ).join( ', ' )} )` : `()` ) + ': ' + `${this.type}`;
     }
 
     /**
@@ -65,7 +100,6 @@ export const iCallable = superclass => Callable = class Callable extends supercl
 }
 
 /** */
-// export class Constructs extends mix( Call ) {}
-export const Constructs = superclass => class Constructs extends iCallable( superclass ) {};
+export const iConstructs = superclass => Constructs = class Constructs extends iCallable( superclass ) {};
 
-export {Callable};
+export { Callable, Constructs };

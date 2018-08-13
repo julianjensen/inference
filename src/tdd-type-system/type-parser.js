@@ -7,17 +7,16 @@
 
 import { type } from "typeofs";
 // import { Parser } from '../utils/parser';
-import { Type } from './basic-type';
-import { TupleType, TypeLiteral } from "./object-type";
-import { ClassType, FunctionType, FunctionDecl } from "./function-type";
-import { Members } from "./interfaces/members";
-import { iCallable, Constructs } from "./interfaces/callable";
-import { Identifier } from "../tdd/identifier";
-import { define_type_parameter, TypeParameter, TypeReference } from "./type-variables";
-import { GenericType } from "./interfaces/generic";
+import { ArrayType, Module, ObjectType, TupleType, TypeLiteral } from "./object-type";
+import { ClassType, ConstructorDecl, FunctionDecl, FunctionType } from "./function-type";
+import { define_type_parameter, TypeArgument, TypeParameter, TypeReference } from "./type-variables";
+import { Generic } from "./interfaces/generic";
 import { primitive_from_typename } from "./primitive-type";
-import { ObjectType } from "./object-type";
 import { IntersectionType, MappedType, UnionType } from "./abstract-type";
+import { global_scope, DECL, get_decl, get_kind, get_scope, nameless, defer_scope } from "./utils";
+import { Scope } from "./interfaces/scopes";
+
+const { CONSTRUCTOR, SIGNATURE } = nameless;
 
 export const
     string = o => type( o ) === 'string',
@@ -29,67 +28,21 @@ export const
 
 let parser;
 
-export function massage_defs( def )
+export const isGeneric = type => !!type && type instanceof Generic && type.hasTypeParameters();
+
+function define_identifier( current, name, def )
 {
-    let error;
+    let scope;
 
-    if ( has( def, 'members' ) && array( def.members ) )
-    {
-        def.members.forEach( massage_defs );
-        return def;
-    }
+    while ( current && !( scope = get_scope( current ) ) )
+        current = current.parent;
 
-    if ( !has( def, 'decls' ) || !array( def.decls ) ) return def;
+    if ( !scope )
+        scope = global_scope();
 
-    def.kind = def.decls.map( d => d.kind ).reduce( ( prev, cur ) => cur !== prev ? error = [ cur, prev ] : cur );
-    // def.decls.forEach( d => delete d.kind );
+    scope.add( name, def );
 
-    if ( error )
-        throw new Error( `Multiple kinds: ${error}` );
-
-    def.decls.forEach( massage_defs );
-
-    return def;
-}
-
-function read_type( def )
-{
-    def.decls.forEach( decl => {
-        if ( has( def, 'flags' ) && !has( def, 'kind' ) )
-        {
-            def.kind = def.flags;
-            delete def.flags;
-        }
-
-        type_from_def( def.name, decl, def );
-    } );
-}
-
-const DECL = {
-    INTERFACE: 'InterfaceDeclaration',
-    CONSTRUCTOR: 'ConstructSignature',
-    METHOD: 'MethodSignature',
-    CALL: 'CallSignature',
-    SIGNATURE: 'Signature',
-    VARIABLE: 'VariableDeclaration',
-    PROPERTY: 'PropertySignature',
-    LITERAL: 'typeliteral',
-
-    TYPE: 'RAW_TYPE'
-};
-
-/**
- * @param {object} def
- * @return {string}
- */
-function get_kind( def )
-{
-    return def.kind || DECL.TYPE;
-    // return has( def, 'kind' ) ?
-    //        def.kind :
-    //        has( def, 'flags' ) ?
-    //        def.flags :
-    //        def.decls[ 0 ].kind;
+    return scope;
 }
 
 // /**
@@ -121,26 +74,76 @@ function get_kind( def )
 //     }
 // }
 
-const get_decl = ( d, kind ) => d.find( decl => decl.kind === kind );
+/**
+ * @param {object} def
+ * @param {Type} [parent]
+ * @return {{name: string|symbol, type: ClassType|FunctionType}}
+ */
+function function_definition( def, parent )
+{
+    let outer, name, ConstrFunc = FunctionDecl;
+
+    if ( def.name === "New" && def.decls[ 0 ].kind === DECL.CONSTRUCTOR )
+    {
+        outer = new ClassType().debug( 'constructor symbol' );
+        name = CONSTRUCTOR;
+        ConstrFunc = ConstructorDecl;
+    }
+    else if ( def.name === "Call" && def.decls[ 0 ].kind === DECL.CALL )
+    {
+        outer = new FunctionType().debug( 'call symbol' );
+        name = SIGNATURE;
+    }
+    else
+    {
+        outer = new FunctionType().debug( def.name + ' as method' );
+        name = def.name;
+    }
+
+    outer.parent = parent;
+
+    def.decls.forEach( ( decl, i ) => {
+        /** @type {FunctionDecl|ConstructorDecl} */
+        const type = new ConstrFunc().debug( ConstrFunc.name );
+
+        type.type = type_from_def( decl.type, type );
+
+        if ( decl.parameters )
+            decl.parameters.map( p => type.add_parameter( p.name, type_from_def( p, type ), { optional: p.optional, rest: p.rest } ) );
+
+        if ( decl.typeParameters )
+            decl.typeParameters.forEach( tp => type.add_parameter_from_def( tp ) );
+
+        outer.add_declaration( type );
+        type.parent = outer;
+    } );
+
+    return { name, type: outer };
+}
+
+/**
+ *
+ */
+export function init()
+{
+    defer_scope( Scope );
+    global_scope( new Module() );
+}
 
 /**
  * @param {object} def
+ * @param {Type|iGeneric|Generic} [parent]
  */
-export function type_from_def( def )
+export function type_from_def( def, parent = global_scope() )
 {
     const
-        add_type_params = ( type, obj ) => has( obj, 'typeParameters' ) && type instanceof GenericType && type.add_type_parameter( obj ),
+        add_type_params = ( type, obj ) => has( obj, 'typeParameters' ) && type instanceof Generic && type.add_type_parameter( obj ),
         add_type_arguments = ( type, obj ) => has( obj, 'typeArguments' ) && type.add_type_parameter( obj );
-
-    let type;
 
     if ( !def ) return null;
 
-    // if ( string( def ) ) def = parse_string( def );
-    // console.log( 'defing:', Object.keys( def ) );
-
-    if ( [ DECL.CONSTRUCTOR, DECL.CALL, DECL.METHOD ].includes( def.kind ) && def.decls )
-        def.kind = DECL.SIGNATURE;
+    if ( !has( def, 'kind' ) && has( def, 'decls' ) )
+        def.kind = def.decls[ 0 ].kind;
 
     switch ( get_kind( def ) )
     {
@@ -148,108 +151,125 @@ export function type_from_def( def )
             const
                 decls = def.decls,
                 idecl = decls && get_decl( decls, DECL.INTERFACE ),
-                container = new ObjectType().debug( def.name );
+                container = new ObjectType().debug( def.name ),
+                _type_from_def = arg => type_from_def( arg, container );
+
+            container.isInterface = true;
 
             if ( decls )
-                idecl.members.map( type_from_def ).forEach( t => container.add_member( t.name, t.type ) );
+                idecl.members.map( _type_from_def ).filter( x => x ).forEach( t => container.add_member( t.name, t.type, container ) );
 
-
+            container.parent = parent;
             return { name: def.name, type: container };
-
-        case DECL.CONSTRUCTOR:
-            type = new FunctionDecl().debug( 'class' );
-            type.type = type_from_def( def.type );
-            if ( def.parameters )
-                def.parameters.map( p => type.add_parameter( p.name, type_from_def( p ), { optional: p.optional, rest: p.rest } ) );
-
-            if ( def.typeParameters )
-                def.typeParameters.forEach( tp => type.add_parameter_from_def( tp ) );
-
-            // def.decls.map( type_from_def ).forEach( t => type.add( Members.CONSTRUCTOR, t.type ) );
-            return { name: Members.CONSTRUCTOR, type };
 
         case DECL.METHOD:
         case DECL.CALL:
-            type = new FunctionDecl().debug( def.name || 'anonymous' );
-            type.type = type_from_def( def.type );
-            if ( def.parameters )
-                def.parameters.map( p => type.add_parameter( p.name, type_from_def( p ), { optional: p.optional, rest: p.rest } ) );
-
-            if ( def.typeParameters )
-                def.typeParameters.forEach( tp => type.add_parameter_from_def( tp ) );
-
-            // def.decls.map( type_from_def ).forEach( t => type.add( Members.SIGNATURE, t.type ) );
-            return { name: def.name || Members.SIGNATURE, type };
-
-        case DECL.SIGNATURE:
-            if ( def.name === "New" && def.decls[ 0 ].kind === "ConstructSignature" )
-            {
-                type = new ClassType().debug( 'signature constructor' );
-                def.decls.map( type_from_def ).forEach( t => type.add_declaration( t.type ) );
-                // type.define( def.decls.map( type_from_def ) );
-                return { name: Members.CONSTRUCTOR, type };
-            }
-            else if ( def.name === "Call" && def.decls[ 0 ].kind === "CallSignature" )
-            {
-                type = new FunctionType().debug( 'signature call' );
-                def.decls.map( type_from_def ).forEach( t => type.add_declaration( t.type ) );
-                return { name: Members.SIGNATURE, type };
-            }
-            else
-            {
-                // console.log( 'name:', def.name );
-                // if ( !def.decls ) console.error( 'no decls:', def );
-                type = new FunctionType().debug( def.name );
-                def.decls.map( type_from_def ).forEach( t => type.add_declaration( t.type ) );
-                return { name: def.name, type };
-            }
-
+        case DECL.CONSTRUCTOR:
+            return function_definition( def, parent );
 
         case DECL.PROPERTY:
             if ( def.decls )
-                return { name: def.name, type: type_from_def( def.decls[ 0 ] ) };
+                return { name: def.name, type: type_from_def( def.decls[ 0 ], parent ) };
             else
-                return type_from_def( def.type );
+                return type_from_def( def.type, parent );
 
         case DECL.VARIABLE:
-            // @todo Add variable to symbol table
+            const
+                non_var = arr => arr.find( d => d.kind !== DECL.VARIABLE ).kind,
+                vdecl = def.decls && get_decl( def.decls, DECL.VARIABLE );
+
+            define_identifier( parent, def.name, type_from_def( vdecl.type, parent ) );
+            return type_from_def( { ...def, kind: def.kind !== DECL.VARIABLE ? def.kind : non_var(def.decls ), decls: def.decls.filter( d => d.kind !== DECL.VARIABLE ) }, parent );
+
+        case DECL.TYPEPARAM:
+            const
+                tpDecl = def.decls[ 0 ];
+
+            if ( !parent.add_parameter_from_def( tpDecl ) )
+            {
+                const typeParam = new TypeParameter();
+                typeParam.typeName = def.name;
+
+                parent.add_type_parameter( def.name, typeParam );
+            }
+
             return null;
 
+        case DECL.THIS:
+            return parse_type( { typeName: 'this' }, parent );
+
+        case DECL.INDEX:
+            const
+                valueType = type_from_def( def.type, parent ),
+                keyType = type_from_def( def.parameters, parent );
+
+            return { type: { valueType, keyType } };
+
         case DECL.TYPE:
-            return parse_type( def );
+            return parse_type( def, parent );
 
         default:
-            throw new Error( `Kind not handled: "${get_kind( def )}"` );
+            let kindText = get_kind( def );
+
+            if ( object( kindText ) ) kindText = JSON.stringify( kindText, null, 4 );
+
+            throw new Error( `Kind not handled: "${kindText}"` );
     }
 }
 
-function parse_type( def )
+function add_type_arguments( type, def )
 {
+    if ( !has( def, 'typeArguments' ) || typeof type.add_type_arguments !== 'function' ) return type;
+
+    const typeArgs = def.typeArguments.map( taDef => new TypeArgument().parse( taDef ) );
+
+    type.add_type_arguments( typeArgs );
+
+    return type;
+}
+
+/**
+ * @param {object} def
+ * @param {Type} [parent]
+ * @return {Type}
+ */
+function parse_type( def, parent )
+{
+    const _type_from_def = arg => type_from_def( arg, parent );
+
+    if ( def.isArray )
+    {
+        const at = new ArrayType();
+        at.elementType = parse_type( {...def, isArray: false } );
+        return at;
+    }
+
     switch ( def.type )
     {
         case 'reference':
             const ref = new TypeReference().debug( def.typeName );
 
             ref.typeName = def.typeName;
+            add_type_arguments( ref, def );
             return ref;
 
         case 'union':
             const u = new UnionType();
 
-            def.types.forEach( d => u.add_type( type_from_def( d ) ) );
+            def.types.forEach( d => u.add_type( type_from_def( d, u ) ) );
             return u;
 
         case 'intersection':
             const i = new IntersectionType();
 
-            def.types.forEach( d => i.add_type( type_from_def( d ) ) );
+            def.types.forEach( d => i.add_type( type_from_def( d, i ) ) );
             return i;
 
         case 'typeliteral':
             const
                 lit = new TypeLiteral().debug( def.name || 'anonymous typeliteral -> ' + JSON.stringify( def, null, 4 ) );
 
-            def.members.map( type_from_def ).forEach( t => lit.add_member( t.name, t.type ) );
+            def.members.map( _type_from_def ).forEach( t => lit.add_member( t.name, t.type ) );
 
             return lit;
 
@@ -261,15 +281,15 @@ function parse_type( def )
              */
         case 'index':
             const
-                valueType = type_from_def( def.typeName ),
-                keyType = type_from_def( def.parameters );
+                valueType = _type_from_def( def.typeName ),
+                keyType = _type_from_def( def.parameters );
 
             return { type: { valueType, keyType } };
 
         case 'tuple':
             const tuple = new TupleType();
 
-            def.types.map( type_from_def ).forEach( t => tuple.add_type( t ) );
+            def.types.map( _type_from_def ).forEach( t => tuple.add_type( t ) );
 
             return tuple;
 
@@ -277,9 +297,44 @@ function parse_type( def )
             const mapped = new MappedType();
 
             mapped.keyType = define_type_parameter( def.definition.typeParameter );
-            mapped.valueType = type_from_def( def.definition.type );
+            mapped.valueType = _type_from_def( def.definition.type );
 
             return mapped;
+
+        case 'parens':
+            return _type_from_def( def.types ).type;
+
+        case 'function':
+            const fake = {
+                name: def.name,
+                kind: DECL.CALL,
+                decls: [ def.definition ]
+            };
+
+            return _type_from_def( fake ).type;
+
+            /*
+            {
+                "type": "predicate",
+                "param": "value",
+                "returns": {
+                    "type": "reference",
+                    "typeName": {
+                        "name": "S"
+                    }
+                }
+            }
+             */
+        case 'predicate':
+            return _type_from_def( {
+                kind: DECL.CALL,
+                decls: [
+                    {
+                        type: def.returns,
+                        parameters: [ { name: def.param, typeName: 'any' } ]
+                    }
+                ]
+            } ).type;
 
         default:
             if ( def.type )
@@ -287,10 +342,18 @@ function parse_type( def )
                 console.log( def );
                 throw new Error( `Unhandled type def: "${def.type}"` );
             }
+
+            if ( string( def.name ) && string( def.typeName ) && def.name === def.typeName )
+            {
+                const tr = new TypeReference();
+                tr.typeName = def.name;
+                return tr;
+            }
+
             const name = string( def ) ? def : def.typeName;
 
             if ( typeof name !== 'string' )
-                return type_from_def( def.typeName );
+                return _type_from_def( def.typeName );
 
             if ( name === 'object' )
                 return new TypeLiteral();

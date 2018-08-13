@@ -7,7 +7,6 @@
 
 import { Type } from "./basic-type";
 import { TypeAlias } from "./abstract-type";
-import { Identifier } from "../tdd/identifier";
 import { type } from 'typeofs';
 
 const
@@ -19,7 +18,8 @@ const
     },
     hasKeyType = ( o, name, optType ) => _has( o )( name ) && ( !optType || type( o[ name ] ) === optType ),
     hasOneKeyType = ( o, name, optType ) => Object.keys( o ).length === 1 && hasKeyType( o, name, optType ),
-    hasTwoKeyType = ( o, n1, n2, t1, t2 ) => Object.keys( o ).length === 2 && hasKeyType( o , n1, t1 ) && hasKeyType( o , n2, t2 );
+    hasTwoKeyType = ( o, n1, t1, n2, t2 ) => Object.keys( o ).length === 2 && hasKeyType( o , n1, t1 ) && hasKeyType( o , n2, t2 );
+
 
 /**
  * @param {Type} t
@@ -66,6 +66,8 @@ export class TypeArgument extends Type
         }
         else if ( hasOneKeyType( def, 'typeName', 'string' ) )
             this.name = def.typeName;
+
+        return this;
     }
 
     toString()
@@ -84,6 +86,18 @@ export class TypeParameter extends Type
     keyOf      = false;
     resolvesTo = null;
     name       = null;
+
+    stringify( name )
+    {
+        if ( !name ) return this.toString();
+
+        if ( !this.constraint )
+            return name;
+        else if ( this.keyOf )
+            return `${name} in keyof ${this.constraint}`;
+        else
+            return `${name} extends ${this.constraint}`;
+    }
 
     toString()
     {
@@ -114,7 +128,10 @@ export class TypeParameter extends Type
     }
 }
 
-
+/**
+ * @param {object} def
+ * @return {TypeParameter}
+ */
 export function define_type_parameter( def )
 {
     const check = hasStr( def );
@@ -179,7 +196,7 @@ export class TypeArguments
 
     toString()
     {
-        return '<' + this.typeArguments.map( ta => `${ta}` ).join( ', ' ) + '>';
+        return this.typeArguments.length ? '<' + this.typeArguments.map( ta => `${ta}` ).join( ', ' ) + '>' : '';
     }
 }
 
@@ -193,9 +210,14 @@ export class TypeReference extends Type
     typeName      = null;
     typeArguments = new TypeArguments();
 
+    add_type_arguments( typeArgs )
+    {
+        this.typeArguments.typeArguments = typeArgs;
+    }
+
     toString()
     {
-        return typeof this.typeName === 'string' ? `${this.typeName}` : this.typeName.name;
+        return ( typeof this.typeName === 'string' ? `${this.typeName}` : this.typeName.name ) + this.typeArguments;
     }
 }
 

@@ -5,13 +5,12 @@
  *******************************************************************************/
 "use strict";
 
-import { type_from_def } from "./src/tdd-type-system/type-parser";
-import { ObjectType } from "./src/tdd-type-system/object-type";
+import { init, type_from_def } from "./src/tdd-type-system/type-parser";
 
-const objectConstructor = require( './fixed.json' );
+init();
 
-const { name, type } = type_from_def( objectConstructor );
-
-console.log( `interface ${name} ${type}` );
+const def = require( './__tests__/tdd/array-fixed.json' );
+const { type } = type_from_def( def );
+console.log( 'stringified:', type.toString() );
 
 

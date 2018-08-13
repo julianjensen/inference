@@ -5,7 +5,7 @@
  *******************************************************************************/
 "use strict";
 
-import { massage_defs } from "../src/tdd-type-system/type-parser";
+import { massage_defs } from "../src/tdd-type-system/utils";
 import fs from 'fs';
 
 const

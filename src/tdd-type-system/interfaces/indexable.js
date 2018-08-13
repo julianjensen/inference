@@ -6,7 +6,7 @@
 "use strict";
 
 /** */
-export const Indexable = superclass => class Indexable extends superclass
+export const iIndexable = superclass => class Indexable extends superclass
 {
     keyType   = null;
     valueType = null;

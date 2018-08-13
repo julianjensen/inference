@@ -17,81 +17,112 @@ const
         return ( ...keys ) => keys.every( k => has( k ) && string( o[ k ] ) );
     };
 
+let Generic;
+
 /**
- * @class GenericType
+ * @interface iGeneric
  */
-export const GenericType = superclass => class GenericType extends superclass
-{
-    /** @type {Array<TypeParameter>} */
-    typeParameters = [];
-    pnames = {};
-
-    add_parameter_from_def( def )
+export const iGeneric = superclass => Generic =
+    /** @class Generic */
+    class Generic extends superclass
     {
-        const check = hasStr( def );
+        /** @type {Array<TypeParameter>} */
+        typeParameters = [];
+        tnames         = {};
 
-        if ( check( 'typeName', 'name' ) && def.typeName === def.name )
-            this.add_type_parameter( def.name, new TypeParameter() );
-        else if ( check( 'name', 'typeName', 'typeOperator' ) )
+        /**
+         * @param {object} def
+         * @memberOf Generic
+         * @memberOf iGeneric
+         */
+        add_parameter_from_def( def )
         {
-            const tp = new TypeParameter();
+            const check = hasStr( def );
 
-            tp.constraint          = new TypeReference();
-            tp.constraint.typeName = def.typeName;
+            if ( check( 'name', 'typeName', 'typeOperator', 'keyOf' ) )
+            {
+                const tp = new TypeParameter();
 
-            this.add_type_parameter( def.name, tp );
+                tp.name                = def.name;
+                tp.constraint          = new TypeReference();
+                tp.constraint.typeName = def.typeName;
+                tp.keyOf               = true;
+
+                return this.add_type_parameter( def.name, tp );
+            }
+            else if ( check( 'name', 'typeName', 'typeOperator' ) )
+            {
+                const tp = new TypeParameter();
+
+                tp.name                = def.name;
+                tp.constraint          = new TypeReference();
+                tp.constraint.typeName = def.typeName;
+
+                return this.add_type_parameter( def.name, tp );
+            }
+            else if ( check( 'typeName', 'name' ) && def.typeName === def.name )
+            {
+                const tp = new TypeParameter();
+
+                tp.typeName = def.name;
+
+                return this.add_type_parameter( def.name, tp );
+            }
         }
-        else if ( check( 'name', 'typeName', 'typeOperator', 'keyOf' ) )
+
+        /**
+         * @param {string} name
+         * @param {Type} type
+         * @return {iCallable}
+         */
+        add_type_parameter( name, type )
         {
-            const tp = new TypeParameter();
+            this.tnames[ name ]                       = this.typeParameters.length;
+            this.tnames[ this.typeParameters.length ] = name;
+            this.typeParameters.push( type );
 
-            tp.constraint          = new TypeReference();
-            tp.constraint.typeName = def.typeName;
-            tp.keyOf               = true;
-
-            this.add_type_parameter( def.name, tp );
+            return this;
         }
-    }
 
-    /**
-     * @param {string} name
-     * @param {Type} type
-     * @return {iCallable}
-     */
-    add_type_parameter( name, type )
-    {
-        this.pnames[ name ] = this.typeParameters.length;
-        this.pnames[ this.typeParameters.length ] = name;
-        this.typeParameters.push( type );
+        /**
+         * @param {number|string} nameOrIndex
+         * @return {TypeParameter}
+         */
+        param_by( nameOrIndex )
+        {
+            if ( number( nameOrIndex ) )
+                return this.typeParameters[ nameOrIndex ];
 
-        return this;
-    }
+            return this.typeParameters[ this.tnames[ nameOrIndex ] ];
+        }
 
-    /**
-     * @param {number|string} nameOrIndex
-     * @return {TypeParameter}
-     */
-    param_by( nameOrIndex )
-    {
-        if ( number( nameOrIndex ) )
-            return this.typeParameters[ nameOrIndex ];
+        /**
+         * @return {boolean}
+         * @memberOf Generic
+         * @memberOf iGeneric
+         */
+        hasTypeParameters()
+        {
+            return !!this.typeParameters.length;
+        }
 
-        return this.typeParameters[ this.pnames[ nameOrIndex ] ];
-    }
+        /**
+         * @param {...(Type|TypeReference)} refTypes
+         */
+        instantiate( ...refTypes )
+        {
 
-    /**
-     * @return {number}
-     */
-    hasTypeParameters()
-    {
-        return this.typeParameters.length;
-    }
+        }
 
-    /**
-     * @param {...(Type|TypeReference)} refTypes
-     */
-    instantiate( ...refTypes )
-    {
+        /**
+         * @return {string}
+         * @memberOf Generic
+         * @memberOf iGeneric
+         */
+        type_parameters_to_string()
+        {
+            return this.typeParameters.length ? '<' + this.typeParameters.map( ( ta, i ) => `${ta.stringify( this.tnames[ i ] )}` ).join( ', ' ) + '>' : '';
+        }
+    };
 
-    }
-};
+export { Generic };

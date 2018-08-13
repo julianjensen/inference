@@ -119,6 +119,17 @@ export class NeverType extends Primitive
     toString() { return 'never'; }
 }
 
+export class ThisType extends Primitive
+{
+    constructor()
+    {
+        super();
+        this.typeName = 'this';
+    }
+
+    toString() { return 'this'; }
+}
+
 const primitives = new Map( [
                                 [ 'any', AnyType ],
                                 [ 'string', StringType ],
@@ -128,7 +139,8 @@ const primitives = new Map( [
                                 [ 'undefined', UndefinedType ],
                                 [ 'void', VoidType ],
                                 [ 'symbol', SymbolType ],
-                                [ 'never', NeverType ]
+                                [ 'never', NeverType ],
+                                [ 'this', ThisType ]
                             ] );
 
 /**

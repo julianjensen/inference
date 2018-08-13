@@ -7,7 +7,7 @@
 
 import { mix } from "mixwith";
 import { Type } from "./basic-type";
-import { Indexable } from "./interfaces/indexable";
+import { iIndexable } from "./interfaces/indexable";
 
 /**
  * @class EnumType
@@ -67,9 +67,9 @@ export class IntersectionType extends Type
 /**
  * @class MappedType
  * @extends Type
- * @extends Indexable
+ * @extends iIndexable
  */
-export class MappedType extends mix( Type ).with( Indexable )
+export class MappedType extends mix( Type ).with( iIndexable )
 {
     toString()
     {

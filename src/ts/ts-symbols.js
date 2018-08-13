@@ -104,6 +104,7 @@ const
     },
     fixKeyword = s => isString( s ) && /^\s*[A-Z][a-z]+Keyword\s*$/.test( s ) ? s.replace( /^\s*(.*)Keyword\s*$/, '$1' ).toLowerCase() : s;
 
+const notDealing = new Map();
 const topLevelNames = [];
 
 function elevate( obj )
@@ -146,13 +147,20 @@ export function walk_symbols( _file )
     file        = _file;
     typeChecker = _file.typeChecker;
 
-    const r = sym_walk( _file.ast, {} );
-    r.topLevelNames = [ ...new Set( topLevelNames ) ].sort();
+    try {
+        const r         = sym_walk( _file.ast, {} );
+        r.topLevelNames = [ ...new Set( topLevelNames ) ].sort();
 
-    r.allKinds = [ ...allKinds ];
-    r.allKindsWithMembers = [ ...allKindsWithMembers ];
-    r.allMembersKindsNoAmbiguity = [ ...allMembersKindsNoAmbiguity ];
-    return r;
+        r.allKinds                   = [ ...allKinds ];
+        r.allKindsWithMembers        = [ ...allKindsWithMembers ];
+        r.allMembersKindsNoAmbiguity = [ ...allMembersKindsNoAmbiguity ];
+        console.error( 'Not dealing:', notDealing );
+        return r;
+    }
+    catch ( err ) {
+        console.error( 'WTF:', err );
+        console.error( err );
+    }
 }
 
 function type_in_mapped_type( node )
@@ -506,10 +514,11 @@ function get_decl( decl )
 
     const dd = {
         loc: `${lineNumber + 1}:${offset}`,
-        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' ),
+        decl: declName + ( type( typeName ) !== 'object' && typeName ? ': ' + typeName : '' )
     };
 
     let _type = decl.type ? add_raw_types( decl.type ) : '';
+
     if ( _type ) _type = elevate( _type );
     if ( _type ) dd.type = _type;
 
@@ -633,11 +642,17 @@ function add_types( type )
                 return `Unknown literal "${SyntaxKind[ type.literal.kind ]}" ${ident( type )}`;
         }
     }
+    else if ( type.kind === SyntaxKind.PropertySignature )
+    {
+        const psName = get_type_name( type );
+
+        return `${psName}${type.optional ? '?' : ''}: ${type.type ? add_types( type.type ) : psName}`;
+    }
     else if ( type.kind === SyntaxKind.TypeLiteral )
     {
         const tl = type.members.length;
 
-        return !tl ? '{}' : tl === 1 ? `{ ${add_types( type.members[ 0 ] )}` : `{ ${type.members.map( add_types ).join( ', ' )} }`;
+        return !tl ? '{}' : tl === 1 ? `{ ${add_types( type.members[ 0 ] )} }` : `{ ${type.members.map( add_types ).join( ', ' )} }`;
     }
     else if ( type.kind === SyntaxKind.IndexSignature )
         return `[ ${type.parameters.map( add_types ).join( ', ' )} ]: ${add_types( type.type )} }`;
@@ -760,13 +775,16 @@ function func_type_info( type, dd = {} )
 function add_param( decl )
 {
 
-    const p = add_raw_types( decl.type ) || {};
-    p.name =  decl.name && decl.name.escapedText || 'anon';
+    const p = {
+        type: add_raw_types( decl.type ),
+        name: decl.name && decl.name.escapedText || 'anon'
+    };
+    // p.name =  decl.name && decl.name.escapedText || 'anon';
 
     if ( decl.dotDotDotToken )
         p.rest = true;
 
-    collapse( p );
+    // collapse( p );
 
     return optional( p, decl.questionToken );
 }
@@ -851,6 +869,15 @@ function add_raw_types_prev( type )
 
             return mapped;
 
+        case SyntaxKind.PropertySignature:
+            const psName = get_raw_type_name( type );
+
+            return {
+                type: 'property',
+                name: psName,
+                typeName: type.type ? add_raw_types( type.type ) : psName
+            };
+
         case SyntaxKind.LiteralType:
             return raw_literal( type );
 
@@ -924,6 +951,7 @@ function add_raw_types_prev( type )
 
     if ( t.type ) t.type = elevate( t.type );
 
+    t.__K = type ? SyntaxKind[ type.kind ] : 'no type';
     return t;
 }
 
@@ -936,6 +964,18 @@ function add_raw_types( type )
     // if ( !type ) return '<missing> ' + new Error().stack.split( /\r?\n/ ).slice( 1, 4 ).join( ' | ' );
 
     let t = {}, r, tmpl;
+
+    const getProp = p => {
+        const propKey = p.name.escapedText;
+        const propType = p.type && add_raw_types( p.type );
+        const typeName = propType ? ( propType.typeName || propType.name || propType ) : propKey;
+
+        return {
+            type:     'property',
+            propKey,
+            typeName
+        };
+    };
 
     switch ( type.kind )
     {
@@ -951,7 +991,8 @@ function add_raw_types( type )
         case SyntaxKind.TypeReference:
             r = {
                 type: 'reference',
-                typeName: collapse( add_raw_types( type.typeName ) )
+                typeName: add_raw_types( type.typeName ).name
+                // typeName: collapse( add_raw_types( type.typeName ) )
             };
 
             tmpl = check_for_raw_template( type );
@@ -970,6 +1011,9 @@ function add_raw_types( type )
                 definition: func_type_info( type )
             };
 
+        case SyntaxKind.PropertySignature:
+            return getProp( type );
+
         case SyntaxKind.UnionType:
             return { type: 'union', types: type.types.map( add_raw_types ) };
 
@@ -983,8 +1027,10 @@ function add_raw_types( type )
 
             // if ( type.questionToken ) mapped.optional = true;
             mapped.definition = {
-                type: collapse( add_raw_types( type.type ) ),
-                typeParameter: collapse( add_raw_types( type.typeParameter ) )
+                type: add_raw_types( type.type ),
+                typeParameter: add_raw_types( type.typeParameter )
+                // type: collapse( add_raw_types( type.type ) ),
+                // typeParameter: collapse( add_raw_types( type.typeParameter ) )
             };
 
             return optional( mapped, type.questionToken );
@@ -1002,14 +1048,16 @@ function add_raw_types( type )
             const is = {
                 type: 'index',
                 typeName: add_raw_types( type.type ),
-                parameters: type.parameters.map( add_raw_types ).map( collapse )
+                parameters: type.parameters.map( add_raw_types )
+                // parameters: type.parameters.map( add_raw_types ).map( collapse )
             };
 
             collapse( is );
             return is;
 
         case SyntaxKind.Parameter:
-            const typeList = collapse( add_raw_types( type.type ) );
+            const typeList = add_raw_types( type.type );
+            // const typeList = collapse( add_raw_types( type.type ) );
 
             return optional( {
                 name: add_raw_types( type.name ),
@@ -1019,9 +1067,75 @@ function add_raw_types( type )
         case SyntaxKind.TupleType:
             return {
                 type: 'tuple',
-                types: type.elementTypes.map( add_raw_types ).map( collapse )
+                types: type.elementTypes.map( add_raw_types )
+                // types: type.elementTypes.map( add_raw_types ).map( collapse )
             };
 
+        case SyntaxKind.NumberKeyword:
+            return 'number';
+
+        case SyntaxKind.AnyKeyword:
+            return 'any';
+
+        case SyntaxKind.StringKeyword:
+            return 'string';
+
+        case SyntaxKind.BooleanKeyword:
+            return 'boolean';
+
+        case SyntaxKind.VoidKeyword:
+            return 'void';
+
+        case SyntaxKind.UndefinedKeyword:
+            return 'undefined';
+
+        case SyntaxKind.NullKeyword:
+            return 'null';
+
+        case SyntaxKind.NeverKeyword:
+            return 'never';
+
+        case SyntaxKind.ThisType:
+            return 'this';
+
+        case SyntaxKind.ArrayType:
+            return {
+                type: 'array',
+                elementType: add_raw_types( type.elementType )
+            };
+
+        case SyntaxKind.TypeParameter:
+            return {
+                name: get_type_name( type ),
+                ...( type.constraint ? { constraint: add_raw_types( type.constraint ) } : {} ),
+                ...( type.default ? { default: add_raw_types( type.default ) } : {} )
+            };
+
+        case SyntaxKind.TypeQuery:
+            return {
+                type: 'query',
+                typeName: add_raw_types( type.exprName )
+            };
+
+            //     'ObjectKeyword',
+            //     'SymbolKeyword',
+            //     'IndexedAccessType',
+            //     'MethodSignature',
+            //     'ConstructorType',
+            //     'ConstructSignature',
+            //     'CallSignature',
+
+        default:
+            const deal = SyntaxKind[ type.kind ];
+
+            if ( !notDealing.has( deal ) )
+                notDealing.set( deal, new Set() );
+
+            const dealKeys = Object.keys( type ).sort();
+            const curKeys = notDealing.get( deal );
+
+
+            dealKeys.forEach( dk => curKeys.add( dk ) );
     }
 
     if ( type )
@@ -1064,9 +1178,7 @@ function add_raw_types( type )
     if ( tmpl )
         t.typeParameters = tmpl;
 
-    collapse( t );
-
-    // if ( t.type ) t.type = elevate( t.type );
+    // collapse( t );
 
     return optional( t, type.questionToken );
 }
@@ -1184,15 +1296,10 @@ function _collapse( t, field = 'typeName', sub = field )
 
     const
         has = ( o, n ) => type( o ) === 'object' ? o.hasOwnProperty( n ) : false,
-        // keys = o => Object.keys( o ),
-        // __ = o => type( o ) === 'object' ? `[ ${keys( o ).join( ', ' )} ]` : '-',
         tn = type( t[ field ] ) === 'object' ? t[ field ] : null;
 
     if ( tn && has( tn, 'types' ) && !tn.types )
         delete tn.types;
-
-    // if ( type( t.typeName ) === 'object' && type( t.typeName.typeName ) === 'string' )
-    //     console.log( `maybe: ${__( t.typeName )}, do? ${type( t.typeName ) === 'object' && keyCount( t.typeName ) === 1 && keys( t.typeName )[ 0 ] === 'typeName'}, t: ${__( t )}` );
 
     if ( tn && keyCount( tn ) === 1 )
     {

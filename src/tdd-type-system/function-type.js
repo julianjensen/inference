@@ -2,48 +2,85 @@
  * DESCRIPTION
  * @author julian.jensen
  * @since 0.0.1
+ *
+ * FunctionType with members
+ *      FunctionDecl[] with generics and callable
+ *
+ * ClassType with members
+ *      FunctionDecl[] with generics and callable
  *******************************************************************************/
+
 "use strict";
 
 import { mix } from 'mixwith';
 import { Type } from "./basic-type";
-import { Members } from "./interfaces/members";
-import { GenericType } from "./interfaces/generic";
-import { iCallable } from "./interfaces/callable";
+import { iMembers } from "./interfaces/members";
+import { iGeneric } from "./interfaces/generic";
+import { iCallable, iConstructs } from "./interfaces/callable";
+import { iScope } from "./interfaces/scopes";
+import { NodeScope } from "./object-type";
 
 /**
  * @class FunctionDecl
- * @extends {iCallable}
- * @extends {GenericType}
+ * @extends {Callable}
+ * @extends {Generic}
  * @extends {Type}
  */
-export class FunctionDecl extends mix( Type ).with( GenericType, iCallable )
+export class FunctionDecl extends mix( Type ).with( iGeneric, iCallable )
+{
+}
+
+/**
+ * @class FunctionDecl
+ * @extends {Constructs}
+ * @extends {Generic}
+ * @extends {Type}
+ */
+export class ConstructorDecl extends mix( Type ).with( iGeneric, iConstructs )
 {
 }
 
 /**
  * @class FunctionType
- * @extends {iCallable}
- * @extends {Constructs}
  * @extends {Members}
  * @extends {Type}
  */
-export class FunctionType extends mix( Type ).with( Members )
+export class FunctionShared extends mix( Type ).with( iMembers )
 {
+    /** @type {Array<FunctionDecl>|Array<ConstructorDecl>} */
     declarations = [];
+    parameterScope = new NodeScope( null, this );
+    functionScope = new NodeScope( this.parameterScope, this );
 
+    /**
+     * @param {FunctionDecl|ConstructorDecl} decl
+     */
     add_declaration( decl )
     {
         this.declarations.push( decl );
     }
 
+    /**
+     * @param {string} name
+     * @return {string}
+     */
+    stringify( name )
+    {
+        if ( !name ) return this.toString();
+
+        return this.declarations.map( t => `${t.stringify( name )}` ).join( ';\n    ' );
+    }
+
+    /**
+     * @return {string}
+     */
     toString()
     {
         return this.declarations.map( t => `${t}` ).join( ';\n    ' );
     }
 
     /**
-     * @param {iCallable|Constructs|FunctionType|Array<iCallable|Constructs>} decl
+     * @param {iCallable|iConstructs|FunctionType|Array<iCallable|iConstructs>} decl
      */
     define( decl )
     {
@@ -58,22 +95,13 @@ export class FunctionType extends mix( Type ).with( Members )
 
 /**
  * @class ClassType
- * @extends {Constructs}
- * @extends {Members}
- * @extends {Type}
+ * @extends {FunctionShared}
  */
-export class ClassType extends mix( Type ).with( Members, GenericType, iCallable )
-{
-    declarations = [];
+export class ClassType extends FunctionShared {}
 
-    add_declaration( decl )
-    {
-        this.declarations.push( decl );
-    }
-
-    toString()
-    {
-        return this.declarations.map( t => `${t}` ).join( ';\n    ' );
-    }
-}
+/**
+ * @class FunctionType
+ * @extends {FunctionShared}
+ */
+export class FunctionType extends FunctionShared {}
 

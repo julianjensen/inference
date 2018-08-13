@@ -120,7 +120,7 @@
  * `heritageClauses`:
  * `members[]`:
  *
- * ### Members
+ * ### iMembers
  * `ConstructSignature`     // Looks like `new(value?: any): Object;`
  *
  * `typeParameters`
