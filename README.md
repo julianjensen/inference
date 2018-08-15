@@ -102,6 +102,17 @@ All of the specifiers have one field `local`, always an `Identifier`
 * `Identifier` always and only
 * `local` is an `Identfier`
 
+## Creating structured data type
+
+### Interface (`InterfaceDeclaration`)
+Definition is in `base`, declarations in `base.decls[]`.
+
+1. Create the interface type
+
+   `objConstr = create_type( 'interface', base.name );`
+2. For each `base.members`
+3. 
+
 ## License
 
 MIT © [Julian Jensen](https://github.com/julianjensen/jsdoc-tag-parser)

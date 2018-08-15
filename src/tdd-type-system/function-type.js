@@ -105,3 +105,71 @@ export class ClassType extends FunctionShared {}
  */
 export class FunctionType extends FunctionShared {}
 
+/**
+ * @typedef {class} ActualFunction
+ * @implements IdealSignature
+ * @implements IdealObject
+ */
+
+/**
+ * @typedef {class} ActualObject
+ * @implements IdealObject
+ */
+
+/**
+ * @typedef {class} ActualClass
+ * @implements IdealSignature
+ * @implements IdealObject
+ */
+
+/**
+ * @interface IdealSignature
+ * @property {function} add_return_type
+ * @property {function} add_parameter       - FORMAL or TYPE
+ * @property {function} add_parameters      - Same as above, except ...args
+ * @property {function} stringify
+ * @property {number} flags                 - CONSTRUCTOR, METHOD
+ * @property {function} match               - Given an AST (or whatever), do the signatures match?
+ * @property {Array<IdealParameter>} parameters
+ */
+
+/**
+ * @interface IdealParameter
+ * @property {string} name
+ * @property {IdealType} type
+ * @property {number} flags
+ */
+
+/**
+ * @typedef {object} IdealFunction
+ * @property {Array<IdealFunction>} signatures
+ * @property {function} add_signature
+ * @property {function(type, function(IdealSignature, object)):boolean} find - `type` is one of CONSTRUCTOR, METHOD, FUNCTION, ANY
+ */
+
+/**
+ * @typedef {object} IdealClass
+ * @property {function} add_function    - Pass function and signature
+ * @property {function} add_signature   - Pass function and signature
+ * @property {function} add_constructor - Like above `add_function`
+ * @property {function} add_constructor_signature - Like above `add_signature`
+ * @property {function} add_property
+ */
+
+/**
+ * @interface IdealProperty
+ * @property {IdealType} type
+ * @property {number} flags
+ */
+
+/**
+ * @interface IdealType
+ */
+
+/**
+ * @interface IdealObject
+ * @property {Map<string, IdealProperty>} properties
+ * @property {function} add_property
+ * @property {function(type, function(IdealProperty, string, object)):boolean} find - `type` is one of PROPERTY, SIGNATURE, ANY
+ */
+
